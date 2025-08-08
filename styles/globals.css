@@ -3,6 +3,7 @@
 html, body {
   margin: 0;
   padding: 0;
+  height: 100%;
 }
 
 * {
@@ -11,6 +12,8 @@ html, body {
 
 body {
   font-family: 'Montserrat', sans-serif;
+  background: #370a7a;
+  background: linear-gradient(313deg, rgba(55, 10, 122, 1) 0%, rgba(4, 4, 97, 1) 55%, rgba(0, 212, 255, 1) 100%);
 }
 
 .grid {
