@@ -1,5 +1,4 @@
 [
-  { "href": "/admin", "title": "Admin", "description": "Edit buttons and content" },
   { "href": "https://seyuselfies.com", "title": "SEYU", "description": "Fans on screen, instantly" },
   { "href": "https://example.com/a", "title": "Action A", "description": "Primary call" },
   { "href": "https://example.com/b", "title": "Action B", "description": "Secondary call" }
