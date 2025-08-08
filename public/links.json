@@ -1,17 +1,57 @@
 [
   {
+    "href": "https://api.togetherforvictory.com/backend/events",
+    "title": "Events",
+    "description": ""
+  },
+
+  {
+    "href": "https://app.togetherforvictory.com",
+    "title": "App SEYU",
+    "description": ""
+  },
+  {
     "href": "https://api.togetherforvictory.com/backend",
-    "title": "backend",
+    "title": "Backend SEYU",
+    "description": ""
+  },
+  {
+    "href": "https://app-mkosz.togetherforvictory.com",
+    "title": "App MKOSZ",
+    "description": ""
+  },
+
+  {
+    "href": "https://api.seyu.hu/backend-mkosz/login.html",
+    "title": "Backend MKOSZ",
+    "description": ""
+  },
+
+
+  {
+    "href": "https://app-mol.togetherforvictory.com",
+    "title": "App MOL",
+    "description": ""
+  },
+  {
+    "href": "https://api.togetherforvictory.com/backend-mol",
+    "title": "Backend MOL",
+    "description": ""
+  },
+
+  {
+    "href": "https://app-fanxp.togetherforvictory.com",
+    "title": "App FANXP",
     "description": ""
   },
   {
     "href": "https://api.togetherforvictory.com/backend-fanxp",
-    "title": "backend-fanxp",
+    "title": "Backend FANXP",
     "description": ""
   },
   {
     "href": "https://api-dev.togetherforvictory.com/backend",
-    "title": "dev backend",
+    "title": "Backend DEV",
     "description": ""
   },
   {
@@ -21,34 +61,21 @@
   },
   {
     "href": "https://jira.seyu.hu",
-    "title": "ira",
+    "title": "JIRA",
     "description": ""
   },
   {
     "href": "http://report.seyu.hu/jasperserver",
-    "title": "report",
+    "title": "REPORT",
     "description": ""
   },
   {
     "href": "https://ai.seyu.hu/",
-    "title": "ai",
+    "title": "AI",
     "description": ""
   },
-  {
-    "href": "https://api.togetherforvictory.com/backend/events",
-    "title": "events",
-    "description": ""
-  },
-  {
-    "href": "https://app-fanxp.togetherforvictory.com",
-    "title": "app-fanxp",
-    "description": ""
-  },
-  {
-    "href": "https://app.togetherforvictory.com",
-    "title": "app-seyu",
-    "description": ""
-  },
+
+
   {
     "href": "https://speedtest.seyu.hu",
     "title": "speedtest",
