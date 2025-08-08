@@ -1,77 +1,62 @@
 [
   {
-    "href": "https://fonts.googleapis.com",
-    "title": "index.html",
-    "description": ""
-  },
-  {
-    "href": "https://fonts.gstatic.com",
-    "title": "index.html",
-    "description": ""
-  },
-  {
-    "href": "https://fonts.googleapis.com/css2?family=Montserrat:wght@500;800&display=swap",
-    "title": "index.html",
-    "description": ""
-  },
-  {
     "href": "https://api.togetherforvictory.com/backend",
-    "title": "index.html",
+    "title": "backend",
     "description": ""
   },
   {
     "href": "https://api.togetherforvictory.com/backend-fanxp",
-    "title": "index.html",
+    "title": "backend-fanxp",
     "description": ""
   },
   {
     "href": "https://api-dev.togetherforvictory.com/backend",
-    "title": "index.html",
+    "title": "dev backend",
     "description": ""
   },
   {
     "href": "https://api.togetherforvictory.com/credit-system",
-    "title": "index.html",
+    "title": "credit-system",
     "description": ""
   },
   {
     "href": "https://jira.seyu.hu",
-    "title": "index.html",
+    "title": "ira",
     "description": ""
   },
   {
     "href": "http://report.seyu.hu/jasperserver",
-    "title": "index.html",
+    "title": "report",
     "description": ""
   },
   {
     "href": "https://ai.seyu.hu/",
-    "title": "index.html",
+    "title": "ai",
     "description": ""
   },
   {
     "href": "https://api.togetherforvictory.com/backend/events",
-    "title": "index.html",
+    "title": "events",
     "description": ""
   },
   {
     "href": "https://app-fanxp.togetherforvictory.com",
-    "title": "index.html",
+    "title": "app-fanxp",
     "description": ""
   },
   {
     "href": "https://app.togetherforvictory.com",
-    "title": "index.html",
+    "title": "app-sedu",
     "description": ""
   },
   {
     "href": "https://speedtest.seyu.hu",
-    "title": "index.html",
+    "title": "speedtest",
     "description": ""
   },
   {
     "href": "https://gallery.seyu.hu",
-    "title": "index.html",
+    "title": "gallery",
     "description": ""
   }
 ]
