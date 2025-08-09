@@ -58,3 +58,50 @@ body { font-family: 'Montserrat', sans-serif; }
 @media (min-width: 768px){
   .grid { gap: 20px; padding: 24px; }
 }
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.admin-card { list-style: none; }
+.admin-card-inner {
+  border-radius: 16px;
+  padding: 14px;
+  min-height: 180px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+.admin-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.admin-card-top .drag { cursor: grab; border: 0; background: rgba(0,0,0,0.15); color: #fff; border-radius: 8px; padding: 2px 8px; }
+.admin-card-top .actions { display: flex; gap: 6px; }
+.admin-card-top .actions .edit,
+.admin-card-top .actions .del {
+  border: 0; border-radius: 8px; padding: 4px 8px; color: #111;
+  background: rgba(255,255,255,0.9);
+}
+.admin-card-top .actions .del { background: rgba(255,230,230,0.95); }
+.admin-card-content { flex: 1; }
+.admin-card-content h3 { margin: 8px 0 4px; font-size: 16px; }
+.admin-card-content p { margin: 0; font-size: 12px; opacity: .9; }
+.admin-card .visit {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.9);
+  color: #111; text-decoration: none;
+  border-radius: 8px; padding: 6px 10px; font-size: 12px; border: 0;
+}
+.admin-card-form label { display: grid; gap: 4px; margin-bottom: 8px; font-size: 12px; }
+.admin-card-form input, .admin-card-form textarea {
+  width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.5);
+  padding: 6px 8px; background: rgba(255,255,255,0.95); color: #111;
+}
+.admin-card-form .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.admin-card-form .form-actions button {
+  border: 0; border-radius: 8px; padding: 6px 10px; background: rgba(255,255,255,0.9); color: #111;
+}

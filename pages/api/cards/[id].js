@@ -7,6 +7,16 @@ function toClient(doc) {
   return { _id: _id?.toString?.() || String(_id), ...rest };
 }
 
+const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
+
+function normalizeBg(input) {
+  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
+  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
+  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
+  return pick || DEFAULT_BG;
+}
+
 export default async function handler(req, res) {
   const client = await clientPromise;
   const db = client.db(process.env.DB_NAME || 'oversized-links');
@@ -19,13 +29,16 @@ export default async function handler(req, res) {
   if (req.method === 'PATCH') {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
+
     const update = {};
-    ['href','title','description','order'].forEach(k => {
-      if (k in req.body) update[k] = k === 'order' ? Number(req.body[k]) : String(req.body[k] ?? '');
-    });
+    for (const k of ['href','title','description','order','background']) {
+      if (k in req.body) {
+        if (k === 'order') update[k] = Number(req.body[k]);
+        else if (k === 'background') update[k] = normalizeBg(String(req.body[k] ?? ''));
+        else update[k] = String(req.body[k] ?? '');
+      }
+    }
     update.updatedAt = new Date();
     await col.updateOne({ _id }, { $set: update });
     const doc = await col.findOne({ _id });
@@ -35,9 +48,7 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
     await col.deleteOne({ _id });
     return res.status(204).end();
   }
