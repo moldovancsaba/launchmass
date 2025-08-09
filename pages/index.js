@@ -1,6 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import OversizedLink from '../components/OversizedLink';
+import clientPromise from '../lib/db';
 
 export default function Home({ links }) {
   return (
@@ -10,14 +9,14 @@ export default function Home({ links }) {
   );
 }
 
-export async function getStaticProps() {
-  const filePath = path.join(process.cwd(), 'public', 'links.json');
-  let links = [];
+export async function getServerSideProps() {
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    links = JSON.parse(raw);
-  } catch (e) {
-    links = [{ href: '/admin', title: 'Admin', description: 'Edit buttons and content' }];
+    const client = await clientPromise;
+    const db = client.db(process.env.DB_NAME || 'oversized-links');
+    const links = await db.collection('links').find({}).sort({ order: 1, _id: 1 }).toArray();
+    const safe = links.map(({ _id, ...rest }) => rest);
+    return { props: { links: safe } };
+  } catch {
+    return { props: { links: [] } };
   }
-  return { props: { links }, revalidate: 60 };
 }
