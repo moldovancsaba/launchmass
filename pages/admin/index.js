@@ -48,8 +48,13 @@ export default function Admin() {
   const sensors = useSensors(useSensor(PointerSensor));
 
   async function saveItem(updated) {
+    if (!token) {
+      setStatus('No ADMIN_TOKEN set (paste it and Save token)');
+      setTimeout(() => setStatus(''), 2500);
+      return;
+    }
     try {
-      const res = await fetch('/api/cards/' + updated._id, {
+      const res = await fetch('/api/cards/' + encodeURIComponent(updated._id), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -61,29 +66,34 @@ export default function Admin() {
           description: updated.description
         })
       });
-      if (!res.ok) throw new Error();
-      const fresh = await res.json();
-      setItems(items.map(i => (i._id === fresh._id ? fresh : i)));
-      setStatus('Saved'); setTimeout(() => setStatus(''), 1200);
-    } catch {
-      setStatus('Save failed'); setTimeout(() => setStatus(''), 1500);
+      const txt = await res.text();
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + txt);
+      const fresh = JSON.parse(txt);
+      setItems(prev => prev.map(i => (i._id === fresh._id ? fresh : i)));
+      setStatus('Saved');
+      setTimeout(() => setStatus(''), 1200);
+    } catch (e) {
+      setStatus(String(e.message || 'Save failed'));
+      setTimeout(() => setStatus(''), 3500);
     }
   }
 
   async function deleteItem(id) {
+    if (!token) { setStatus('No ADMIN_TOKEN set'); setTimeout(() => setStatus(''), 2000); return; }
     try {
-      const res = await fetch('/api/cards/' + id, {
+      const res = await fetch('/api/cards/' + encodeURIComponent(id), {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token }
       });
-      if (!res.ok) throw new Error();
-      setItems(items.filter(i => i._id !== id));
-    } catch {
-      setStatus('Delete failed'); setTimeout(() => setStatus(''), 1500);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + (await res.text()));
+      setItems(prev => prev.filter(i => i._id !== id));
+    } catch (e) {
+      setStatus(String(e.message || 'Delete failed')); setTimeout(() => setStatus(''), 3000);
     }
   }
 
   async function addItem() {
+    if (!token) { setStatus('No ADMIN_TOKEN set'); setTimeout(() => setStatus(''), 2000); return; }
     try {
       const res = await fetch('/api/cards', {
         method: 'POST',
@@ -98,10 +108,10 @@ export default function Admin() {
         })
       });
       const created = await res.json();
-      if (!res.ok) throw new Error();
-      setItems([...items, created]);
-    } catch {
-      setStatus('Add failed'); setTimeout(() => setStatus(''), 1500);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + JSON.stringify(created));
+      setItems(prev => [...prev, created]);
+    } catch (e) {
+      setStatus(String(e.message || 'Add failed')); setTimeout(() => setStatus(''), 3000);
     }
   }
 
@@ -114,16 +124,14 @@ export default function Admin() {
     setItems(reordered);
     try {
       const ids = reordered.map(i => i._id);
-      await fetch('/api/cards/reorder', {
+      const res = await fetch('/api/cards/reorder', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify({ ids })
       });
-    } catch {
-      setStatus('Reorder failed'); setTimeout(() => setStatus(''), 1500);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + (await res.text()));
+    } catch (e) {
+      setStatus(String(e.message || 'Reorder failed')); setTimeout(() => setStatus(''), 3000);
     }
   }
 
@@ -138,6 +146,7 @@ export default function Admin() {
         <input value={token} onChange={e => setToken(e.target.value)} placeholder="Admin token" style={{ width: 360 }} />
         <button onClick={saveToken}>Save token</button>
         <button onClick={addItem}>Add new card</button>
+        <span style={{ opacity:.7, fontSize:12 }}>Auth: {token ? '✓' : '✗'}</span>
         {status ? <span style={{ opacity: .75 }}>{status}</span> : null}
       </section>
 
@@ -148,7 +157,7 @@ export default function Admin() {
               <Row
                 key={it._id}
                 item={it}
-                onChange={(updated) => setItems(items.map(x => x._id === updated._id ? updated : x))}
+                onChange={(updated) => setItems(prev => prev.map(x => x._id === updated._id ? updated : x))}
                 onSave={saveItem}
                 onDelete={deleteItem}
               />
@@ -158,7 +167,7 @@ export default function Admin() {
       </DndContext>
 
       <section style={{ gridColumn: '1 / -1', opacity: .7, fontSize: 12 }}>
-        Tip: Paste your ADMIN_TOKEN, Save token, then Add new card. Edit fields, click Save. Drag rows to reorder.
+        Tip: Paste your ADMIN_TOKEN, Save token, then Add/Edit/Drag rows. Changes persist to MongoDB.
       </section>
     </main>
   );
