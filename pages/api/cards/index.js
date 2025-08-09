@@ -1,5 +1,7 @@
 import clientPromise from '../../../lib/db';
 
+const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
+
 function toClient(doc) {
   if (!doc) return doc;
   const { _id, ...rest } = doc;
@@ -19,19 +21,26 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { href = '', title = '', description = '' } = req.body || {};
+    const { href = '', title = '', description = '', order, background } = req.body || {};
     const last = await col.find({}).sort({ order: -1 }).limit(1).toArray();
-    const order = last.length ? (Number(last[0].order) + 1) : 0;
+    const nextOrder = Number.isFinite(order) ? Number(order) : (last.length ? (Number(last[0].order) + 1) : 0);
     const now = new Date();
-    const doc = { href: String(href), title: String(title), description: String(description), order, createdAt: now, updatedAt: now };
+    const bg = typeof background === 'string' && background.trim() ? normalizeBg(background) : DEFAULT_BG;
+    const doc = { href: String(href), title: String(title), description: String(description), background: bg, order: nextOrder, createdAt: now, updatedAt: now };
     const r = await col.insertOne(doc);
     return res.status(201).json({ _id: r.insertedId.toString(), ...doc });
   }
 
   res.setHeader('Allow', ['GET', 'POST']);
   return res.status(405).end('Method Not Allowed');
+}
+
+function normalizeBg(input) {
+  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
+  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
+  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
+  return pick;
 }
