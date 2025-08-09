@@ -34,10 +34,10 @@ body { font-family: 'Montserrat', sans-serif; }
   padding: 20px;
   min-height: 140px;
   text-decoration: none;
-  color: #000;
-  background: rgba(245, 247, 251, 0.92);
+
+
   border: 1px solid #e6e8ef;
-  backdrop-filter: blur(2px);
+
 }
 
 .card h3 { margin: 0 0 6px 0; font-size: 24px; font-weight: 700; line-height: 1.2; }
