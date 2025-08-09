@@ -3,6 +3,7 @@ import '../styles/globals.css';
 export default function App({ Component, pageProps }) {
   return (
     <>
+      <div className="background-content" />
       <Component {...pageProps} />
       <div className="info-bar">
         <img
