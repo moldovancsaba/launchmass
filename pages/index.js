@@ -4,7 +4,15 @@ import clientPromise from '../lib/db';
 export default function Home({ cards }) {
   return (
     <main className="grid">
-      {cards.map((c, i) => <OversizedLink key={i} href={c.href} title={c.title} description={c.description} />)}
+      {cards.map((c, i) => (
+        <OversizedLink
+          key={i}
+          href={c.href}
+          title={c.title}
+          description={c.description}
+          background={c.background}
+        />
+      ))}
     </main>
   );
 }
