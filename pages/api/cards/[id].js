@@ -3,8 +3,14 @@ import { ObjectId } from 'mongodb';
 
 function toClient(doc) {
   if (!doc) return doc;
-  const { _id, ...rest } = doc;
-  return { _id: _id?.toString?.() || String(_id), ...rest };
+  const { _id, createdAt, updatedAt, ...rest } = doc;
+  return { 
+    _id: _id?.toString?.() || String(_id), 
+    ...rest,
+    // Convert Date objects to ISO strings for JSON serialization
+    ...(createdAt && { createdAt: createdAt.toISOString() }),
+    ...(updatedAt && { updatedAt: updatedAt.toISOString() })
+  };
 }
 
 const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";

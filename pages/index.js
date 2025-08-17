@@ -22,7 +22,15 @@ export async function getServerSideProps() {
     const client = await clientPromise;
     const db = client.db(process.env.DB_NAME || 'launchmass');
     const cards = await db.collection('cards').find({}).sort({ order: 1, _id: 1 }).toArray();
-    const safe = cards.map(({ _id, ...rest }) => rest);
+    
+    // Serialize data for Next.js - convert Dates to strings and remove MongoDB _id
+    const safe = cards.map(({ _id, createdAt, updatedAt, ...rest }) => ({
+      ...rest,
+      // Convert Date objects to ISO strings for JSON serialization
+      ...(createdAt && { createdAt: createdAt.toISOString() }),
+      ...(updatedAt && { updatedAt: updatedAt.toISOString() })
+    }));
+    
     return { props: { cards: safe } };
   } catch {
     return { props: { cards: [] } };
