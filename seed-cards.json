@@ -1,0 +1,22 @@
+[
+  { "href": "https://api.togetherforvictory.com/backend/events", "title": "Events", "description": "Next events on SEYU", "order": 0 },
+  { "href": "https://app.togetherforvictory.com", "title": "App SEYU", "description": "SEYU Official Fan Engagement Selfie App", "order": 1 },
+  { "href": "https://api.togetherforvictory.com/backend", "title": "Backend SEYU", "description": "Backend Dashboard and event management for administrators and success managers", "order": 2 },
+  { "href": "https://app-mkosz.togetherforvictory.com", "title": "App MKOSZ", "description": "HUNBASKET Official Fan Engagement application", "order": 3 },
+  { "href": "https://api.seyu.hu/backend-mkosz/login.html", "title": "Backend MKOSZ", "description": "MKOSZ Backend Dashboard and event management for administrators and success managers", "order": 4 },
+  { "href": "https://app-mol.togetherforvictory.com", "title": "App MOL", "description": "MOL Official Fan Engagement application", "order": 5 },
+  { "href": "https://api.togetherforvictory.com/backend-mol", "title": "Backend MOL", "description": "MOL Backend Dashboard and event management for administrators and success managers", "order": 6 },
+  { "href": "https://app-fanxp.togetherforvictory.com", "title": "App FANXP", "description": "MLSZ Official Fan Engagement application", "order": 7 },
+  { "href": "https://api.togetherforvictory.com/backend-fanxp", "title": "Backend FANXP", "description": "MLSZ Backend Dashboard and event management for administrators and success managers", "order": 8 },
+  { "href": "https://api-dev.togetherforvictory.com/backend", "title": "Backend DEV", "description": "DEV Backend Dashboard and event management for administrators and success managers", "order": 9 },
+  { "href": "https://api.togetherforvictory.com/credit-system", "title": "credit-system", "description": "SEYU Credit System and Dashboard", "order": 10 },
+  { "href": "https://jira.seyu.hu", "title": "JIRA", "description": "", "order": 11 },
+  { "href": "http://report.seyu.hu/jasperserver", "title": "REPORT", "description": "", "order": 12 },
+  { "href": "https://ai.seyu.hu/", "title": "AI", "description": "", "order": 13 },
+  { "href": "https://speedtest.seyu.hu", "title": "speedtest", "description": "", "order": 14 },
+  { "href": "https://gallery.seyu.hu", "title": "gallery", "description": "", "order": 15 },
+  { "href": "", "title": "", "description": "", "order": 16 },
+  { "href": "", "title": "", "description": "", "order": 17 },
+  { "href": "", "title": "", "description": "", "order": 18 },
+  { "href": "", "title": "", "description": "", "order": 19 }
+]

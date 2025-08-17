@@ -11,7 +11,7 @@ export default async function handler(req, res) {
   if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids array required' });
 
   const client = await clientPromise;
-  const db = client.db(process.env.DB_NAME || 'oversized-links');
+  const db = client.db(process.env.DB_NAME || 'launchmass');
   const col = db.collection('cards');
 
   const ops = ids.map((id, idx) => ({ updateOne: { filter: { _id: new ObjectId(id) }, update: { $set: { order: idx, updatedAt: new Date() } } } }));

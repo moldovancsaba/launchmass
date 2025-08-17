@@ -2,7 +2,7 @@ import clientPromise from '../../../lib/db';
 
 export default async function handler(req, res) {
   const client = await clientPromise;
-  const db = client.db(process.env.DB_NAME || 'oversized-links');
+  const db = client.db(process.env.DB_NAME || 'launchmass');
   const col = db.collection('links');
 
   if (req.method === 'GET') {
