@@ -20,7 +20,7 @@ export default function Home({ cards }) {
 export async function getServerSideProps() {
   try {
     const client = await clientPromise;
-    const db = client.db(process.env.DB_NAME || 'oversized-links');
+    const db = client.db(process.env.DB_NAME || 'launchmass');
     const cards = await db.collection('cards').find({}).sort({ order: 1, _id: 1 }).toArray();
     const safe = cards.map(({ _id, ...rest }) => rest);
     return { props: { cards: safe } };
