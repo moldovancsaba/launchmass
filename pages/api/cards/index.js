@@ -4,8 +4,14 @@ const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 19
 
 function toClient(doc) {
   if (!doc) return doc;
-  const { _id, ...rest } = doc;
-  return { _id: _id?.toString?.() || String(_id), ...rest };
+  const { _id, createdAt, updatedAt, ...rest } = doc;
+  return { 
+    _id: _id?.toString?.() || String(_id), 
+    ...rest,
+    // Convert Date objects to ISO strings for JSON serialization
+    ...(createdAt && { createdAt: createdAt.toISOString() }),
+    ...(updatedAt && { updatedAt: updatedAt.toISOString() })
+  };
 }
 
 export default async function handler(req, res) {
@@ -30,7 +36,8 @@ export default async function handler(req, res) {
     const bg = typeof background === 'string' && background.trim() ? normalizeBg(background) : DEFAULT_BG;
     const doc = { href: String(href), title: String(title), description: String(description), background: bg, order: nextOrder, createdAt: now, updatedAt: now };
     const r = await col.insertOne(doc);
-    return res.status(201).json({ _id: r.insertedId.toString(), ...doc });
+    const created = { _id: r.insertedId.toString(), ...doc };
+    return res.status(201).json(toClient(created));
   }
 
   res.setHeader('Allow', ['GET', 'POST']);
