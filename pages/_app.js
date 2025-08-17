@@ -12,7 +12,7 @@ export default function App({ Component, pageProps }) {
           width="48"
           height="48"
         />
-        <span className="info-text">SEYU SELFIES</span>
+        <span className="info-text">SEYU SOLUTIONS</span>
       </div>
     </>
   );
