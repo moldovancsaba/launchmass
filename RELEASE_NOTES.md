@@ -2,6 +2,16 @@
 
 ## [v1.1.0] — 2025-01-21T14:12:14.000Z
 
+## [v1.2.0] — 2025-09-16T12:24:10.000Z
+
+### Changed
+- Hide global bottom info bar on admin routes via conditional rendering in pages/_app.js; other pages unaffected.
+- Stabilized build by adding pages/_document.js (or ensuring it exists) and deferring MongoDB client initialization to runtime (lazy init) to avoid build-time env throws.
+
+### Documentation
+- Updated version across package.json, README.md badge, ARCHITECTURE.md, LEARNINGS.md.
+- Roadmap and tasks logged in governance docs where applicable.
+
 ### Added
 - **Complete Documentation Framework**: Established comprehensive project documentation structure
   - Created TASKLIST.md for development task management

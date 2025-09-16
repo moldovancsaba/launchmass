@@ -1,8 +1,10 @@
 # launchmass
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 
 Mobile-first grid of oversized buttons with a simple JSON-driven admin page. Features Google Analytics tracking for user engagement monitoring.
+
+Note: The global bottom info bar is automatically suppressed on admin routes (/admin) to keep the admin UI uncluttered.
 
 ## Quick Start
 
@@ -28,3 +30,4 @@ npm run start
 - [RELEASE_NOTES.md](RELEASE_NOTES.md) - Version history and changelog
 - [LEARNINGS.md](LEARNINGS.md) - Development insights and lessons learned
 - [WARP.md](WARP.md) - AI development guidance and project rules
+- [WARP.DEV_AI_CONVERSATION.md](WARP.DEV_AI_CONVERSATION.md) - Timestamped planning log
