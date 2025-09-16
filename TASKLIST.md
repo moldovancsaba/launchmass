@@ -1,4 +1,4 @@
-# Task List - launchmass v1.1.0
+# Task List - launchmass v1.2.0
 
 ## Active Tasks
 

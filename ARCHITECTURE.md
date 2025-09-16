@@ -1,4 +1,4 @@
-# System Architecture - launchmass v1.1.0
+# System Architecture - launchmass v1.2.0
 
 ## Overview
 
@@ -26,6 +26,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Role**: Global application wrapper with background and branding
 - **Dependencies**: Global CSS styles
 - **Status**: Active - Visual foundation layer
+- **Info Bar Behavior**: The global bottom info bar is suppressed on all `/admin` routes via conditional rendering (useRouter path check).
 
 ### Page Components
 

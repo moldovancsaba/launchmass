@@ -1,4 +1,4 @@
-# Development Learnings - launchmass v1.1.0
+# Development Learnings - launchmass v1.2.0
 
 ## Frontend
 
@@ -8,6 +8,11 @@
 **Key Learning**: Next.js _document.js is the proper approach for global script injection, ensuring consistent loading across all pages without performance impact from individual page modifications
 
 ### Google Analytics Integration Pattern
+
+### Conditional UI Rendering on Route
+**Issue**: The global bottom info bar should not appear on admin pages  
+**Solution**: In `pages/_app.js`, used `useRouter()` to detect `/admin` routes and conditionally suppress the info bar rendering, leaving CSS untouched  
+**Key Learning**: Prefer route-based conditional rendering in the app wrapper for layout chrome that should vary by section; avoid putting dynamic UI in `_document.js` which is meant for static document structure
 **Issue**: Requirement to implement Google Analytics tracking with gtag.js  
 **Solution**: Used Next.js _document.js with dangerouslySetInnerHTML for gtag initialization  
 **Key Learning**: 
