@@ -7,6 +7,7 @@ function toClient(doc) {
   return { 
     _id: _id?.toString?.() || String(_id), 
     ...rest,
+    tags: Array.isArray(rest?.tags) ? rest.tags : [],
     // Convert Date objects to ISO strings for JSON serialization
     ...(createdAt && { createdAt: createdAt.toISOString() }),
     ...(updatedAt && { updatedAt: updatedAt.toISOString() })
@@ -21,6 +22,19 @@ function normalizeBg(input) {
   const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
   const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
   return pick || DEFAULT_BG;
+}
+
+function normalizeTags(input) {
+  const arr = Array.isArray(input) ? input : [];
+  const out = [];
+  const seen = new Set();
+  for (const raw of arr) {
+    if (typeof raw !== 'string') continue;
+    const t = raw.trim().replace(/^#/,'').toLowerCase();
+    if (!t) continue;
+    if (!seen.has(t)) { seen.add(t); out.push(t); }
+  }
+  return out;
 }
 
 export default async function handler(req, res) {
@@ -38,10 +52,11 @@ export default async function handler(req, res) {
     if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
 
     const update = {};
-    for (const k of ['href','title','description','order','background']) {
+    for (const k of ['href','title','description','order','background','tags']) {
       if (k in req.body) {
         if (k === 'order') update[k] = Number(req.body[k]);
         else if (k === 'background') update[k] = normalizeBg(String(req.body[k] ?? ''));
+        else if (k === 'tags') update[k] = normalizeTags(req.body[k]);
         else update[k] = String(req.body[k] ?? '');
       }
     }

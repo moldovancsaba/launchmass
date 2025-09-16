@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+// Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
+// We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
 const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
 
@@ -13,10 +15,93 @@ function normalizeBg(input) {
   return pick || DEFAULT_BG;
 }
 
-function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange, sortable }) {
+function normalizeTags(input){
+  const arr = Array.isArray(input) ? input : [];
+  const out = [];
+  const seen = new Set();
+  for (const raw of arr) {
+    if (typeof raw !== 'string') continue;
+    const t = raw.trim().replace(/^#/,'').toLowerCase();
+    if (!t) continue;
+    if (!seen.has(t)) { seen.add(t); out.push(t); }
+  }
+  return out;
+}
+
+function TagInput({ value = [], options = [], onChange }) {
+  const [input, setInput] = useState('');
+
+  const normalized = normalizeTags(value);
+  const filtered = options
+    .filter(t => typeof t === 'string')
+    .map(t => t.toLowerCase())
+    .filter(t => input ? t.startsWith(input.trim().toLowerCase()) : true)
+    .filter(t => !normalized.includes(t))
+    .slice(0, 8);
+
+  function addTag(raw){
+    const t = (raw || '').trim().replace(/^#/,'').toLowerCase();
+    if (!t) return;
+    if (!normalized.includes(t)) onChange([...normalized, t]);
+  }
+
+  function removeTag(tag){
+    onChange(normalized.filter(t => t !== tag));
+  }
+
+  function onKeyDown(e){
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(input);
+      setInput('');
+    }
+    if (e.key === 'Backspace' && !input && normalized.length) {
+      // Quick delete last
+      onChange(normalized.slice(0, -1));
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+        {normalized.map((t, i) => (
+          <span key={i} className="tag-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            #{t}
+            <button
+              type="button"
+              onClick={() => removeTag(t)}
+              aria-label={`Remove tag ${t}`}
+              style={{ border: 0, background: 'transparent', cursor: 'pointer', padding: 0 }}
+            >×</button>
+          </span>
+        ))}
+      </div>
+      <input
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={onKeyDown}
+        placeholder="Type a tag and press Enter"
+        style={{ width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.5)', padding: '6px 8px' }}
+      />
+      {filtered.length ? (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+          {filtered.map((t, i) => (
+            <button key={i} type="button" className="tag-chip" onClick={() => { addTag(t); setInput(''); }}>
+              #{t}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange, sortable, tagOptions }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item._id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const bg = item.background || DEFAULT_BG;
+
+  const tags = Array.isArray(item.tags) ? item.tags : [];
 
   return (
     <div ref={setNodeRef} style={style} className="admin-card" >
@@ -33,6 +118,13 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
             <div className="admin-card-content">
               <h3>{item.title || 'Untitled'}</h3>
               <p>{item.description || ''}</p>
+              {tags.length ? (
+                <div className="tag-list" style={{ marginTop: 6 }}>
+                  {tags.map((t, idx) => (
+                    <span key={idx} className="tag-chip">#{t}</span>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <a className="visit" href={item.href || '#'} target="_blank" rel="noopener noreferrer">Open</a>
           </>
@@ -47,6 +139,15 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
               onChange={e => onChange({ ...item, _bgInput: e.target.value, background: normalizeBg(e.target.value) })}
               rows={4}
             /></label>
+{/* Functional: Predictive tags input with chips and remove (x). */}
+            {/* Strategic: Lightweight custom input avoids Popper-based Autocomplete to ensure reliable builds. */}
+            <div style={{ margin: '8px 0' }}>
+              <TagInput
+                value={tags}
+                options={tagOptions}
+                onChange={(next) => onChange({ ...item, tags: normalizeTags(next) })}
+              />
+            </div>
             <div className="form-actions">
               <button onClick={onCancel}>Cancel</button>
               <button onClick={onSave}>Save</button>
@@ -63,11 +164,16 @@ export default function Admin() {
   const [items, setItems] = useState([]);
   const [editingId, setEditingId] = useState('');
   const [status, setStatus] = useState('');
+  const [tagOptions, setTagOptions] = useState([]);
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('ADMIN_TOKEN') || '' : '';
     setToken(saved);
     fetch('/api/cards', { cache: 'no-store' }).then(r => r.json()).then(setItems).catch(() => setItems([]));
+    fetch('/api/tags', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(arr => setTagOptions(Array.isArray(arr) ? arr : []))
+      .catch(() => setTagOptions([]));
   }, []);
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -77,7 +183,7 @@ export default function Admin() {
       const res = await fetch('/api/cards/' + encodeURIComponent(it._id), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ title: it.title, href: it.href, description: it.description, background: it.background })
+        body: JSON.stringify({ title: it.title, href: it.href, description: it.description, background: it.background, tags: normalizeTags(it.tags) })
       });
       const txt = await res.text();
       if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + txt);
@@ -85,6 +191,8 @@ export default function Admin() {
       setItems(prev => prev.map(x => x._id === fresh._id ? fresh : x));
       setEditingId('');
       setStatus('Saved'); setTimeout(() => setStatus(''), 1200);
+      // Refresh tag options after potential new tag creation
+      fetch('/api/tags').then(r => r.json()).then(arr => setTagOptions(Array.isArray(arr) ? arr : [])).catch(() => {});
     } catch (e) {
       setStatus(String(e.message || 'Save failed')); setTimeout(() => setStatus(''), 3500);
     }
@@ -109,12 +217,14 @@ export default function Admin() {
           title: 'New Card',
           href: 'https://example.com',
           description: 'Describe me',
-          background: DEFAULT_BG
+          background: DEFAULT_BG,
+          tags: []
         })
       });
       const created = await res.json();
       if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + JSON.stringify(created));
       setItems(prev => [...prev, created]);
+      // refresh tag suggestions not necessary here as no new tags yet
     } catch (e) {
       setStatus(String(e.message || 'Add failed')); setTimeout(() => setStatus(''), 3000);
     }
@@ -165,6 +275,7 @@ export default function Admin() {
                   key={it._id}
                   item={it}
                   editing={editing}
+                  tagOptions={tagOptions}
                   onStartEdit={() => setEditingId(it._id)}
                   onCancel={() => setEditingId('')}
                   onSave={() => saveItem(it)}
