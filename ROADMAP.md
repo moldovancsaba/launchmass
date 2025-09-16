@@ -40,7 +40,22 @@
 - **Dependencies: Stable analytics foundation**
 - **Milestone: Extended Monitoring**
 
-  Expand monitoring and analytics ecosystem:
+Expand monitoring and analytics ecosystem:
   - Additional tracking integrations as needed
   - Performance monitoring solutions
   - Error tracking and reporting systems
+
+## Q4 2025 — Tag System Enhancements (Forward-Looking)
+
+### Milestone: v1.4.0 Tag UX Enhancements
+- Priority: P1
+- Dependencies: v1.3.0 released
+- Scope:
+  - Multi-tag filtering on main page (e.g., `?tags=a,b`)
+  - Tag rename/merge utility in admin
+  - Optional: tag color theming
+
+---
+
+## Plan Log (Delivery Protocol)
+- 2025-09-16 19:12 CET — Hashtags feature released in v1.3.0. Roadmap updated to track future tag UX enhancements. Owner: AI Agent (Warp).

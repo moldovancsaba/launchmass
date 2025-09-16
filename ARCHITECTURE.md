@@ -1,4 +1,4 @@
-# System Architecture - launchmass v1.2.0
+# System Architecture - launchmass v1.3.0
 
 ## Overview
 
