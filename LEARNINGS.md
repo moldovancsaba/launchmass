@@ -1,4 +1,4 @@
-# Development Learnings - launchmass v1.2.0
+# Development Learnings - launchmass v1.3.0
 
 ## Frontend
 
@@ -13,6 +13,11 @@
 **Issue**: The global bottom info bar should not appear on admin pages  
 **Solution**: In `pages/_app.js`, used `useRouter()` to detect `/admin` routes and conditionally suppress the info bar rendering, leaving CSS untouched  
 **Key Learning**: Prefer route-based conditional rendering in the app wrapper for layout chrome that should vary by section; avoid putting dynamic UI in `_document.js` which is meant for static document structure
+
+### Hashtags Feature Implementation (2025-09-16T18:12:51.000Z)
+**Issue**: Need to support adding/removing hashtags on cards and filtering by hashtag on the main page  
+**Solution**: Added `tags: string[]` to cards with strict normalization (trim, strip `#`, lowercase, dedupe). Implemented predictive tag input with chips and remove (x) on the admin page, and clickable chips on the main page with SSR filtering via `?tag=`. Provided `/api/tags` for distinct suggestions. Replaced MUI Autocomplete with a lightweight custom TagInput to avoid Popper-related build errors.  
+**Key Learning**: Keep domain fields normalized at the API boundary; SSR query filtering yields stable, shareable URLs; avoid introducing heavy UI dependencies when a small bespoke input suffices for MVP stability.
 **Issue**: Requirement to implement Google Analytics tracking with gtag.js  
 **Solution**: Used Next.js _document.js with dangerouslySetInnerHTML for gtag initialization  
 **Key Learning**: 

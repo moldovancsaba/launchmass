@@ -4,6 +4,17 @@
 
 ## [v1.2.0] — 2025-09-16T12:24:10.000Z
 
+## [v1.3.0] — 2025-09-16T18:12:51.000Z
+
+### Added
+- Hashtags: tags field on cards with normalization (trim, strip `#`, lowercase, dedupe)
+- Admin: predictive tag input (chips with remove), no-Popper custom TagInput
+- Main: clickable hashtag chips and SSR filtering via `?tag=`
+- API: `/api/tags` endpoint for distinct suggestions
+
+### Changed
+- Documentation updated across ROADMAP, TASKLIST, LEARNINGS; version synchronized
+
 ### Changed
 - Hide global bottom info bar on admin routes via conditional rendering in pages/_app.js; other pages unaffected.
 - Stabilized build by adding pages/_document.js (or ensuring it exists) and deferring MongoDB client initialization to runtime (lazy init) to avoid build-time env throws.
