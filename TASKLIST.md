@@ -3,9 +3,9 @@
 ## Active Tasks
 
 ### P0 — High Priority
-- Title: Deploy v1.3.0 to production (vercel --prod)
+- Title: Post-deploy verification (production) — hashtags and filtering sanity
   Owner: moldovan
-  Expected Delivery: 2025-09-16T18:45:00.000Z
+  Expected Delivery: 2025-09-17T19:15:00.000Z
 
 ### P1 — Medium Priority
 - Title: Monitor hashtag usage and UX feedback; refine suggestions and chip UI

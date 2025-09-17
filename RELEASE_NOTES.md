@@ -18,6 +18,9 @@
 ### Deployed
 - 2025-09-17T10:54:18.131Z — Production deployed to https://launchmass-nkxp6ftlb-narimato.vercel.app
 
+### Verification
+- 2025-09-17T18:54:16.000Z — Automated probe detected 401 on / and /api/cards. This is expected if production requires auth or env gating. Manual UI verification recommended for functional checks.
+
 ### Changed
 - Hide global bottom info bar on admin routes via conditional rendering in pages/_app.js; other pages unaffected.
 - Stabilized build by adding pages/_document.js (or ensuring it exists) and deferring MongoDB client initialization to runtime (lazy init) to avoid build-time env throws.
