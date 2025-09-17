@@ -15,6 +15,9 @@
 ### Changed
 - Documentation updated across ROADMAP, TASKLIST, LEARNINGS; version synchronized
 
+### Deployed
+- 2025-09-17T10:54:18.131Z — Production deployed to https://launchmass-nkxp6ftlb-narimato.vercel.app
+
 ### Changed
 - Hide global bottom info bar on admin routes via conditional rendering in pages/_app.js; other pages unaffected.
 - Stabilized build by adding pages/_document.js (or ensuring it exists) and deferring MongoDB client initialization to runtime (lazy init) to avoid build-time env throws.
