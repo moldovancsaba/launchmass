@@ -1,4 +1,5 @@
 import clientPromise from '../../../lib/db';
+import { getOrgContext } from '../../../lib/org.js';
 
 const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
 
@@ -22,7 +23,14 @@ export default async function handler(req, res) {
   const col = db.collection('cards');
 
   if (req.method === 'GET') {
-    const docs = await col.find({}).sort({ order: 1, _id: 1 }).toArray();
+    // Functional: When an org context is provided, scope results to that organization.
+    // Strategic: Backward-compatible — if no org context, return legacy unscoped list but add a deprecation header.
+    const ctx = await getOrgContext(req);
+    const filter = ctx?.orgUuid ? { orgUuid: ctx.orgUuid } : {};
+    if (!ctx?.orgUuid) {
+      res.setHeader('X-Deprecation', 'org-context-required');
+    }
+    const docs = await col.find(filter).sort({ order: 1, _id: 1 }).toArray();
     return res.status(200).json(docs.map(toClient));
   }
 
@@ -31,8 +39,12 @@ export default async function handler(req, res) {
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
 
+    // Require org context for writes to prevent cross-tenant leakage
+    const ctx = await getOrgContext(req);
+    if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
+
     const { href = '', title = '', description = '', order, background, tags } = req.body || {};
-    const last = await col.find({}).sort({ order: -1 }).limit(1).toArray();
+    const last = await col.find({ orgUuid: ctx.orgUuid }).sort({ order: -1 }).limit(1).toArray();
     const nextOrder = Number.isFinite(order) ? Number(order) : (last.length ? (Number(last[0].order) + 1) : 0);
     const now = new Date();
     const bg = typeof background === 'string' && background.trim() ? normalizeBg(background) : DEFAULT_BG;
@@ -41,7 +53,7 @@ export default async function handler(req, res) {
     // Strategic: Ensures consistent filtering and prevents duplicates across the system.
     const safeTags = normalizeTags(tags);
 
-    const doc = { href: String(href), title: String(title), description: String(description), background: bg, order: nextOrder, createdAt: now, updatedAt: now, tags: safeTags };
+    const doc = { href: String(href), title: String(title), description: String(description), background: bg, order: nextOrder, createdAt: now, updatedAt: now, tags: safeTags, orgUuid: ctx.orgUuid, orgSlug: ctx.orgSlug || '' };
     const r = await col.insertOne(doc);
     const created = { _id: r.insertedId.toString(), ...doc };
     return res.status(201).json(toClient(created));

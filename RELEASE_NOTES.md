@@ -1,5 +1,39 @@
 # Release Notes - launchmass
 
+## [v1.4.0] — 2025-10-01T09:24:28.000Z
+
+### Changed
+- Version bumped to v1.4.0 in package.json; documentation synchronized across README badge, ARCHITECTURE, LEARNINGS, and TASKLIST headers.
+
+### Documentation
+- Plan logged in ROADMAP (Plan Log) and WARP.DEV_AI_CONVERSATION with ISO 8601 UTC millisecond timestamp.
+- TASKLIST updated to reference v1.4.0 and include delivery tracking for this operation.
+
+## [v1.3.1] — 2025-09-25T10:48:49.000Z
+
+### Added
+- Organization helpers (lib/org.js) with header-based context detection and in-memory TTL cache
+- Organization CRUD endpoints: /api/organizations (GET, POST), /api/organizations/[uuid] (PUT, DELETE)
+- Organization resolver endpoint: /api/organization/[slug]
+- Tags endpoint: /api/tags — returns distinct tags per organization
+- Public route: /organization/[slug] — SSR org-specific grid with optional tag filtering
+
+### Changed
+- Homepage now redirects to the default organization using its UUID (/organization/{uuid})
+- /organization/[id] shows a small banner with the organization’s display name
+- Cards API endpoints are now organization-aware:
+
+### Security
+- Upgraded Next.js to 15.4.7 to address GHSA-4342-x723-ch2f (SSRF via middleware redirects)
+- Info bar is hidden on /organization/[id]/admin routes
+- Cards API endpoints are now organization-aware:
+  - GET /api/cards: backward-compatible; if no org context, returns legacy unscoped list and adds X-Deprecation: org-context-required
+  - POST/PATCH/DELETE/reorder require org context (X-Organization-UUID header or ?orgUuid=)
+
+### Documentation
+- Version bumped to v1.3.1 across README, ARCHITECTURE, TASKLIST, LEARNINGS
+- Plan logged in ROADMAP (Plan Log) with ISO 8601 UTC timestamp; tasks added to TASKLIST
+
 ## [v1.1.0] — 2025-01-21T14:12:14.000Z
 
 ## [v1.2.0] — 2025-09-16T12:24:10.000Z

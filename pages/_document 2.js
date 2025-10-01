@@ -44,33 +44,6 @@ export default function Document() {
         />
       </Head>
       <body>
-        {/* Failsafe nav: always-visible minimal navigation with inline styles (very high z-index) */}
-        {/* Functional: Guarantees access to key areas even if global styles or data fail to load. */}
-        {/* Strategic: Non-breadcrumb, compact top-right overlay to unblock workflows fast. */}
-        <div
-          id="failsafe-nav"
-          style={{
-            position: 'fixed',
-            top: 8,
-            right: 8,
-            zIndex: 2147483647,
-            background: 'rgba(0,0,0,0.80)',
-            color: '#fff',
-            padding: '6px 8px',
-            borderRadius: 8,
-            display: 'flex',
-            gap: 8,
-            alignItems: 'center',
-            fontSize: 14,
-          }}
-          role="region"
-          aria-label="Quick navigation"
-        >
-          <a href="/" style={{ color: '#fff', textDecoration: 'none' }}>Home</a>
-          <a href="/organizations" style={{ color: '#fff', textDecoration: 'none' }}>Organizations</a>
-          <a href="/admin" style={{ color: '#fff', textDecoration: 'none' }}>Admin</a>
-          <a href="/settings" style={{ color: '#fff', textDecoration: 'none' }}>Settings</a>
-        </div>
         <Main />
         <NextScript />
       </body>

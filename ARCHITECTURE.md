@@ -1,4 +1,4 @@
-# System Architecture - launchmass v1.3.0
+# System Architecture - launchmass v1.4.0
 
 ## Overview
 
@@ -8,7 +8,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 
 ### Frontend Layer
 
-#### Next.js Framework (v15.4.6)
+#### Next.js Framework (v15.5.4)
 - **Role**: Application framework and server-side rendering
 - **Dependencies**: React 19.1.1, React-DOM 19.1.1
 - **Status**: Active - Core application foundation
@@ -76,6 +76,33 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Status**: Active - Interactive admin features
 
 ### External Integrations
+
+## Organizations
+
+### Data Model
+- Collection: `organizations`
+  - Fields: uuid (UUIDv4), name, slug (unique, lowercase), description, isActive (bool), createdAt, updatedAt
+  - Indexes: { slug: 1, unique: true }, { uuid: 1, unique: true }, { isActive: 1 }
+- Cards (existing):
+  - Added: orgUuid (authoritative), orgSlug (denormalized)
+  - Indexes: { orgUuid: 1, order: 1 }, optionally { orgUuid: 1, tags: 1 }
+
+### Context Detection
+- Headers: X-Organization-UUID (preferred), X-Organization-Slug (fallback)
+- Helper: lib/org.js resolves org context and caches slug lookups (TTL)
+
+### Routes and Endpoints
+- Pages:
+  - `/organization/[slug]` — Organization-specific grid with optional `?tag=`
+- APIs:
+  - `/api/organizations` (GET/POST)
+  - `/api/organizations/[uuid]` (PUT/DELETE)
+  - `/api/organization/[slug]` (GET)
+  - `/api/cards` and related endpoints — org-aware
+  - `/api/tags` — distinct tags for current org
+
+### Admin Flow
+- /admin includes an org selector. Save ADMIN_TOKEN, refresh orgs, select org. All admin writes require org context.
 
 #### Google Analytics (gtag.js)
 - **Role**: User behavior tracking and analytics collection
