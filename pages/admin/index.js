@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import dynamic from 'next/dynamic';
 // Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
 // We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
@@ -159,30 +160,104 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
   );
 }
 
-export default function Admin() {
+// Disable SSR for Admin page to avoid server runtime issues with drag-and-drop and browser-only APIs.
+export default dynamic(() => Promise.resolve(AdminPageInner), { ssr: false });
+
+function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug = '' }) {
   const [token, setToken] = useState('');
   const [items, setItems] = useState([]);
   const [editingId, setEditingId] = useState('');
   const [status, setStatus] = useState('');
   const [tagOptions, setTagOptions] = useState([]);
+  // Functional: Load and select organizations for scoping admin actions.
+  // Strategic: Mirrors narimato header-based org context; keeps UI simple with a dropdown selector.
+  const [orgs, setOrgs] = useState([]);
+  const [selectedOrgUuid, setSelectedOrgUuid] = useState('');
+  // Minimal Organizations management inline: allow creating orgs directly from Admin.
+  const [orgForm, setOrgForm] = useState({ name: '', slug: '', description: '' });
 
+  // Helper: Fetch organizations with admin token
+  async function fetchOrgs(authToken) {
+    if (!authToken) { setOrgs([]); return; }
+    try {
+      const res = await fetch('/api/organizations', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const list = Array.isArray(data.organizations) ? data.organizations : [];
+      setOrgs(list);
+      // If no selection yet, prefer forcedOrgUuid, otherwise default slug or first org
+      if (!selectedOrgUuid) {
+        if (forcedOrgUuid) {
+          setSelectedOrgUuid(forcedOrgUuid);
+          if (typeof window !== 'undefined') localStorage.setItem('admin.selectedOrgUuid', forcedOrgUuid);
+        } else {
+          const def = list.find(o => o.slug === 'default') || list[0];
+          if (def) {
+            setSelectedOrgUuid(def.uuid);
+            if (typeof window !== 'undefined') localStorage.setItem('admin.selectedOrgUuid', def.uuid);
+          }
+        }
+      }
+    } catch {
+      setOrgs([]);
+    }
+  }
+
+  // Helper: Fetch cards scoped to selected organization (if any)
+  async function fetchItems(authToken, orgUuid) {
+    try {
+      const headers = {};
+      if (orgUuid) headers['X-Organization-UUID'] = orgUuid;
+      const res = await fetch('/api/cards', { headers, cache: 'no-store' });
+      const data = await res.json();
+      if (Array.isArray(data)) setItems(data); else setItems([]);
+    } catch {
+      setItems([]);
+    }
+  }
+
+  // Helper: Fetch tag suggestions scoped to selected org
+  async function fetchTags(orgUuid) {
+    try {
+      const headers = {};
+      if (orgUuid) headers['X-Organization-UUID'] = orgUuid;
+      const res = await fetch('/api/tags', { headers, cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const arr = await res.json();
+      setTagOptions(Array.isArray(arr) ? arr : []);
+    } catch {
+      setTagOptions([]);
+    }
+  }
+
+  // Initial hydration: admin token and selected org
   useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('ADMIN_TOKEN') || '' : '';
-    setToken(saved);
-    fetch('/api/cards', { cache: 'no-store' }).then(r => r.json()).then(setItems).catch(() => setItems([]));
-    fetch('/api/tags', { cache: 'no-store' })
-      .then(r => r.json())
-      .then(arr => setTagOptions(Array.isArray(arr) ? arr : []))
-      .catch(() => setTagOptions([]));
+    const savedToken = typeof window !== 'undefined' ? localStorage.getItem('ADMIN_TOKEN') || '' : '';
+    const savedOrgLocal = typeof window !== 'undefined' ? localStorage.getItem('admin.selectedOrgUuid') || '' : '';
+    const savedOrg = forcedOrgUuid || savedOrgLocal;
+    setToken(savedToken);
+    setSelectedOrgUuid(savedOrg);
+    // Prime data
+    fetchOrgs(savedToken);
+    fetchItems(savedToken, savedOrg);
+    fetchTags(savedOrg);
   }, []);
+
+  // Re-fetch items and tags when selected org changes
+  useEffect(() => {
+    fetchItems(token, selectedOrgUuid);
+    fetchTags(selectedOrgUuid);
+  }, [selectedOrgUuid]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
   async function saveItem(it) {
     try {
+      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+      if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
       const res = await fetch('/api/cards/' + encodeURIComponent(it._id), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers,
         body: JSON.stringify({ title: it.title, href: it.href, description: it.description, background: it.background, tags: normalizeTags(it.tags) })
       });
       const txt = await res.text();
@@ -200,7 +275,9 @@ export default function Admin() {
 
   async function deleteItem(id) {
     try {
-      const res = await fetch('/api/cards/' + encodeURIComponent(id), { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+      const headers = { 'Authorization': 'Bearer ' + token };
+      if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
+      const res = await fetch('/api/cards/' + encodeURIComponent(id), { method: 'DELETE', headers });
       if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + (await res.text()));
       setItems(prev => prev.filter(i => i._id !== id));
     } catch (e) {
@@ -210,9 +287,11 @@ export default function Admin() {
 
   async function addItem() {
     try {
+      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+      if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
       const res = await fetch('/api/cards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers,
         body: JSON.stringify({
           title: 'New Card',
           href: 'https://example.com',
@@ -239,9 +318,11 @@ export default function Admin() {
     setItems(reordered);
     try {
       const ids = reordered.map(i => i._id);
+      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+      if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
       const res = await fetch('/api/cards/reorder', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers,
         body: JSON.stringify({ ids })
       });
       if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + (await res.text()));
@@ -253,16 +334,82 @@ export default function Admin() {
   function saveToken() {
     localStorage.setItem('ADMIN_TOKEN', token);
     setStatus('Token saved'); setTimeout(() => setStatus(''), 1000);
+    // Refresh organizations after saving token
+    fetchOrgs(token);
+  }
+
+  // Create a new organization from Admin UI
+  async function createOrganization(e) {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/organizations', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: String(orgForm.name || '').trim(),
+          slug: String(orgForm.slug || '').trim().toLowerCase(),
+          description: String(orgForm.description || '')
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      // Refresh org list and clear form
+      await fetchOrgs(token);
+      setOrgForm({ name: '', slug: '', description: '' });
+      // Auto-select the newly created org if not forced by route
+      if (!forcedOrgUuid && data?.organization?.uuid) {
+        setSelectedOrgUuid(data.organization.uuid);
+        localStorage.setItem('admin.selectedOrgUuid', data.organization.uuid);
+      }
+      setStatus('Organization created'); setTimeout(() => setStatus(''), 1200);
+    } catch (e) {
+      setStatus('Create organization failed'); setTimeout(() => setStatus(''), 1500);
+    }
+  }
+
+  function onChangeOrg(e) {
+    if (forcedOrgUuid) return; // locked by route
+    const v = e.target.value;
+    setSelectedOrgUuid(v);
+    if (typeof window !== 'undefined') localStorage.setItem('admin.selectedOrgUuid', v);
+    setStatus('Organization selected'); setTimeout(() => setStatus(''), 1000);
   }
 
   return (
     <main style={{ padding: 16 }}>
-      <section style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+      <section style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
         <input value={token} onChange={e => setToken(e.target.value)} placeholder="Admin token" style={{ width: 360 }} />
         <button onClick={saveToken}>Save token</button>
-        <button onClick={addItem}>Add new card</button>
+        {/* Functional: Organization selector to scope admin operations */}
+        {/* Strategic: Clear alternative to breadcrumbs; keeps UI minimal */}
+        <select value={selectedOrgUuid} onChange={onChangeOrg} disabled={!!forcedOrgUuid} style={{ minWidth: 220 }}>
+          <option value="">Select organization</option>
+          {orgs.map(o => (
+            <option key={o.uuid} value={o.uuid}>{o.name} /{o.slug}</option>
+          ))}
+        </select>
+        <button onClick={() => fetchOrgs(token)}>Refresh orgs</button>
+        <a href="/organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</a>
+        <button onClick={addItem} disabled={!token || !selectedOrgUuid}>Add new card</button>
         <span style={{ opacity:.7, fontSize:12 }}>Auth: {token ? '✓' : '✗'}</span>
+        <span style={{ opacity:.7, fontSize:12 }}>Org: {selectedOrgUuid ? '✓' : '✗'}</span>
         {status ? <span style={{ opacity:.75 }}>{status}</span> : null}
+      </section>
+
+      {/* Inline Create Organization (minimal) */}
+      <section style={{ marginBottom: 16 }}>
+        <details>
+          <summary style={{ cursor:'pointer' }}>Create Organization</summary>
+          <form onSubmit={createOrganization} style={{ display:'grid', gap: 8, marginTop: 8, maxWidth: 520 }}>
+            <label>Name<input value={orgForm.name} onChange={e => setOrgForm(prev => ({ ...prev, name: e.target.value }))} required /></label>
+            <label>Slug<input value={orgForm.slug} onChange={e => setOrgForm(prev => ({ ...prev, slug: e.target.value.toLowerCase() }))} required /></label>
+            <label>Description<textarea value={orgForm.description} onChange={e => setOrgForm(prev => ({ ...prev, description: e.target.value }))} rows={3} /></label>
+            <div style={{ display:'flex', gap: 8 }}>
+              <button type="submit" disabled={!token}>Create</button>
+              <a href="/organizations" className="tag-chip">Open full org manager</a>
+            </div>
+          </form>
+        </details>
       </section>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>

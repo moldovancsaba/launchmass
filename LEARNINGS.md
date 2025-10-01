@@ -1,4 +1,4 @@
-# Development Learnings - launchmass v1.3.0
+# Development Learnings - launchmass v1.4.0
 
 ## Frontend
 

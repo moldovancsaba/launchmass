@@ -1,17 +1,25 @@
-import clientPromise from '../../../lib/db';
+import clientPromise from '../../../lib/db.js';
+import { getOrgContext } from '../../../lib/org.js';
 
-// Returns distinct normalized tags. Optional prefix filter via ?q=.
+// /api/tags: GET — distinct tags for the current organization
+// Functional: Returns the set of tags available within the selected organization.
+// Strategic: Keeps suggestions and filtering org-scoped to prevent cross-tenant leakage.
+
 export default async function handler(req, res) {
+  if (req.method !== 'GET') { res.setHeader('Allow', ['GET']); return res.status(405).end('Method Not Allowed'); }
+
+  const ctx = await getOrgContext(req);
+  if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
+
   const client = await clientPromise;
   const db = client.db(process.env.DB_NAME || 'launchmass');
-  const col = db.collection('cards');
 
-  const raw = await col.distinct('tags');
-  const tags = Array.isArray(raw) ? raw.filter(t => typeof t === 'string' && t.trim()).map(t => t.toLowerCase()) : [];
-  const unique = Array.from(new Set(tags));
-
-  const q = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase() : '';
-  const filtered = q ? unique.filter(t => t.startsWith(q)) : unique;
-
-  return res.status(200).json(filtered);
+  try {
+    // Distinct tags scoped by orgUuid; tags are normalized to lowercase at write time
+    const tags = await db.collection('cards').distinct('tags', { orgUuid: ctx.orgUuid });
+    const safe = (Array.isArray(tags) ? tags : []).filter(t => typeof t === 'string' && t.trim() !== '');
+    return res.status(200).json(safe);
+  } catch (e) {
+    return res.status(200).json([]);
+  }
 }

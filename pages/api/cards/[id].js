@@ -1,5 +1,6 @@
 import clientPromise from '../../../lib/db';
 import { ObjectId } from 'mongodb';
+import { getOrgContext } from '../../../lib/org.js';
 
 function toClient(doc) {
   if (!doc) return doc;
@@ -51,6 +52,10 @@ export default async function handler(req, res) {
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
 
+    // Require org context; guard updates to the owning org only
+    const ctx = await getOrgContext(req);
+    if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
+
     const update = {};
     for (const k of ['href','title','description','order','background','tags']) {
       if (k in req.body) {
@@ -61,8 +66,9 @@ export default async function handler(req, res) {
       }
     }
     update.updatedAt = new Date();
-    await col.updateOne({ _id }, { $set: update });
-    const doc = await col.findOne({ _id });
+    const r = await col.updateOne({ _id, orgUuid: ctx.orgUuid }, { $set: update });
+    if (!r.matchedCount) return res.status(404).json({ error: 'Card not found in this organization' });
+    const doc = await col.findOne({ _id, orgUuid: ctx.orgUuid });
     return res.status(200).json(toClient(doc));
   }
 
@@ -70,7 +76,10 @@ export default async function handler(req, res) {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
-    await col.deleteOne({ _id });
+    const ctx = await getOrgContext(req);
+    if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
+    const r = await col.deleteOne({ _id, orgUuid: ctx.orgUuid });
+    if (!r.deletedCount) return res.status(404).json({ error: 'Card not found in this organization' });
     return res.status(204).end();
   }
 
