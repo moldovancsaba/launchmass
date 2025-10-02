@@ -1,23 +1,28 @@
-# Task List - launchmass v1.4.0
+# Task List - launchmass v1.5.0
+
+## Completed Tasks (v1.5.0 - SSO Integration)
+
+### ✅ P0 — SSO Migration (Completed 2025-10-02T14:18:45.000Z)
+- ✅ Create lib/users.js with upsertUserFromSso and recordAuthEvent functions
+- ✅ Create lib/auth.js with validateSsoSession and withSsoAuth middleware
+- ✅ Create migration script scripts/migrate-users-collection.cjs
+- ✅ Create API proxy pages/api/auth/validate.js
+- ✅ Copy SSO client utilities to public/sso-client.js
+- ✅ Protect API routes with withSsoAuth (cards, organizations, reorder)
+- ✅ Admin UI overhaul: Remove token field, add SSR guard, user display, logout
+- ✅ Remove ADMIN_TOKEN from code, env, and update seed script
+- ✅ Update environment configuration (.env.local) with SSO variables
+- ✅ Build test passed successfully (1467ms)
+- ✅ Update README.md with SSO authentication section
+- ✅ Update ARCHITECTURE.md with SSO auth architecture
+- ✅ Update LEARNINGS.md with SSO integration insights
+- ✅ Update WARP.md with subdomain requirement warning
+- ✅ Version bump to 1.5.0 across all files
+- ✅ Create RELEASE_NOTES.md v1.5.0 changelog
+- ✅ Create SSO_IMPLEMENTATION.md (371 lines)
+- ✅ Create DEPLOYMENT_GUIDE.md (387 lines)
 
 ## Active Tasks
-
-### P0 — High Priority
-- Title: Version bump and documentation sync to v1.4.0; commit and push to main
-  Owner: moldovancsaba
-  Expected Delivery: 2025-10-01T09:40:00.000Z
-- Title: Post-deploy verification (production) — hashtags and filtering sanity
-  Owner: moldovan
-  Expected Delivery: 2025-09-17T19:15:00.000Z
-- Title: Implement organizations: data model and org context helpers
-  Owner: moldovan
-  Expected Delivery: 2025-09-26T12:00:00.000Z
-- Title: Organizations API and slug resolver: index, [uuid], [slug]
-  Owner: moldovan
-  Expected Delivery: 2025-09-26T16:00:00.000Z
-- Title: Make cards API organization-aware (GET w/ deprecation; POST/PATCH/DELETE/reorder require org context)
-  Owner: moldovan
-  Expected Delivery: 2025-09-27T12:00:00.000Z
 
 ### P1 — Medium Priority
 - Title: Monitor hashtag usage and UX feedback; refine suggestions and chip UI

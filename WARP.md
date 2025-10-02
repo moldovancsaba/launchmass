@@ -160,3 +160,43 @@ When working with this codebase, pay attention to:
 - Card component gradient/color logic
 - API route error handling consistency
 - CSS grid responsive behavior
+
+## Database Policy — Local Development
+
+- Rule: Always use the production MongoDB for local development (no separate dev/staging DBs).
+- Rationale: Ensures data parity and identical behavior between localhost and production; avoids schema/index drift and hidden bugs.
+- Scope: All contributors and all local environments.
+- Security: Do not commit secrets. Use .env.local (gitignored) to store MONGODB_URI and SSO configuration.
+- Operational Note: Writes must follow business rules since they affect production data.
+- Timestamp: 2025-10-01T11:15:00.000Z
+
+## Authentication — SSO Integration (v1.5.0+)
+
+**Critical: Admin features ONLY work on launchmass.doneisbetter.com (production subdomain)**
+
+- Rule: All admin operations require valid SSO session from sso.doneisbetter.com
+- Authentication Method: HttpOnly cookies with `Domain=.doneisbetter.com`
+- Localhost Limitation: Admin features DO NOT work on localhost due to cookie domain mismatch
+- Development Testing: Use Vercel preview deployments with *.doneisbetter.com subdomain
+- Public Pages: Non-admin routes work fine on localhost (no SSO required)
+- User Management: First SSO login automatically grants admin rights via `users` collection
+- Audit Trail: All authentication attempts logged in `authLogs` collection with IP/user agent
+- Session Monitoring: Client-side 5-minute interval checks with auto-redirect on expiration
+- Legacy Auth: ADMIN_TOKEN bearer token system removed in v1.5.0 (deprecated)
+- Timestamp: 2025-10-02T14:18:45.000Z
+
+**Environment Variables Required:**
+```bash
+# Server-side SSO config
+SSO_SERVER_URL=https://sso.doneisbetter.com
+SSO_COOKIE_DOMAIN=.doneisbetter.com
+SSO_LOGIN_PATH=/
+SSO_LOGOUT_PATH=/logout
+
+# Client-side SSO config (NEXT_PUBLIC_ prefix)
+NEXT_PUBLIC_SSO_SERVER_URL=https://sso.doneisbetter.com
+NEXT_PUBLIC_SSO_LOGIN_PATH=/
+NEXT_PUBLIC_SSO_LOGOUT_PATH=/logout
+```
+
+**For detailed implementation:** See `SSO_IMPLEMENTATION.md` and `DEPLOYMENT_GUIDE.md`

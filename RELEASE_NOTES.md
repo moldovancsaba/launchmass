@@ -1,5 +1,67 @@
 # Release Notes - launchmass
 
+## [v1.5.0] — 2025-10-02T14:18:45.000Z
+
+### 🔐 Security - SSO Integration (Breaking Change for Development)
+
+**Added:**
+- Complete SSO authentication via sso.doneisbetter.com
+- Automatic user creation with admin rights on first login
+- User persistence in MongoDB (`users` collection)
+- Comprehensive audit logging (`authLogs` collection)
+- Server-side session validation with SSR guard in `getServerSideProps`
+- Client-side session monitoring (5-minute intervals with auto-redirect)
+- `lib/auth.js` - SSO validation and `withSsoAuth` middleware (144 lines)
+- `lib/users.js` - User sync and audit logging (131 lines)
+- `pages/api/auth/validate.js` - Session validation proxy for client
+- `public/sso-client.js` - Browser SSO redirect utilities
+- `scripts/migrate-users-collection.cjs` - Database migration script
+
+**Changed:**
+- Admin authentication now requires SSO login (no more ADMIN_TOKEN)
+- All admin API routes protected with `withSsoAuth` middleware:
+  - `/api/cards` (POST), `/api/cards/[id]` (PATCH/DELETE), `/api/cards/reorder`
+  - `/api/organizations` (GET/POST), `/api/organizations/[uuid]` (PUT/DELETE)
+- Admin UI (`pages/admin/index.js`) completely overhauled:
+  - Added `getServerSideProps` with SSR authentication guard
+  - Removed token input field and localStorage token handling
+  - Added user info display (name/email) in header
+  - Added logout button with SSO redirect
+  - Implemented session monitoring with 5-minute checks
+  - All fetch calls now use `credentials: 'include'`
+- App MUST run on `*.doneisbetter.com` subdomain (cookie domain requirement)
+- Production domain: https://launchmass.doneisbetter.com
+
+**Removed:**
+- ADMIN_TOKEN environment variable (deprecated)
+- Bearer token authentication system
+- Token input field from admin interface
+- All `Authorization: Bearer` headers from API calls
+
+**Migration:**
+- Run `node scripts/migrate-users-collection.cjs` after deployment
+- Set SSO environment variables in Vercel (see DEPLOYMENT_GUIDE.md)
+- Configure custom domain: launchmass.doneisbetter.com
+- First SSO login auto-grants admin rights
+
+**Documentation:**
+- Created `SSO_IMPLEMENTATION.md` - Complete technical implementation guide (371 lines)
+- Created `DEPLOYMENT_GUIDE.md` - Production deployment checklist and troubleshooting
+- Updated `README.md` - Added SSO authentication section, removed ADMIN_TOKEN references
+- Updated `ARCHITECTURE.md` - Added SSO authentication architecture with database schemas
+- Updated `LEARNINGS.md` - Added SSO integration insights and patterns
+- Updated `WARP.md` - Added SSO configuration and localhost limitation warning
+- Version bumped to v1.5.0 across all documentation
+
+**Note:** 
+- Localhost admin access no longer works due to SSO cookie domain requirements
+- Use Vercel preview deployments with *.doneisbetter.com subdomain for testing
+- Public pages (non-admin routes) work fine on localhost
+
+**Build Status:** ✅ Passed (1467ms compile time)
+
+---
+
 ## [v1.4.0] — 2025-10-01T09:24:28.000Z
 
 ### Changed

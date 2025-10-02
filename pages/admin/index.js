@@ -3,6 +3,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
+import { validateSsoSession } from '../../lib/auth.js';
 // Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
 // We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
@@ -160,11 +161,52 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
   );
 }
 
-// Disable SSR for Admin page to avoid server runtime issues with drag-and-drop and browser-only APIs.
+// Functional: SSR guard for admin page - validates SSO session on every page load
+// Strategic: Prevents UI flicker and ensures immediate redirect to SSO login if not authenticated;
+// user info passed as props enables displaying name/email in header
+export async function getServerSideProps(context) {
+  const { req, resolvedUrl } = context;
+  
+  // Validate SSO session on server side
+  const { isValid, user } = await validateSsoSession(req);
+  
+  if (!isValid) {
+    // Functional: Redirect to SSO login with current URL as return destination
+    // Strategic: Browser will send SSO cookies (Domain=.doneisbetter.com) to SSO service
+    const ssoServerUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
+    const loginPath = process.env.SSO_LOGIN_PATH || '/';
+    const currentUrl = `${req.headers.host}${resolvedUrl}`;
+    const redirectUrl = `${ssoServerUrl}${loginPath}?redirect=${encodeURIComponent(`https://${currentUrl}`)}`;
+    
+    return {
+      redirect: {
+        destination: redirectUrl,
+        permanent: false,
+      },
+    };
+  }
+  
+  // Functional: Pass authenticated user to client component
+  // Strategic: Enables displaying user info without additional client-side fetch
+  return {
+    props: {
+      user: {
+        email: user.email || '',
+        name: user.name || '',
+        ssoUserId: user.ssoUserId || '',
+        isAdmin: user.isAdmin || false,
+      },
+    },
+  };
+}
+
+// Disable SSR for component itself due to drag-and-drop requiring browser APIs
+// Note: getServerSideProps still runs on server (authentication guard)
 export default dynamic(() => Promise.resolve(AdminPageInner), { ssr: false });
 
-function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug = '' }) {
-  const [token, setToken] = useState('');
+// Functional: Admin interface component with SSO authentication
+// Strategic: Receives authenticated user from SSR guard; no token management needed
+function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug = '' }) {
   const [items, setItems] = useState([]);
   const [editingId, setEditingId] = useState('');
   const [status, setStatus] = useState('');
@@ -176,11 +218,11 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
   // Minimal Organizations management inline: allow creating orgs directly from Admin.
   const [orgForm, setOrgForm] = useState({ name: '', slug: '', description: '' });
 
-  // Helper: Fetch organizations with admin token
-  async function fetchOrgs(authToken) {
-    if (!authToken) { setOrgs([]); return; }
+  // Functional: Fetch organizations using SSO session (cookies sent automatically)
+  // Strategic: No Authorization header needed - withSsoAuth middleware validates session
+  async function fetchOrgs() {
     try {
-      const res = await fetch('/api/organizations', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const res = await fetch('/api/organizations', { credentials: 'include' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       const list = Array.isArray(data.organizations) ? data.organizations : [];
@@ -203,8 +245,9 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
     }
   }
 
-  // Helper: Fetch cards scoped to selected organization (if any)
-  async function fetchItems(authToken, orgUuid) {
+  // Functional: Fetch cards scoped to selected organization
+  // Strategic: Public endpoint; org scoping via header
+  async function fetchItems(orgUuid) {
     try {
       const headers = {};
       if (orgUuid) headers['X-Organization-UUID'] = orgUuid;
@@ -230,34 +273,57 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
     }
   }
 
-  // Initial hydration: admin token and selected org
+  // Functional: Initial data load and session monitoring
+  // Strategic: SSO session validated by SSR guard; client monitors for expiration
   useEffect(() => {
-    const savedToken = typeof window !== 'undefined' ? localStorage.getItem('ADMIN_TOKEN') || '' : '';
     const savedOrgLocal = typeof window !== 'undefined' ? localStorage.getItem('admin.selectedOrgUuid') || '' : '';
     const savedOrg = forcedOrgUuid || savedOrgLocal;
-    setToken(savedToken);
     setSelectedOrgUuid(savedOrg);
-    // Prime data
-    fetchOrgs(savedToken);
-    fetchItems(savedToken, savedOrg);
+    
+    // Prime data - SSO cookies sent automatically
+    fetchOrgs();
+    fetchItems(savedOrg);
     fetchTags(savedOrg);
+    
+    // Functional: Session monitoring - check every 5 minutes for session expiration
+    // Strategic: Prevents stale sessions; redirects to SSO login if expired
+    const sessionMonitor = setInterval(async () => {
+      try {
+        const res = await fetch('/api/auth/validate', { cache: 'no-store' });
+        const data = await res.json();
+        if (!data.isValid) {
+          // Functional: Redirect to SSO login with current URL as return destination
+          const ssoUrl = process.env.NEXT_PUBLIC_SSO_SERVER_URL || 'https://sso.doneisbetter.com';
+          const loginPath = process.env.NEXT_PUBLIC_SSO_LOGIN_PATH || '/';
+          const currentUrl = encodeURIComponent(window.location.href);
+          window.location.href = `${ssoUrl}${loginPath}?redirect=${currentUrl}`;
+        }
+      } catch (err) {
+        console.error('[admin] Session monitor error:', err);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => clearInterval(sessionMonitor);
   }, []);
 
   // Re-fetch items and tags when selected org changes
   useEffect(() => {
-    fetchItems(token, selectedOrgUuid);
+    fetchItems(selectedOrgUuid);
     fetchTags(selectedOrgUuid);
   }, [selectedOrgUuid]);
 
   const sensors = useSensors(useSensor(PointerSensor));
 
+  // Functional: Save card changes using SSO session
+  // Strategic: credentials: 'include' ensures cookies sent; withSsoAuth validates on server
   async function saveItem(it) {
     try {
-      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+      const headers = { 'Content-Type': 'application/json' };
       if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
       const res = await fetch('/api/cards/' + encodeURIComponent(it._id), {
         method: 'PATCH',
         headers,
+        credentials: 'include',
         body: JSON.stringify({ title: it.title, href: it.href, description: it.description, background: it.background, tags: normalizeTags(it.tags) })
       });
       const txt = await res.text();
@@ -275,9 +341,9 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
 
   async function deleteItem(id) {
     try {
-      const headers = { 'Authorization': 'Bearer ' + token };
+      const headers = {};
       if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
-      const res = await fetch('/api/cards/' + encodeURIComponent(id), { method: 'DELETE', headers });
+      const res = await fetch('/api/cards/' + encodeURIComponent(id), { method: 'DELETE', headers, credentials: 'include' });
       if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + (await res.text()));
       setItems(prev => prev.filter(i => i._id !== id));
     } catch (e) {
@@ -287,11 +353,12 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
 
   async function addItem() {
     try {
-      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+      const headers = { 'Content-Type': 'application/json' };
       if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
       const res = await fetch('/api/cards', {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify({
           title: 'New Card',
           href: 'https://example.com',
@@ -318,11 +385,12 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
     setItems(reordered);
     try {
       const ids = reordered.map(i => i._id);
-      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+      const headers = { 'Content-Type': 'application/json' };
       if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
       const res = await fetch('/api/cards/reorder', {
         method: 'POST',
         headers,
+        credentials: 'include',
         body: JSON.stringify({ ids })
       });
       if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + (await res.text()));
@@ -331,12 +399,6 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
     }
   }
 
-  function saveToken() {
-    localStorage.setItem('ADMIN_TOKEN', token);
-    setStatus('Token saved'); setTimeout(() => setStatus(''), 1000);
-    // Refresh organizations after saving token
-    fetchOrgs(token);
-  }
 
   // Create a new organization from Admin UI
   async function createOrganization(e) {
@@ -344,7 +406,8 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
     try {
       const res = await fetch('/api/organizations', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: String(orgForm.name || '').trim(),
           slug: String(orgForm.slug || '').trim().toLowerCase(),
@@ -354,7 +417,7 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error('HTTP ' + res.status);
       // Refresh org list and clear form
-      await fetchOrgs(token);
+      await fetchOrgs();
       setOrgForm({ name: '', slug: '', description: '' });
       // Auto-select the newly created org if not forced by route
       if (!forcedOrgUuid && data?.organization?.uuid) {
@@ -375,11 +438,29 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
     setStatus('Organization selected'); setTimeout(() => setStatus(''), 1000);
   }
 
+  // Functional: Logout handler - redirects to SSO logout endpoint with return URL
+  // Strategic: Only SSO can clear HttpOnly cookies; after logout, SSO redirects back to app
+  function handleLogout() {
+    const ssoUrl = process.env.NEXT_PUBLIC_SSO_SERVER_URL || 'https://sso.doneisbetter.com';
+    const logoutPath = process.env.NEXT_PUBLIC_SSO_LOGOUT_PATH || '/logout';
+    const returnUrl = encodeURIComponent(window.location.origin);
+    window.location.href = `${ssoUrl}${logoutPath}?redirect=${returnUrl}`;
+  }
+
   return (
     <main style={{ padding: 16 }}>
+      {/* Functional: Admin header with authenticated user info and controls */}
+      {/* Strategic: Replaces token input; shows who is logged in and enables logout */}
+      <section style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto' }}>
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{user.name || user.email || 'Admin User'}</span>
+          <span style={{ fontSize: 11, opacity: 0.7 }}>{user.email || 'Authenticated via SSO'}</span>
+        </div>
+        <button onClick={handleLogout} style={{ background: 'rgba(255,100,100,0.2)', border: '1px solid rgba(255,100,100,0.5)', padding: '6px 12px', borderRadius: 4, cursor: 'pointer' }}>Logout</button>
+      </section>
+
+      {/* Functional: Organization and card management controls */}
       <section style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-        <input value={token} onChange={e => setToken(e.target.value)} placeholder="Admin token" style={{ width: 360 }} />
-        <button onClick={saveToken}>Save token</button>
         {/* Functional: Organization selector to scope admin operations */}
         {/* Strategic: Clear alternative to breadcrumbs; keeps UI minimal */}
         <select value={selectedOrgUuid} onChange={onChangeOrg} disabled={!!forcedOrgUuid} style={{ minWidth: 220 }}>
@@ -388,10 +469,9 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
             <option key={o.uuid} value={o.uuid}>{o.name} /{o.slug}</option>
           ))}
         </select>
-        <button onClick={() => fetchOrgs(token)}>Refresh orgs</button>
-        <a href="/organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</a>
-        <button onClick={addItem} disabled={!token || !selectedOrgUuid}>Add new card</button>
-        <span style={{ opacity:.7, fontSize:12 }}>Auth: {token ? '✓' : '✗'}</span>
+        <button onClick={() => fetchOrgs()}>Refresh orgs</button>
+        <a href="/settings#organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</a>
+        <button onClick={addItem} disabled={!selectedOrgUuid}>Add new card</button>
         <span style={{ opacity:.7, fontSize:12 }}>Org: {selectedOrgUuid ? '✓' : '✗'}</span>
         {status ? <span style={{ opacity:.75 }}>{status}</span> : null}
       </section>
@@ -405,8 +485,8 @@ function AdminPageInner({ forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug 
             <label>Slug<input value={orgForm.slug} onChange={e => setOrgForm(prev => ({ ...prev, slug: e.target.value.toLowerCase() }))} required /></label>
             <label>Description<textarea value={orgForm.description} onChange={e => setOrgForm(prev => ({ ...prev, description: e.target.value }))} rows={3} /></label>
             <div style={{ display:'flex', gap: 8 }}>
-              <button type="submit" disabled={!token}>Create</button>
-              <a href="/organizations" className="tag-chip">Open full org manager</a>
+              <button type="submit">Create</button>
+              <a href="/settings#organizations" className="tag-chip">Open org manager</a>
             </div>
           </form>
         </details>

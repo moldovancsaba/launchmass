@@ -9,25 +9,6 @@ import { getOrgBySlugCached, getOrgByUuid } from '../../lib/org.js';
 export default function OrgHome({ org, cards, activeTag }) {
   return (
     <>
-      {/* Small banner for organization clarity */}
-      <div className="org-banner" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8, color: '#111' }}>
-        <span style={{ fontWeight: 600 }}>Organization:</span>
-        <span>{org?.name || 'Unknown'}</span>
-        <span style={{ opacity: 0.7, fontSize: 12 }}>({org?.slug || org?.uuid})</span>
-        <a
-          href="/organizations"
-          className="tag-chip"
-          style={{ marginLeft: 'auto' }}
-        >
-          Organizations
-        </a>
-        <a
-          href={`/organization/${encodeURIComponent(org.uuid)}/admin`}
-          className="tag-chip"
-        >
-          Manage
-        </a>
-      </div>
       {activeTag ? (
         <div className="filter-bar" style={{ padding: '8px 16px' }}>
           <span>Filtering by</span>
@@ -56,6 +37,11 @@ export async function getServerSideProps(context) {
   const slugOrUuid = typeof params?.slug === 'string' ? params.slug : '';
   // Attempt slug first; fallback to UUID to support /organization/{uuid} URLs
   let org = await getOrgBySlugCached(slugOrUuid);
+  // Enforce: Slug-based public URL must be explicitly enabled by editor (useSlugAsPublicUrl===true)
+  if (org && org.isActive !== false && org.useSlugAsPublicUrl !== true) {
+    // Treat as not found for slug access; do not allow accidental public exposure via slug
+    org = null;
+  }
   if ((!org || org.isActive === false) && slugOrUuid) {
     const byUuid = await getOrgByUuid(slugOrUuid);
     if (byUuid && byUuid.isActive !== false) org = byUuid;

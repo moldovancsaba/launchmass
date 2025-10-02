@@ -1,6 +1,7 @@
 import clientPromise from '../../../lib/db';
 import { ObjectId } from 'mongodb';
 import { getOrgContext } from '../../../lib/org.js';
+import { withSsoAuth } from '../../../lib/auth.js';
 
 function toClient(doc) {
   if (!doc) return doc;
@@ -47,40 +48,41 @@ export default async function handler(req, res) {
   let _id;
   try { _id = new ObjectId(id); } catch { return res.status(400).json({ error: 'Invalid id' }); }
 
+  // Functional: Protect PATCH (update) operation with SSO authentication
+  // Strategic: withSsoAuth ensures only authenticated admin users can modify cards
   if (req.method === 'PATCH') {
-    const auth = req.headers.authorization || '';
-    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
+    return withSsoAuth(async (req, res) => {
+      // Require org context; guard updates to the owning org only
+      const ctx = await getOrgContext(req);
+      if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
 
-    // Require org context; guard updates to the owning org only
-    const ctx = await getOrgContext(req);
-    if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
-
-    const update = {};
-    for (const k of ['href','title','description','order','background','tags']) {
-      if (k in req.body) {
-        if (k === 'order') update[k] = Number(req.body[k]);
-        else if (k === 'background') update[k] = normalizeBg(String(req.body[k] ?? ''));
-        else if (k === 'tags') update[k] = normalizeTags(req.body[k]);
-        else update[k] = String(req.body[k] ?? '');
+      const update = {};
+      for (const k of ['href','title','description','order','background','tags']) {
+        if (k in req.body) {
+          if (k === 'order') update[k] = Number(req.body[k]);
+          else if (k === 'background') update[k] = normalizeBg(String(req.body[k] ?? ''));
+          else if (k === 'tags') update[k] = normalizeTags(req.body[k]);
+          else update[k] = String(req.body[k] ?? '');
+        }
       }
-    }
-    update.updatedAt = new Date();
-    const r = await col.updateOne({ _id, orgUuid: ctx.orgUuid }, { $set: update });
-    if (!r.matchedCount) return res.status(404).json({ error: 'Card not found in this organization' });
-    const doc = await col.findOne({ _id, orgUuid: ctx.orgUuid });
-    return res.status(200).json(toClient(doc));
+      update.updatedAt = new Date();
+      const r = await col.updateOne({ _id, orgUuid: ctx.orgUuid }, { $set: update });
+      if (!r.matchedCount) return res.status(404).json({ error: 'Card not found in this organization' });
+      const doc = await col.findOne({ _id, orgUuid: ctx.orgUuid });
+      return res.status(200).json(toClient(doc));
+    })(req, res);
   }
 
+  // Functional: Protect DELETE operation with SSO authentication
+  // Strategic: Prevents unauthorized card deletion; org context ensures tenant isolation
   if (req.method === 'DELETE') {
-    const auth = req.headers.authorization || '';
-    const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-    if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
-    const ctx = await getOrgContext(req);
-    if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
-    const r = await col.deleteOne({ _id, orgUuid: ctx.orgUuid });
-    if (!r.deletedCount) return res.status(404).json({ error: 'Card not found in this organization' });
-    return res.status(204).end();
+    return withSsoAuth(async (req, res) => {
+      const ctx = await getOrgContext(req);
+      if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
+      const r = await col.deleteOne({ _id, orgUuid: ctx.orgUuid });
+      if (!r.deletedCount) return res.status(404).json({ error: 'Card not found in this organization' });
+      return res.status(204).end();
+    })(req, res);
   }
 
   res.setHeader('Allow', ['PATCH', 'DELETE']);

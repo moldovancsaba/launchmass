@@ -46,7 +46,7 @@ export default function Document() {
       <body>
         {/* Failsafe nav: always-visible minimal navigation with inline styles (very high z-index) */}
         {/* Functional: Guarantees access to key areas even if global styles or data fail to load. */}
-        {/* Strategic: Non-breadcrumb, compact top-right overlay to unblock workflows fast. */}
+        {/* Strategic: Compact top-right overlay; we will hide it on admin routes to avoid overlap. */}
         <div
           id="failsafe-nav"
           style={{
@@ -67,10 +67,15 @@ export default function Document() {
           aria-label="Quick navigation"
         >
           <a href="/" style={{ color: '#fff', textDecoration: 'none' }}>Home</a>
-          <a href="/organizations" style={{ color: '#fff', textDecoration: 'none' }}>Organizations</a>
           <a href="/admin" style={{ color: '#fff', textDecoration: 'none' }}>Admin</a>
           <a href="/settings" style={{ color: '#fff', textDecoration: 'none' }}>Settings</a>
         </div>
+        {/* Hide the overlay nav on any admin route to avoid UI overlap */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: "(function(){try{var p=location.pathname||'';if(p==='/admin'||p.indexOf('/admin')===0||p.indexOf('/organization/')===0&&p.indexOf('/admin')>0){var el=document.getElementById('failsafe-nav');if(el&&el.parentNode){el.parentNode.removeChild(el);}}}catch(e){}})();"
+          }}
+        />
         <Main />
         <NextScript />
       </body>
