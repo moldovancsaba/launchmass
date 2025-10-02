@@ -9,7 +9,7 @@ export default function Home({ cards, activeTag }) {
         <section style={{ padding: '16px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background:'rgba(0,0,0,0.05)', borderRadius: 12, color:'#111' }}>
           <strong>Welcome to launchmass</strong>
           <span style={{ opacity: 0.75 }}>No content found yet.</span>
-          <a href="/organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</a>
+          <a href="/settings#organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</a>
           <a href="/admin" className="tag-chip">Admin</a>
         </section>
       )}

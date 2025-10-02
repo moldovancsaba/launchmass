@@ -1,4 +1,4 @@
-# Development Learnings - launchmass v1.4.0
+# Development Learnings - launchmass v1.5.0
 
 ## Frontend
 
@@ -53,3 +53,33 @@
 **Issue**: Project requires comprehensive commenting explaining both function and reasoning  
 **Solution**: Implemented detailed comments covering implementation decisions and architectural choices  
 **Key Learning**: Comments should explain not just what code does, but why specific approaches were chosen, especially for architectural decisions like script injection methods
+
+## Security
+
+### SSO Integration with Cross-Domain Cookies (2025-10-02T14:18:45.000Z)
+**Issue**: Need centralized authentication replacing bearer token system, but SSO uses HttpOnly cookies with specific domain requirements  
+**Solution**: Implemented server-side cookie forwarding pattern where Next.js server forwards cookies to SSO validation endpoint, combined with SSR guard in `getServerSideProps` for admin page protection  
+**Key Learning**: 
+- HttpOnly cookies cannot be accessed by client JavaScript, requiring server-side forwarding for validation
+- SSO cookies with `Domain=.doneisbetter.com` only work on matching subdomains, making localhost admin impossible
+- SSR validation prevents UI flash and ensures auth check before page render
+- Client-side session monitoring (5-min intervals) provides graceful logout on expiration
+- Use Vercel preview deployments with *.doneisbetter.com for admin testing during development
+
+### User Persistence and Audit Logging
+**Issue**: Need to track SSO users locally for admin rights and maintain audit trail of authentication attempts  
+**Solution**: Created `users` collection with upsert pattern (sets `isAdmin: true` only on insert using `$setOnInsert`) and `authLogs` collection for comprehensive event tracking with IP/user agent  
+**Key Learning**: 
+- `$setOnInsert` operator enables future manual admin rights revocation without automatic re-grant on next login
+- Audit logs must capture both successful and failed auth attempts for security analysis
+- IP address from `x-forwarded-for` and user agent provide context for suspicious activity detection
+- Proper MongoDB indexing (`{ ssoUserId: 1 }` unique, `{ createdAt: -1 }`) critical for audit log performance
+
+### API Route Protection with Middleware
+**Issue**: Multiple API endpoints need identical SSO validation logic without code duplication  
+**Solution**: Created `withSsoAuth()` higher-order function that wraps API handlers, validates session, attaches `req.user`, and returns 401 for invalid sessions  
+**Key Learning**: 
+- Middleware pattern centralizes auth logic and ensures consistency across endpoints
+- Returning 401 early prevents unauthorized operations without handler code changes
+- Attaching `req.user` to request object provides handler access to authenticated user data
+- Pattern supports partial route protection (e.g., GET public, POST protected) within same endpoint

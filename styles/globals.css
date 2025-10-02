@@ -22,6 +22,9 @@ body { font-family: 'Montserrat', sans-serif; }
   display: grid;
   gap: 16px;
   padding: 16px;
+  /* Keep a small distance from the top overlay menu (failsafe nav) on launch page */
+  /* Why: Prevents visual overlap with the fixed top-right quick navigation while keeping UI minimal. */
+  padding-top: 56px;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
@@ -72,7 +75,13 @@ body { font-family: 'Montserrat', sans-serif; }
 .info-text { font-size: 16px; font-weight: 600; }
 
 @media (min-width: 768px){
-  .grid { gap: 20px; padding: 24px; }
+  .grid {
+    gap: 20px;
+    padding: 24px;
+    /* On wider screens, leave some extra space on the right so cards do not sit under the overlay */
+    padding-top: 64px;
+    padding-right: 140px;
+  }
 }
 
 .admin-grid {
