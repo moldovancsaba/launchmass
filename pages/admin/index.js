@@ -3,7 +3,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
-import { validateSsoSession, getOAuthLoginUrl } from '../../lib/auth-oauth.js';
+import { validateSsoSession } from '../../lib/auth.js';
 // Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
 // We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
@@ -161,20 +161,22 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
   );
 }
 
-// Functional: SSR guard for admin page - validates OAuth session on every page load
-// Strategic: Prevents UI flicker and ensures immediate redirect to OAuth login if not authenticated;
-// user info from OAuth ID token passed as props enables displaying name/email in header
+// Functional: SSR guard for admin page - validates SSO session on every page load
+// Strategic: Prevents UI flicker and ensures immediate redirect to SSO login if not authenticated;
+// user info from SSO validation passed as props enables displaying name/email in header
 export async function getServerSideProps(context) {
   const { req, resolvedUrl } = context;
   
-  // Functional: Validate OAuth session from sso_session cookie
-  // Strategic: Session contains OAuth tokens (access_token, id_token, refresh_token) and user claims
+  // Functional: Validate SSO session (checks both public and admin cookies)
+  // Strategic: Cookie-based SSO - browser automatically sends HttpOnly cookies to SSO service
   const { isValid, user } = await validateSsoSession(req);
   
   if (!isValid) {
-    // Functional: Redirect to OAuth authorization endpoint
-    // Strategic: OAuth 2.0 authorization code flow - SSO will redirect back with code to /api/oauth/callback
-    const loginUrl = getOAuthLoginUrl(resolvedUrl);
+    // Functional: Redirect to SSO login page with return URL
+    // Strategic: Simple cookie-based flow - SSO sets session cookie, redirects back
+    const ssoUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
+    const returnUrl = `https://launchmass.doneisbetter.com${resolvedUrl}`;
+    const loginUrl = `${ssoUrl}/login?redirect=${encodeURIComponent(returnUrl)}`;
     
     return {
       redirect: {
@@ -185,13 +187,13 @@ export async function getServerSideProps(context) {
   }
   
   // Functional: Pass authenticated user to client component
-  // Strategic: User data from OAuth ID token JWT (sub, email, name, role claims)
+  // Strategic: User data from SSO validation (synced to local database)
   return {
     props: {
       user: {
         email: user.email || '',
         name: user.name || user.email || '',
-        id: user.id || '',
+        id: user.ssoUserId || user.id || '',
         role: user.role || '',
       },
     },
@@ -202,8 +204,8 @@ export async function getServerSideProps(context) {
 // Note: getServerSideProps still runs on server (authentication guard)
 export default dynamic(() => Promise.resolve(AdminPageInner), { ssr: false });
 
-// Functional: Admin interface component with SSO authentication
-// Strategic: Receives authenticated user from SSR guard; no token management needed
+// Functional: Admin interface component with cookie-based SSO authentication
+// Strategic: Receives authenticated user from SSR guard; no OAuth token management needed
 function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug = '' }) {
   const [items, setItems] = useState([]);
   const [editingId, setEditingId] = useState('');
