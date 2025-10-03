@@ -1,6 +1,6 @@
 import clientPromise from '../../../lib/db.js';
 import { invalidateOrgCacheBySlug } from '../../../lib/org.js';
-import { withSsoAuth } from '../../../lib/auth.js';
+import { withSsoAuth } from '../../../lib/auth-oauth.js';
 
 // /api/organizations/[uuid]: PUT (update), DELETE (soft delete)
 // Functional: Update org profile or soft delete by uuid.

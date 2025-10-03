@@ -1,7 +1,7 @@
 import clientPromise from '../../../lib/db';
 import { ObjectId } from 'mongodb';
 import { getOrgContext } from '../../../lib/org.js';
-import { withSsoAuth } from '../../../lib/auth.js';
+import { withSsoAuth } from '../../../lib/auth-oauth.js';
 
 function toClient(doc) {
   if (!doc) return doc;

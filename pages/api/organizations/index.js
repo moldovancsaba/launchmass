@@ -1,6 +1,6 @@
 import clientPromise from '../../../lib/db.js';
 import { ensureOrgContext, getOrgContext } from '../../../lib/org.js';
-import { withSsoAuth } from '../../../lib/auth.js';
+import { withSsoAuth } from '../../../lib/auth-oauth.js';
 
 // /api/organizations (index): GET (list active) and POST (create)
 // Functional: Manage organizations via admin-only endpoints.
