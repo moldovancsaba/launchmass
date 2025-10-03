@@ -1,18 +1,18 @@
-// Functional: Same-origin API endpoint for client-side session validation
-// Strategic: Avoids CORS complications by providing a local proxy to SSO validation;
-// enables client-side session monitoring without exposing SSO service directly
+// Functional: Same-origin API endpoint for client-side OAuth session validation
+// Strategic: Avoids exposing OAuth tokens to browser; enables client-side session monitoring
+// to detect expiration and trigger re-authentication via OAuth flow
 
-import { validateSsoSession } from '../../../lib/auth.js';
+import { validateSsoSession } from '../../../lib/auth-oauth.js';
 
 /**
- * Functional: Validate current user's SSO session
- * Strategic: Always returns 200 (even for invalid sessions) to avoid CORS preflight issues;
- * client checks the isValid field to determine authentication state
+ * Functional: Validate current user's OAuth session from sso_session cookie
+ * Strategic: Always returns 200 (even for invalid sessions) to simplify client logic;
+ * client checks the isValid field to determine authentication state and trigger OAuth re-login
  * 
- * Why proxy instead of direct SSO calls: Client-side fetch to cross-origin SSO with credentials
- * requires complex CORS setup; this same-origin endpoint is simpler and more reliable
+ * Why server-side validation: OAuth tokens stored in HttpOnly cookie cannot be accessed by
+ * client JavaScript; this endpoint validates session server-side without exposing tokens
  * 
- * @param {Object} req - Next.js API request
+ * @param {Object} req - Next.js API request with sso_session cookie
  * @param {Object} res - Next.js API response
  * @returns {Object} { isValid: boolean, user?: Object }
  */
@@ -23,8 +23,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
-  // Functional: Validate session via SSO and return result
-  // Strategic: Result includes isValid boolean and user object if authenticated
+  // Functional: Validate OAuth session from cookie (checks expiration, validates tokens)
+  // Strategic: Result includes isValid boolean and user object from OAuth ID token claims
   const result = await validateSsoSession(req);
   
   // Functional: Always return 200 with validation result

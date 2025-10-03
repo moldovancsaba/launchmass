@@ -3,7 +3,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
-import { validateSsoSession } from '../../lib/auth.js';
+import { validateSsoSession, getOAuthLoginUrl } from '../../lib/auth-oauth.js';
 // Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
 // We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
@@ -161,40 +161,38 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
   );
 }
 
-// Functional: SSR guard for admin page - validates SSO session on every page load
-// Strategic: Prevents UI flicker and ensures immediate redirect to SSO login if not authenticated;
-// user info passed as props enables displaying name/email in header
+// Functional: SSR guard for admin page - validates OAuth session on every page load
+// Strategic: Prevents UI flicker and ensures immediate redirect to OAuth login if not authenticated;
+// user info from OAuth ID token passed as props enables displaying name/email in header
 export async function getServerSideProps(context) {
   const { req, resolvedUrl } = context;
   
-  // Validate SSO session on server side
+  // Functional: Validate OAuth session from sso_session cookie
+  // Strategic: Session contains OAuth tokens (access_token, id_token, refresh_token) and user claims
   const { isValid, user } = await validateSsoSession(req);
   
   if (!isValid) {
-    // Functional: Redirect to SSO login with current URL as return destination
-    // Strategic: Browser will send SSO cookies (Domain=.doneisbetter.com) to SSO service
-    const ssoServerUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
-    const loginPath = process.env.SSO_LOGIN_PATH || '/';
-    const currentUrl = `${req.headers.host}${resolvedUrl}`;
-    const redirectUrl = `${ssoServerUrl}${loginPath}?redirect=${encodeURIComponent(`https://${currentUrl}`)}`;
+    // Functional: Redirect to OAuth authorization endpoint
+    // Strategic: OAuth 2.0 authorization code flow - SSO will redirect back with code to /api/oauth/callback
+    const loginUrl = getOAuthLoginUrl(resolvedUrl);
     
     return {
       redirect: {
-        destination: redirectUrl,
+        destination: loginUrl,
         permanent: false,
       },
     };
   }
   
   // Functional: Pass authenticated user to client component
-  // Strategic: Enables displaying user info without additional client-side fetch
+  // Strategic: User data from OAuth ID token JWT (sub, email, name, role claims)
   return {
     props: {
       user: {
         email: user.email || '',
-        name: user.name || '',
-        ssoUserId: user.ssoUserId || '',
-        isAdmin: user.isAdmin || false,
+        name: user.name || user.email || '',
+        id: user.id || '',
+        role: user.role || '',
       },
     },
   };

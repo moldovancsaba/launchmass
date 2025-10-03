@@ -1,6 +1,6 @@
 import clientPromise from '../../../lib/db';
 import { getOrgContext } from '../../../lib/org.js';
-import { withSsoAuth } from '../../../lib/auth.js';
+import { withSsoAuth } from '../../../lib/auth-oauth.js';
 
 const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
 

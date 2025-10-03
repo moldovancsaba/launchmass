@@ -1,7 +1,7 @@
 import clientPromise from '../../../lib/db';
 import { ObjectId } from 'mongodb';
 import { getOrgContext } from '../../../lib/org.js';
-import { withSsoAuth } from '../../../lib/auth.js';
+import { withSsoAuth } from '../../../lib/auth-oauth.js';
 
 // Functional: Protect reorder operation with SSO authentication
 // Strategic: Drag-and-drop reordering is an admin-only operation requiring authentication
