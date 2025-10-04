@@ -165,17 +165,47 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
 // Strategic: Prevents UI flicker and ensures immediate redirect to SSO login if not authenticated;
 // user info from SSO validation passed as props enables displaying name/email in header
 export async function getServerSideProps(context) {
-  const { req, resolvedUrl } = context;
-  
-  // Functional: Validate SSO session (checks both public and admin cookies)
-  // Strategic: Cookie-based SSO - browser automatically sends HttpOnly cookies to SSO service
-  const { isValid, user } = await validateSsoSession(req);
-  
-  if (!isValid) {
-    // Functional: Redirect to SSO login page with return URL
-    // Strategic: Simple cookie-based flow - SSO sets session cookie, redirects back
+  try {
+    const { req, resolvedUrl } = context;
+    
+    // Functional: Validate SSO session (checks both public and admin cookies)
+    // Strategic: Cookie-based SSO - browser automatically sends HttpOnly cookies to SSO service
+    const { isValid, user } = await validateSsoSession(req);
+    
+    if (!isValid) {
+      // Functional: Redirect to SSO login page with return URL
+      // Strategic: Simple cookie-based flow - SSO sets session cookie, redirects back
+      const ssoUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
+      const returnUrl = `https://launchmass.doneisbetter.com${resolvedUrl}`;
+      const loginUrl = `${ssoUrl}/login?redirect=${encodeURIComponent(returnUrl)}`;
+      
+      return {
+        redirect: {
+          destination: loginUrl,
+          permanent: false,
+        },
+      };
+    }
+    
+    // Functional: Pass authenticated user to client component
+    // Strategic: User data from SSO validation (synced to local database)
+    return {
+      props: {
+        user: {
+          email: user.email || '',
+          name: user.name || user.email || '',
+          id: user.ssoUserId || user.id || '',
+          role: user.role || '',
+        },
+      },
+    };
+  } catch (err) {
+    // Functional: Graceful error handling - redirect to SSO login on any error
+    // Strategic: Prevents 500 errors from blocking access; user can retry login
+    console.error('[admin] getServerSideProps error:', err.message);
+    
     const ssoUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
-    const returnUrl = `https://launchmass.doneisbetter.com${resolvedUrl}`;
+    const returnUrl = `https://launchmass.doneisbetter.com${context.resolvedUrl || '/admin'}`;
     const loginUrl = `${ssoUrl}/login?redirect=${encodeURIComponent(returnUrl)}`;
     
     return {
@@ -185,19 +215,6 @@ export async function getServerSideProps(context) {
       },
     };
   }
-  
-  // Functional: Pass authenticated user to client component
-  // Strategic: User data from SSO validation (synced to local database)
-  return {
-    props: {
-      user: {
-        email: user.email || '',
-        name: user.name || user.email || '',
-        id: user.ssoUserId || user.id || '',
-        role: user.role || '',
-      },
-    },
-  };
 }
 
 // Disable SSR for component itself due to drag-and-drop requiring browser APIs
