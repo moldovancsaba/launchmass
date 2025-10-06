@@ -456,7 +456,7 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
   function handleLogout() {
     const ssoUrl = process.env.NEXT_PUBLIC_SSO_SERVER_URL || 'https://sso.doneisbetter.com';
     const returnUrl = encodeURIComponent(window.location.origin);
-    window.location.href = `${ssoUrl}/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
+    window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
   }
 
   return (
