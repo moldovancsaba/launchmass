@@ -22,3 +22,18 @@
   - Rationale: Enable centralized authentication, audit compliance, future permission granularity; complete deprecation of bearer tokens
   - Notes: No tests per policy; manual verification on subdomain required; localhost admin will not work (cookie mismatch); version bumped to v1.4.1 pre-dev per protocol
   - Owner: AI Agent (Warp) + moldovancsaba
+
+- 2025-10-04T10:26:39.000Z — User Rights Management Implementation Plan: Two-tier permission system with super admins and organization-scoped roles. Scope:
+  - Database: organizationMembers collection (orgUuid, ssoUserId, role enum admin|user, audit fields); isSuperAdmin field in users collection (deprecate isAdmin)
+  - Migration script: scripts/migrate-user-rights.cjs (idempotent; seed super admins from env SUPERADMINS or first user by createdAt)
+  - Permission system: lib/permissions.js (isSuperAdmin, getUserOrgRole, hasOrgPermission, ensureOrgPermission with permission matrix)
+  - Auth middleware: extend lib/auth.js with withOrgPermission(permission, handler) wrapping withSsoAuth
+  - Member management: /api/organizations/[uuid]/members (GET/POST) and /api/organizations/[uuid]/members/[memberId] (PATCH/DELETE) with last-admin protection
+  - API protections: all cards and organizations endpoints enforce org-scoped permissions (cards.read/write/delete, org.read/write/delete, members.read/write)
+  - Admin UI: members section with add/edit/remove; permission-aware controls; super admin badge in header
+  - Settings UI: filter orgs by membership; show role badges; enable org creation with auto-admin assignment
+  - Business rules: super admins access all orgs; org admins full control within org; org users CRUD cards + view members; last admin cannot be removed/demoted
+  - Default behavior: org creator auto-assigned admin role in organizationMembers; super admins designated via isSuperAdmin flag
+  - Rationale: enable multi-tenant access control; audit trails for membership changes; future-proof for granular permissions; maintain backward compatibility
+  - Notes: no tests per policy; no breadcrumbs; ISO 8601 UTC milliseconds timestamps; ESM modules except migration script (CommonJS); reuse lib/db.js, lib/org.js, lib/auth.js patterns; version 1.6.0→1.6.1 (PATCH) pre-dev, then 1.7.0 (MINOR) before commit
+  - Owner: AI Agent (Warp) + moldovancsaba
