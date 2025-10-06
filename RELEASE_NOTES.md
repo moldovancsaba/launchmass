@@ -1,5 +1,52 @@
 # Release Notes - launchmass
 
+## [v1.7.0] — 2025-10-06T18:12:17.000Z
+
+### 🔐 Security - OAuth 2.0 Migration (Breaking Change)
+
+**Changed:**
+- Migrated authentication from legacy cookie-forwarding SSO to OAuth 2.0 Authorization Code flow
+- Updated `pages/admin/index.js` to use `lib/auth-oauth.js` instead of `lib/auth.js`
+- Updated all API routes to use OAuth-based authentication:
+  - `/api/organizations/*` - All organization endpoints now use OAuth
+  - `/api/cards/*` - All card endpoints already using OAuth
+  - `/api/auth/validate` - OAuth session validation endpoint
+- OAuth callback endpoint at `/api/oauth/callback` handles token exchange
+- Session validation now checks `sso_session` cookie with OAuth tokens (access_token, id_token, refresh_token)
+- Admin page logout redirects to `/oauth/logout` instead of legacy `/logout`
+- Client-side session monitor triggers page reload on expiration (OAuth URL building happens server-side)
+
+**Added:**
+- `withOrgPermission` middleware to `lib/auth-oauth.js` for organization-scoped permissions
+- New OAuth client registered in SSO admin panel:
+  - Client ID: `4e269984-a62e-4878-b46f-0404e0792137`
+  - Redirect URIs: `https://launchmass.doneisbetter.com/api/oauth/callback`
+  - Scopes: `openid profile email offline_access`
+
+**Removed:**
+- Legacy SSO cookie-forwarding authentication (`/api/public/validate`, `/api/sso/validate`)
+- Old login flow via `sso.doneisbetter.com/login`
+
+**Environment Variables (Vercel):**
+- `SSO_CLIENT_ID` - OAuth client ID
+- `SSO_CLIENT_SECRET` - OAuth client secret (sensitive)
+- `NEXT_PUBLIC_SSO_CLIENT_ID` - Public client ID for client-side redirects
+- `SSO_SERVER_URL` - https://sso.doneisbetter.com
+- `SSO_REDIRECT_URI` - https://launchmass.doneisbetter.com/api/oauth/callback
+
+**Migration Steps:**
+1. Add OAuth credentials to Vercel environment variables
+2. Deploy to production
+3. Users will be redirected to OAuth authorize page on next login
+4. OAuth callback sets `sso_session` cookie with tokens
+5. All subsequent requests validated against OAuth session
+
+**Note:** This is a breaking change - old SSO sessions will be invalid and users must re-authenticate via OAuth flow.
+
+**Build Status:** ✅ Ready for deployment
+
+---
+
 ## [v1.5.0] — 2025-10-02T14:18:45.000Z
 
 ### 🔐 Security - SSO Integration (Breaking Change for Development)

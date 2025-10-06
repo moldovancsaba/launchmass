@@ -1,10 +1,10 @@
 import clientPromise from '../../../lib/db.js';
 import { invalidateOrgCacheBySlug } from '../../../lib/org.js';
-import { withSsoAuth } from '../../../lib/auth-oauth.js';
+import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
 
-// /api/organizations/[uuid]: PUT (update), DELETE (soft delete)
-// Functional: Update org profile or soft delete by uuid.
-// Strategic: Keep slug unique; if slug changes, denormalize cards.orgSlug to keep in sync.
+// /api/organizations/[uuid]: GET, PUT (update), DELETE (soft delete)
+// Functional: Read, update, or soft-delete organization by UUID with permission checks
+// Strategic: Enforces org.read, org.write, org.delete permissions; slug changes denormalize to cards
 
 
 function normalizeSlug(input) {
@@ -21,19 +21,59 @@ function coerceBoolean(v) {
   return false;
 }
 
-// Functional: Protect organization update and delete operations with SSO authentication
-// Strategic: All organization management requires authenticated admin users
+// Functional: ISO 8601 UTC timestamp helper (project standard)
+function isoNow() { return new Date().toISOString(); }
+
+// Functional: Protect organization operations with SSO authentication and permission checks
+// Strategic: GET requires org.read, PUT requires org.write, DELETE requires org.delete
 export default async function handler(req, res) {
-  return withSsoAuth(async (req, res) => {
-    const { uuid } = req.query || {};
-    if (typeof uuid !== 'string' || !uuid.trim()) return res.status(400).json({ error: 'Organization UUID required' });
+  const { uuid } = req.query || {};
+  if (typeof uuid !== 'string' || !uuid.trim()) {
+    return res.status(400).json({ error: 'Organization UUID required' });
+  }
 
-    const client = await clientPromise;
-    const db = client.db(process.env.DB_NAME || 'launchmass');
-    const orgs = db.collection('organizations');
-    const cards = db.collection('cards');
+  const client = await clientPromise;
+  const db = client.db(process.env.DB_NAME || 'launchmass');
+  const orgs = db.collection('organizations');
+  const cards = db.collection('cards');
 
-    if (req.method === 'PUT') {
+  // ===================================================================
+  // GET /api/organizations/[uuid] - Read organization details
+  // ===================================================================
+
+  if (req.method === 'GET') {
+    // Functional: Require org.read permission
+    // Strategic: Members and admins can view org details; non-members get 403
+    return withSsoAuth(
+      withOrgPermission('org.read', async (req, res) => {
+        const org = await orgs.findOne({ uuid });
+        
+        if (!org || org.isActive === false) {
+          return res.status(404).json({ error: 'Organization not found' });
+        }
+
+        // Functional: Return org with user's role attached
+        // Strategic: Client can display role-specific UI based on userOrgRole
+        return res.status(200).json({
+          organization: {
+            ...org,
+            _id: org?._id?.toString?.() || String(org?._id),
+            userRole: req.userOrgRole || null,
+          },
+        });
+      })
+    )(req, res);
+  }
+
+  // ===================================================================
+  // PUT /api/organizations/[uuid] - Update organization
+  // ===================================================================
+
+  if (req.method === 'PUT') {
+    // Functional: Require org.write permission
+    // Strategic: Only org admins can update org details; users cannot
+    return withSsoAuth(
+      withOrgPermission('org.write', async (req, res) => {
     const { name, slug, description, useSlugAsPublicUrl } = req.body || {};
     const nameStr = String(name || '').trim();
     const newSlugLower = normalizeSlug(slug);
@@ -51,33 +91,63 @@ export default async function handler(req, res) {
       if (conflict) return res.status(409).json({ error: 'slug already exists' });
     }
 
-    await orgs.updateOne(
-      { uuid },
-      { $set: { name: nameStr, slug: newSlugLower, description: descStr, useSlugAsPublicUrl: slugPublic, updatedAt: new Date() } }
-    );
+        await orgs.updateOne(
+          { uuid },
+          { $set: { name: nameStr, slug: newSlugLower, description: descStr, useSlugAsPublicUrl: slugPublic, updatedAt: isoNow() } }
+        );
 
-    // If slug changed, update denormalized orgSlug on cards
-    if (org.slug !== newSlugLower) {
-      await cards.updateMany({ orgUuid: uuid }, { $set: { orgSlug: newSlugLower, updatedAt: new Date() } });
-      invalidateOrgCacheBySlug(org.slug);
-      invalidateOrgCacheBySlug(newSlugLower);
-    }
+        // Functional: If slug changed, denormalize to cards.orgSlug
+        // Strategic: Maintains data consistency across collections; slug is read-often field
+        if (org.slug !== newSlugLower) {
+          await cards.updateMany(
+            { orgUuid: uuid },
+            { $set: { orgSlug: newSlugLower, updatedAt: isoNow() } }
+          );
+          invalidateOrgCacheBySlug(org.slug);
+          invalidateOrgCacheBySlug(newSlugLower);
+        }
 
-    const updated = await orgs.findOne({ uuid });
-    return res.status(200).json({ organization: { ...updated, _id: updated?._id?.toString?.() || String(updated?._id) } });
+        const updated = await orgs.findOne({ uuid });
+        return res.status(200).json({
+          organization: {
+            ...updated,
+            _id: updated?._id?.toString?.() || String(updated?._id),
+          },
+        });
+      })
+    )(req, res);
   }
 
+  // ===================================================================
+  // DELETE /api/organizations/[uuid] - Soft delete organization
+  // ===================================================================
+
   if (req.method === 'DELETE') {
-    const org = await orgs.findOne({ uuid });
-    if (!org || org.isActive === false) return res.status(404).json({ error: 'Organization not found' });
+    // Functional: Require org.delete permission
+    // Strategic: Only org admins can delete org; users cannot
+    return withSsoAuth(
+      withOrgPermission('org.delete', async (req, res) => {
+        const org = await orgs.findOne({ uuid });
+        if (!org || org.isActive === false) {
+          return res.status(404).json({ error: 'Organization not found' });
+        }
 
-    await orgs.updateOne({ uuid }, { $set: { isActive: false, updatedAt: new Date() } });
-    invalidateOrgCacheBySlug(org.slug);
+        // Functional: Soft delete by setting isActive to false
+        // Strategic: Preserves data for potential recovery; cards remain linked
+        await orgs.updateOne(
+          { uuid },
+          { $set: { isActive: false, updatedAt: isoNow() } }
+        );
+        invalidateOrgCacheBySlug(org.slug);
 
-      return res.status(200).json({ message: 'Organization deleted successfully', uuid });
-    }
+        return res.status(200).json({
+          message: 'Organization deleted successfully',
+          uuid,
+        });
+      })
+    )(req, res);
+  }
 
-    res.setHeader('Allow', ['PUT', 'DELETE']);
-    return res.status(405).end('Method Not Allowed');
-  })(req, res);
+  res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
+  return res.status(405).end('Method Not Allowed');
 }

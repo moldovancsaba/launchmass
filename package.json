@@ -1,6 +1,6 @@
 {
   "name": "launchmass",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -23,6 +23,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.1",
+    "dotenv": "^17.2.3",
     "mongodb": "^6.18.0",
     "next": "^15.4.7",
     "react": "^19.1.1",

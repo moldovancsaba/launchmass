@@ -3,7 +3,9 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
-import { validateSsoSession } from '../../lib/auth.js';
+// Functional: Import OAuth-based SSO authentication utilities
+// Strategic: Migrated from legacy cookie-forwarding (lib/auth.js) to OAuth 2.0 flow (lib/auth-oauth.js)
+import { validateSsoSession, getOAuthLoginUrl } from '../../lib/auth-oauth.js';
 // Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
 // We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
@@ -168,16 +170,14 @@ export async function getServerSideProps(context) {
   try {
     const { req, resolvedUrl } = context;
     
-    // Functional: Validate SSO session (checks both public and admin cookies)
-    // Strategic: Cookie-based SSO - browser automatically sends HttpOnly cookies to SSO service
+    // Functional: Validate OAuth-based SSO session from sso_session cookie
+    // Strategic: OAuth 2.0 flow - tokens stored in HttpOnly cookie, validated server-side
     const { isValid, user } = await validateSsoSession(req);
     
     if (!isValid) {
-      // Functional: Redirect to SSO login page with return URL
-      // Strategic: Simple cookie-based flow - SSO sets session cookie, redirects back
-      const ssoUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
-      const returnUrl = `https://launchmass.doneisbetter.com${resolvedUrl}`;
-      const loginUrl = `${ssoUrl}/login?redirect=${encodeURIComponent(returnUrl)}`;
+      // Functional: Redirect to OAuth authorization URL
+      // Strategic: OAuth 2.0 authorization code flow - user authenticates at SSO, redirected back with code
+      const loginUrl = getOAuthLoginUrl(resolvedUrl);
       
       return {
         redirect: {
@@ -200,13 +200,11 @@ export async function getServerSideProps(context) {
       },
     };
   } catch (err) {
-    // Functional: Graceful error handling - redirect to SSO login on any error
-    // Strategic: Prevents 500 errors from blocking access; user can retry login
+    // Functional: Graceful error handling - redirect to OAuth login on any error
+    // Strategic: Prevents 500 errors from blocking access; user can retry OAuth authentication
     console.error('[admin] getServerSideProps error:', err.message);
     
-    const ssoUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
-    const returnUrl = `https://launchmass.doneisbetter.com${context.resolvedUrl || '/admin'}`;
-    const loginUrl = `${ssoUrl}/login?redirect=${encodeURIComponent(returnUrl)}`;
+    const loginUrl = getOAuthLoginUrl(context.resolvedUrl || '/admin');
     
     return {
       redirect: {
@@ -302,18 +300,16 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
     fetchItems(savedOrg);
     fetchTags(savedOrg);
     
-    // Functional: Session monitoring - check every 5 minutes for session expiration
-    // Strategic: Prevents stale sessions; redirects to SSO login if expired
+    // Functional: Session monitoring - check every 5 minutes for OAuth session expiration
+    // Strategic: Prevents stale sessions; triggers SSR redirect to OAuth login if expired
     const sessionMonitor = setInterval(async () => {
       try {
         const res = await fetch('/api/auth/validate', { cache: 'no-store' });
         const data = await res.json();
         if (!data.isValid) {
-          // Functional: Redirect to SSO login with current URL as return destination
-          const ssoUrl = process.env.NEXT_PUBLIC_SSO_SERVER_URL || 'https://sso.doneisbetter.com';
-          const loginPath = process.env.NEXT_PUBLIC_SSO_LOGIN_PATH || '/';
-          const currentUrl = encodeURIComponent(window.location.href);
-          window.location.href = `${ssoUrl}${loginPath}?redirect=${currentUrl}`;
+          // Functional: Hard reload triggers SSR, which will redirect to OAuth authorize
+          // Strategic: OAuth URL building requires client_secret, must happen server-side
+          window.location.href = '/admin';
         }
       } catch (err) {
         console.error('[admin] Session monitor error:', err);
@@ -455,13 +451,12 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
     setStatus('Organization selected'); setTimeout(() => setStatus(''), 1000);
   }
 
-  // Functional: Logout handler - redirects to SSO logout endpoint with return URL
-  // Strategic: Only SSO can clear HttpOnly cookies; after logout, SSO redirects back to app
+  // Functional: Logout handler - redirects to OAuth logout endpoint with return URL
+  // Strategic: OAuth logout clears sso_session cookie and terminates SSO session
   function handleLogout() {
     const ssoUrl = process.env.NEXT_PUBLIC_SSO_SERVER_URL || 'https://sso.doneisbetter.com';
-    const logoutPath = process.env.NEXT_PUBLIC_SSO_LOGOUT_PATH || '/logout';
     const returnUrl = encodeURIComponent(window.location.origin);
-    window.location.href = `${ssoUrl}${logoutPath}?redirect=${returnUrl}`;
+    window.location.href = `${ssoUrl}/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
   }
 
   return (
