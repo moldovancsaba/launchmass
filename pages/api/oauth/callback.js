@@ -76,13 +76,99 @@ export default async function handler(req, res) {
       role: idTokenPayload.role,
     };
 
-    // Functional: Store tokens in secure HttpOnly cookie
-    // Strategic: HttpOnly prevents XSS attacks, domain scoping enables SSO across subdomains
+    // WHAT: Check if user has permission to access launchmass
+    // WHY: Implements approval-based access control - users need admin approval
+    // HOW: Query SSO API for user's app permission record
+    const permissionResponse = await fetch(
+      `${ssoServerUrl}/api/users/${user.id}/apps/${clientId}/permissions`,
+      {
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+        },
+      }
+    );
+
+    let hasAccess = false;
+    let userRole = 'none';
+    let permissionStatus = 'none';
+    let requestedAt = null;
+
+    if (permissionResponse.ok) {
+      // WHAT: Permission record exists - check access status
+      const permission = await permissionResponse.json();
+      hasAccess = permission.hasAccess;
+      userRole = permission.role;
+      permissionStatus = permission.status;
+      requestedAt = permission.requestedAt;
+    } else if (permissionResponse.status === 404) {
+      // WHAT: No permission record exists - create one in "pending" state
+      // WHY: First access attempt creates pending approval request
+      try {
+        const requestAccessResponse = await fetch(
+          `${ssoServerUrl}/api/users/${user.id}/apps/${clientId}/request-access`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: user.email,
+              name: user.name,
+              ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+              userAgent: req.headers['user-agent'],
+            }),
+          }
+        );
+
+        if (requestAccessResponse.ok) {
+          const requestData = await requestAccessResponse.json();
+          permissionStatus = 'pending';
+          requestedAt = requestData.permission?.requestedAt || new Date().toISOString();
+        } else {
+          console.error('Failed to create access request:', requestAccessResponse.status);
+          permissionStatus = 'error';
+        }
+      } catch (err) {
+        console.error('Failed to create permission record:', err);
+        permissionStatus = 'error';
+      }
+    }
+
+    // WHAT: If user doesn't have access, redirect to pending page
+    // WHY: Users must be approved by admin before accessing app
+    if (!hasAccess) {
+      // Functional: Log access attempt for admin review
+      // Strategic: Admins can see who tried to access and when
+      const { recordAuthEvent } = await import('../../../lib/users.js');
+      await recordAuthEvent({
+        ssoUserId: user.id,
+        email: user.email,
+        status: 'denied',
+        message: `Access ${permissionStatus} - awaiting admin approval`,
+        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+        userAgent: req.headers['user-agent'],
+      });
+
+      // WHAT: Redirect to access pending page with status information
+      // WHY: User needs to know their request is being reviewed
+      return res.redirect(
+        `/access-pending?status=${permissionStatus}&requested=${encodeURIComponent(requestedAt || '')}`
+      );
+    }
+
+    // WHAT: User has access - store tokens and permission info in session
+    // WHY: Session needs to include user's role for authorization checks
     const sessionData = JSON.stringify({
       access_token,
       id_token,
       refresh_token,
-      user,
+      user: {
+        ...user,
+        appRole: userRole,
+        appStatus: permissionStatus,
+        hasAccess: true,
+      },
       expires_at: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
 
@@ -92,16 +178,22 @@ export default async function handler(req, res) {
       `Domain=.doneisbetter.com`,
     ]);
 
-    // Functional: Sync user to local MongoDB
-    // Strategic: Maintain local user records for admin rights and audit trail
+    // Functional: Sync user to local MongoDB with permission info
+    // Strategic: Cache SSO permissions locally for performance
     const { upsertUserFromSso, recordAuthEvent } = await import('../../../lib/users.js');
     
-    await upsertUserFromSso(user);
+    await upsertUserFromSso({
+      ...user,
+      appRole: userRole,
+      appStatus: permissionStatus,
+      hasAccess: true,
+    });
+    
     await recordAuthEvent({
       ssoUserId: user.id,
       email: user.email,
       status: 'success',
-      message: 'OAuth login successful',
+      message: `OAuth login successful - role: ${userRole}`,
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
       userAgent: req.headers['user-agent'],
     });
