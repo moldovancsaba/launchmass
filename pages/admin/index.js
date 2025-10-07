@@ -454,7 +454,8 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
   // Functional: Logout handler - redirects to OAuth logout endpoint with return URL
   // Strategic: OAuth logout clears sso_session cookie and terminates SSO session
   function handleLogout() {
-    const ssoUrl = process.env.NEXT_PUBLIC_SSO_SERVER_URL || 'https://sso.doneisbetter.com';
+    // Hardcoded SSO URL since this is client-side code
+    const ssoUrl = 'https://sso.doneisbetter.com';
     const returnUrl = encodeURIComponent(window.location.origin);
     window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
   }
