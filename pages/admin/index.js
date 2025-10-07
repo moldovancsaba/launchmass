@@ -469,6 +469,9 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
           <span style={{ fontSize: 14, fontWeight: 600 }}>{user.name || user.email || 'Admin User'}</span>
           <span style={{ fontSize: 11, opacity: 0.7 }}>{user.email || 'Authenticated via SSO'}</span>
         </div>
+        {/* Functional: Link to user management page */}
+        {/* Strategic: Allows admins to approve pending users and manage access */}
+        <a href="/admin/users" className="tag-chip" style={{ textDecoration: 'none', padding: '6px 12px' }}>Manage Users</a>
         <button onClick={handleLogout} style={{ background: 'rgba(255,100,100,0.2)', border: '1px solid rgba(255,100,100,0.5)', padding: '6px 12px', borderRadius: 4, cursor: 'pointer' }}>Logout</button>
       </section>
 
