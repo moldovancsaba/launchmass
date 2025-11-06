@@ -27,46 +27,15 @@ async function handler(req, res) {
 
     // TODO: Check if req.user is superadmin
 
-    // WHAT: Get OAuth client ID
-    const clientId = process.env.SSO_CLIENT_ID;
-    const ssoServerUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
-
-    if (!clientId) {
-      return res.status(500).json({
-        error: 'Configuration error',
-        message: 'SSO_CLIENT_ID not configured',
-      });
-    }
-
-    // WHAT: Call SSO API to revoke permission
-    // WHY: SSO is source of truth
-    const ssoResponse = await fetch(
-      `${ssoServerUrl}/api/admin/users/${ssoUserId}/apps/${clientId}/permissions`,
-      {
-        method: 'DELETE',
-        headers: {
-          'Cookie': req.headers.cookie || '',
-        },
-      }
-    );
-
-    if (!ssoResponse.ok) {
-      const errorData = await ssoResponse.json().catch(() => ({}));
-      console.error('SSO permission revoke failed:', ssoResponse.status, errorData);
-      return res.status(ssoResponse.status).json({
-        error: 'Failed to revoke permission',
-        message: errorData.message || 'SSO API error',
-      });
-    }
-
-    // WHAT: Update local user cache
+    // WHAT: Update local user directly (simplified permission management)
+    // WHY: Manage permissions locally without depending on SSO API calls
     const client = await clientPromise;
     const db = client.db(process.env.DB_NAME || 'launchmass');
     const usersCol = db.collection('users');
 
     const now = new Date().toISOString();
 
-    await usersCol.updateOne(
+    const result = await usersCol.updateOne(
       { ssoUserId },
       {
         $set: {
@@ -74,17 +43,25 @@ async function handler(req, res) {
           appStatus: 'revoked',
           hasAccess: false,
           isAdmin: false,
+          isSuperAdmin: false,
           updatedAt: now,
           lastSyncedAt: now,
         },
       }
     );
 
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: `No user found with ssoUserId: ${ssoUserId}`,
+      });
+    }
+
     console.log('Access revoked:', { ssoUserId });
 
     return res.status(200).json({
       success: true,
-      message: 'Access revoked',
+      message: 'Access revoked successfully',
     });
   } catch (error) {
     console.error('Error revoking access:', error);
