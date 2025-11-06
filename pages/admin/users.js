@@ -131,6 +131,7 @@ export default function AdminUsers({ currentUser }) {
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return '#1e895a';
+      case 'approved': return '#1e895a';
       case 'pending': return '#8a6d3b';
       case 'revoked': return '#8b3a3a';
       default: return '#666';
@@ -339,7 +340,7 @@ export default function AdminUsers({ currentUser }) {
                             <option value="superadmin">Superadmin</option>
                           </select>
                         </div>
-                      ) : user.appStatus === 'active' ? (
+                      ) : (user.appStatus === 'active' || user.appStatus === 'approved') ? (
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                           <select
                             value={user.appRole}
