@@ -20,10 +20,13 @@ export default function Settings() {
     try {
       // WHAT: OAuth session authentication (no Bearer token needed)
       // WHY: withSsoAuth middleware validates session automatically
-      const res = await fetch('/api/organizations');
+      const res = await fetch('/api/organizations', {
+        credentials: 'include', // WHAT: Include SSO session cookie
+      });
       const data = await res.json();
       setOrgs(Array.isArray(data.organizations) ? data.organizations : []);
-    } catch { 
+    } catch (error) {
+      console.error('Refresh orgs error:', error);
       setOrgs([]); 
     }
   }
@@ -34,6 +37,7 @@ export default function Settings() {
       const res = await fetch('/api/organizations', {
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
+        credentials: 'include', // WHAT: Include SSO session cookie
         body: JSON.stringify({ 
           name: form.name, 
           slug: (form.slug || '').toLowerCase(), 
@@ -41,14 +45,19 @@ export default function Settings() {
           useSlugAsPublicUrl: !!form.useSlugAsPublicUrl 
         })
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Create org failed:', res.status, errorText);
+        throw new Error(errorText);
+      }
       setForm({ name:'', slug:'', description:'', useSlugAsPublicUrl: false });
       await refreshOrgs();
       setStatus('Organization created'); 
       setTimeout(() => setStatus(''), 1200);
-    } catch {
-      setStatus('Create failed'); 
-      setTimeout(() => setStatus(''), 2000);
+    } catch (error) {
+      console.error('Create org error:', error);
+      setStatus(`Create failed: ${error.message || 'Unknown error'}`); 
+      setTimeout(() => setStatus(''), 3000);
     }
   }
 
@@ -73,6 +82,7 @@ export default function Settings() {
       const res = await fetch('/api/organizations/' + encodeURIComponent(editing), {
         method: 'PUT',
         headers: { 'Content-Type':'application/json' },
+        credentials: 'include', // WHAT: Include SSO session cookie
         body: JSON.stringify({ 
           name: editForm.name, 
           slug: (editForm.slug || '').toLowerCase(), 
@@ -86,7 +96,8 @@ export default function Settings() {
       await refreshOrgs();
       setStatus('Organization updated'); 
       setTimeout(() => setStatus(''), 1200);
-    } catch {
+    } catch (error) {
+      console.error('Update org error:', error);
       setStatus('Update failed'); 
       setTimeout(() => setStatus(''), 2000);
     }
@@ -97,13 +108,15 @@ export default function Settings() {
     try {
       const res = await fetch('/api/organizations/' + encodeURIComponent(uuid), {
         method: 'DELETE',
-        headers: { 'Content-Type':'application/json' }
+        headers: { 'Content-Type':'application/json' },
+        credentials: 'include', // WHAT: Include SSO session cookie
       });
       if (!res.ok) throw new Error(await res.text());
       await refreshOrgs();
       setStatus('Organization deleted'); 
       setTimeout(() => setStatus(''), 1200);
-    } catch {
+    } catch (error) {
+      console.error('Delete org error:', error);
       setStatus('Delete failed'); 
       setTimeout(() => setStatus(''), 2000);
     }

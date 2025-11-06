@@ -85,6 +85,13 @@ export default async function handler(req, res) {
   // Strategic: Authenticated users can create orgs; creator automatically becomes admin
   if (req.method === 'POST') {
     return withSsoAuth(async (req, res) => {
+      // WHAT: Check if user has ssoUserId
+      // WHY: Required for creating organization membership
+      if (!req.user || !req.user.ssoUserId) {
+        console.error('[organizations] Missing ssoUserId in req.user:', req.user);
+        return res.status(500).json({ error: 'User authentication error: missing ssoUserId' });
+      }
+
       const { name, slug, description, useSlugAsPublicUrl } = req.body || {};
       const nameStr = String(name || '').trim();
       const slugLower = normalizeSlug(slug);
