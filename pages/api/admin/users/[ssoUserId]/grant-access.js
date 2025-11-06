@@ -37,56 +37,15 @@ async function handler(req, res) {
     // TODO: Check if req.user is superadmin
     // For now, allow any authenticated user
 
-    // WHAT: Get OAuth client ID from environment
-    // WHY: Need to specify which app we're granting access to
-    const clientId = process.env.SSO_CLIENT_ID;
-    const ssoServerUrl = process.env.SSO_SERVER_URL || 'https://sso.doneisbetter.com';
-
-    if (!clientId) {
-      return res.status(500).json({
-        error: 'Configuration error',
-        message: 'SSO_CLIENT_ID not configured',
-      });
-    }
-
-    // WHAT: Call SSO API to grant permission
-    // WHY: SSO is source of truth for app permissions
-    const ssoResponse = await fetch(
-      `${ssoServerUrl}/api/admin/users/${ssoUserId}/apps/${clientId}/permissions`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': req.headers.cookie || '', // Forward admin session cookie
-        },
-        body: JSON.stringify({
-          hasAccess: true,
-          status: 'active',
-          role: role,
-        }),
-      }
-    );
-
-    if (!ssoResponse.ok) {
-      const errorData = await ssoResponse.json().catch(() => ({}));
-      console.error('SSO permission grant failed:', ssoResponse.status, errorData);
-      return res.status(ssoResponse.status).json({
-        error: 'Failed to grant permission',
-        message: errorData.message || 'SSO API error',
-      });
-    }
-
-    const permissionData = await ssoResponse.json();
-
-    // WHAT: Update local user cache
-    // WHY: Keep local data in sync with SSO
+    // WHAT: Update local user directly (simplified permission management)
+    // WHY: Manage permissions locally without depending on SSO API calls
     const client = await clientPromise;
     const db = client.db(process.env.DB_NAME || 'launchmass');
     const usersCol = db.collection('users');
 
     const now = new Date().toISOString();
 
-    await usersCol.updateOne(
+    const result = await usersCol.updateOne(
       { ssoUserId },
       {
         $set: {
@@ -94,18 +53,26 @@ async function handler(req, res) {
           appStatus: 'active',
           hasAccess: true,
           isAdmin: (role === 'admin' || role === 'superadmin'),
+          isSuperAdmin: (role === 'superadmin'),
           updatedAt: now,
           lastSyncedAt: now,
         },
       }
     );
 
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        error: 'User not found',
+        message: `No user found with ssoUserId: ${ssoUserId}`,
+      });
+    }
+
     console.log('Access granted:', { ssoUserId, role });
 
     return res.status(200).json({
       success: true,
-      message: 'Access granted',
-      permission: permissionData.permission,
+      message: 'Access granted successfully',
+      user: { ssoUserId, role, status: 'active' },
     });
   } catch (error) {
     console.error('Error granting access:', error);

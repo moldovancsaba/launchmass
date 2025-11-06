@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 import { validateSsoSession } from '../../lib/auth-oauth';
 
-export default function AdminUsers() {
+export default function AdminUsers({ currentUser }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending'); // 'all' | 'pending' | 'active'
@@ -152,6 +152,28 @@ export default function AdminUsers() {
   return (
     <div style={{ minHeight: '100vh', background: '#0b1021', color: '#e6e8f2', padding: '2rem' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Current User Display */}
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#12172b', border: '1px solid #22284a', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>Logged in as:</span>
+            <span style={{ fontWeight: '600' }}>{currentUser?.name || currentUser?.email || 'Unknown User'}</span>
+            {currentUser?.email && currentUser?.name && (
+              <span style={{ fontSize: '0.85rem', opacity: 0.6 }}>({currentUser.email})</span>
+            )}
+            {currentUser?.appRole && (
+              <span style={{
+                padding: '0.25rem 0.75rem',
+                background: getRoleColor(currentUser.appRole),
+                borderRadius: '12px',
+                fontSize: '0.8rem',
+                textTransform: 'capitalize',
+              }}>
+                {currentUser.appRole}
+              </span>
+            )}
+          </div>
+        </div>
+        
         {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
           <h1 style={{ margin: '0 0 0.5rem', fontSize: '2rem', fontWeight: '600' }}>
@@ -394,10 +416,16 @@ export async function getServerSideProps({ req }) {
     };
   }
 
-  // TODO: Check if user is actually superadmin
-  // For now, allow any authenticated user
-
+  // WHAT: Pass current user info to component
+  // WHY: Display who is logged in and their role
   return {
-    props: {},
+    props: {
+      currentUser: {
+        name: user?.name || '',
+        email: user?.email || '',
+        ssoUserId: user?.id || user?.ssoUserId || '',
+        appRole: user?.appRole || 'user',
+      },
+    },
   };
 }
