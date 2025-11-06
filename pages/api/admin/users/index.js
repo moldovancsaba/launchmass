@@ -29,7 +29,8 @@ async function handler(req, res) {
     if (filter === 'pending') {
       query.appStatus = 'pending';
     } else if (filter === 'active') {
-      query.appStatus = 'active';
+      // Include both 'active' and 'approved' status in active filter
+      query.appStatus = { $in: ['active', 'approved'] };
     }
     // 'all' = no filter
 
