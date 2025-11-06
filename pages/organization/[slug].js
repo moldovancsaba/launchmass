@@ -66,7 +66,8 @@ export async function getServerSideProps(context) {
     }));
 
     return { props: { org: { uuid: org.uuid, slug: org.slug, name: org.name }, cards: safe, activeTag: filterTag || null } };
-  } catch {
+  } catch (error) {
+    console.error('[organization/[slug]] Error fetching cards:', error);
     return { props: { org: { uuid: org.uuid, slug: org.slug, name: org.name }, cards: [], activeTag: null } };
   }
 }
