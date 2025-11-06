@@ -7,14 +7,24 @@ const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 19
 function toClient(doc) {
   if (!doc) return doc;
   const { _id, createdAt, updatedAt, ...rest } = doc;
+  
+  // Functional: Normalize timestamps to ISO strings for consistent JSON serialization
+  // Strategic: Handle both Date objects (new cards) and string timestamps (migrated legacy cards)
+  const toISOString = (val) => {
+    if (!val) return undefined;
+    if (typeof val === 'string') return val; // Already a string, assume ISO format
+    if (val instanceof Date) return val.toISOString(); // Date object
+    return undefined; // Unknown type
+  };
+  
   return { 
     _id: _id?.toString?.() || String(_id), 
     ...rest,
     // Ensure tags is always an array for the client
     tags: Array.isArray(rest?.tags) ? rest.tags : [],
-    // Convert Date objects to ISO strings for JSON serialization
-    ...(createdAt && { createdAt: createdAt.toISOString() }),
-    ...(updatedAt && { updatedAt: updatedAt.toISOString() })
+    // Convert timestamps to ISO strings
+    ...(createdAt && { createdAt: toISOString(createdAt) }),
+    ...(updatedAt && { updatedAt: toISOString(updatedAt) })
   };
 }
 
