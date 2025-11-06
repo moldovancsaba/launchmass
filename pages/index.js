@@ -41,10 +41,23 @@ export async function getServerSideProps(context) {
     const client = await clientPromise;
     const db = client.db(process.env.DB_NAME || 'launchmass');
 
-    // Original behavior: render the default dashboard grid with optional tag filtering.
+    // WHAT: Find default organization and show its cards
+    // WHY: Main page should show cards from the default organization
+    const orgsCol = db.collection('organizations');
+    const defaultOrg = await orgsCol.findOne({ isDefault: true, isActive: { $ne: false } });
+
     const rawTag = typeof context.query.tag === 'string' ? context.query.tag : '';
     const filterTag = rawTag.trim().toLowerCase();
-    const query = filterTag ? { tags: filterTag } : {};
+    
+    // WHAT: Build query to filter by default org (if exists) and optional tag
+    // WHY: Show only cards from default org on main page
+    let query = {};
+    if (defaultOrg) {
+      query.orgUuid = defaultOrg.uuid;
+    }
+    if (filterTag) {
+      query.tags = filterTag;
+    }
 
     const cards = await db.collection('cards').find(query).sort({ order: 1, _id: 1 }).toArray();
 
