@@ -19,21 +19,34 @@ function toClient(doc) {
 }
 
 export default async function handler(req, res) {
-  const client = await clientPromise;
-  const db = client.db(process.env.DB_NAME || 'launchmass');
-  const col = db.collection('cards');
+  try {
+    console.log('[cards API] Request method:', req.method);
+    console.log('[cards API] Headers:', JSON.stringify(req.headers));
+    
+    const client = await clientPromise;
+    const db = client.db(process.env.DB_NAME || 'launchmass');
+    const col = db.collection('cards');
 
-  if (req.method === 'GET') {
-    // Functional: When an org context is provided, scope results to that organization.
-    // Strategic: Backward-compatible — if no org context, return legacy unscoped list but add a deprecation header.
-    const ctx = await getOrgContext(req);
-    const filter = ctx?.orgUuid ? { orgUuid: ctx.orgUuid } : {};
-    if (!ctx?.orgUuid) {
-      res.setHeader('X-Deprecation', 'org-context-required');
+    if (req.method === 'GET') {
+      // Functional: When an org context is provided, scope results to that organization.
+      // Strategic: Backward-compatible — if no org context, return legacy unscoped list but add a deprecation header.
+      console.log('[cards API] Getting org context...');
+      const ctx = await getOrgContext(req);
+      console.log('[cards API] Org context:', JSON.stringify(ctx));
+      
+      const filter = ctx?.orgUuid ? { orgUuid: ctx.orgUuid } : {};
+      console.log('[cards API] Filter:', JSON.stringify(filter));
+      
+      if (!ctx?.orgUuid) {
+        res.setHeader('X-Deprecation', 'org-context-required');
+      }
+      
+      console.log('[cards API] Fetching cards from DB...');
+      const docs = await col.find(filter).sort({ order: 1, _id: 1 }).toArray();
+      console.log('[cards API] Found', docs.length, 'cards');
+      
+      return res.status(200).json(docs.map(toClient));
     }
-    const docs = await col.find(filter).sort({ order: 1, _id: 1 }).toArray();
-    return res.status(200).json(docs.map(toClient));
-  }
 
   // Functional: Protect POST (create) operation with SSO authentication
   // Strategic: withSsoAuth middleware validates session, upserts user, and attaches req.user
@@ -60,8 +73,13 @@ export default async function handler(req, res) {
     })(req, res);
   }
 
-  res.setHeader('Allow', ['GET', 'POST']);
-  return res.status(405).end('Method Not Allowed');
+    res.setHeader('Allow', ['GET', 'POST']);
+    return res.status(405).end('Method Not Allowed');
+  } catch (error) {
+    console.error('[cards API] Error:', error);
+    console.error('[cards API] Stack:', error.stack);
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
 }
 
 function normalizeBg(input) {
