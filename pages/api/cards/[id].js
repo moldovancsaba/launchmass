@@ -6,13 +6,23 @@ import { withSsoAuth } from '../../../lib/auth-oauth.js';
 function toClient(doc) {
   if (!doc) return doc;
   const { _id, createdAt, updatedAt, ...rest } = doc;
+  
+  // Functional: Normalize timestamps to ISO strings for consistent JSON serialization
+  // Strategic: Handle both Date objects (new cards) and string timestamps (migrated legacy cards)
+  const toISOString = (val) => {
+    if (!val) return undefined;
+    if (typeof val === 'string') return val; // Already a string
+    if (val instanceof Date) return val.toISOString(); // Date object
+    return undefined;
+  };
+  
   return { 
     _id: _id?.toString?.() || String(_id), 
     ...rest,
     tags: Array.isArray(rest?.tags) ? rest.tags : [],
-    // Convert Date objects to ISO strings for JSON serialization
-    ...(createdAt && { createdAt: createdAt.toISOString() }),
-    ...(updatedAt && { updatedAt: updatedAt.toISOString() })
+    // Convert timestamps to ISO strings
+    ...(createdAt && { createdAt: toISOString(createdAt) }),
+    ...(updatedAt && { updatedAt: toISOString(updatedAt) })
   };
 }
 

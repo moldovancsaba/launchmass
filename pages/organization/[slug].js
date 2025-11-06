@@ -58,11 +58,20 @@ export async function getServerSideProps(context) {
     const q = filterTag ? { orgUuid: org.uuid, tags: filterTag } : { orgUuid: org.uuid };
     const rows = await db.collection('cards').find(q).sort({ order: 1, _id: 1 }).toArray();
 
+    // Functional: Normalize timestamps to ISO strings for consistent JSON serialization
+    // Strategic: Handle both Date objects (new cards) and string timestamps (migrated legacy cards)
+    const toISOString = (val) => {
+      if (!val) return undefined;
+      if (typeof val === 'string') return val; // Already a string
+      if (val instanceof Date) return val.toISOString(); // Date object
+      return undefined;
+    };
+
     const safe = rows.map(({ _id, createdAt, updatedAt, ...rest }) => ({
       ...rest,
       tags: Array.isArray(rest?.tags) ? rest.tags : [],
-      ...(createdAt && { createdAt: createdAt.toISOString() }),
-      ...(updatedAt && { updatedAt: updatedAt.toISOString() })
+      ...(createdAt && { createdAt: toISOString(createdAt) }),
+      ...(updatedAt && { updatedAt: toISOString(updatedAt) })
     }));
 
     return { props: { org: { uuid: org.uuid, slug: org.slug, name: org.name }, cards: safe, activeTag: filterTag || null } };
