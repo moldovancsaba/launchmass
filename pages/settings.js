@@ -76,6 +76,29 @@ export default function Settings() {
     setEditForm({ name:'', slug:'', description:'', useSlugAsPublicUrl: false }); 
   }
 
+  async function setDefaultOrg(uuid) {
+    try {
+      // WHAT: Mark organization as default by updating isDefault field
+      // WHY: Only one organization should be marked as default
+      const res = await fetch('/api/organizations/' + encodeURIComponent(uuid), {
+        method: 'PUT',
+        headers: { 'Content-Type':'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          isDefault: true
+        })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      await refreshOrgs();
+      setStatus('Default organization updated'); 
+      setTimeout(() => setStatus(''), 1200);
+    } catch (error) {
+      console.error('Set default org error:', error);
+      setStatus('Failed to set default'); 
+      setTimeout(() => setStatus(''), 2000);
+    }
+  }
+
   async function updateOrg(e){
     e.preventDefault();
     try {
@@ -241,6 +264,16 @@ export default function Settings() {
                 ) : (
                   <>
                     <div style={{ display:'flex', alignItems:'center', gap: 8, flexWrap:'wrap' }}>
+                      <label style={{ display:'flex', alignItems:'center', gap: 6, cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          name="defaultOrg"
+                          checked={!!o.isDefault}
+                          onChange={() => setDefaultOrg(o.uuid)}
+                          title="Set as default organization for main page"
+                        />
+                        <span style={{ fontSize: 12, opacity: 0.7 }}>Default</span>
+                      </label>
                       <strong>{o.name}</strong>
                       <span style={{ opacity:0.7 }}>/ {o.slug}</span>
                       <span style={{ opacity:0.7, fontSize:12 }}>UUID: {o.uuid}</span>

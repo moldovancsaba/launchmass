@@ -74,31 +74,62 @@ export default async function handler(req, res) {
     // Strategic: Only org admins can update org details; users cannot
     return withSsoAuth(
       withOrgPermission('org.write', async (req, res) => {
-    const { name, slug, description, useSlugAsPublicUrl } = req.body || {};
+    const { name, slug, description, useSlugAsPublicUrl, isDefault } = req.body || {};
     const nameStr = String(name || '').trim();
     const newSlugLower = normalizeSlug(slug);
     const descStr = String(description || '');
     const slugPublic = coerceBoolean(useSlugAsPublicUrl);
+    const setAsDefault = coerceBoolean(isDefault);
 
-    if (!nameStr || !newSlugLower) return res.status(400).json({ error: 'name and slug required' });
-    if (!validateSlug(newSlugLower)) return res.status(400).json({ error: 'invalid slug format' });
+    // WHAT: Allow updating just isDefault field without other required fields
+    // WHY: Radio button only sends isDefault: true
+    const isDefaultOnlyUpdate = isDefault !== undefined && !name && !slug;
+    
+    if (!isDefaultOnlyUpdate && (!nameStr || !newSlugLower)) {
+      return res.status(400).json({ error: 'name and slug required' });
+    }
+    if (!isDefaultOnlyUpdate && !validateSlug(newSlugLower)) {
+      return res.status(400).json({ error: 'invalid slug format' });
+    }
 
     const org = await orgs.findOne({ uuid });
     if (!org || org.isActive === false) return res.status(404).json({ error: 'Organization not found' });
 
-    if (org.slug !== newSlugLower) {
+    if (!isDefaultOnlyUpdate && org.slug !== newSlugLower) {
       const conflict = await orgs.findOne({ slug: newSlugLower });
       if (conflict) return res.status(409).json({ error: 'slug already exists' });
     }
 
+        // WHAT: If setting as default, unset all other orgs first
+        // WHY: Only one organization can be default at a time
+        if (setAsDefault) {
+          await orgs.updateMany(
+            { uuid: { $ne: uuid } },
+            { $set: { isDefault: false, updatedAt: isoNow() } }
+          );
+        }
+
+        // WHAT: Build update object based on what fields were provided
+        // WHY: Support both full updates and isDefault-only updates
+        const updateFields = { updatedAt: isoNow() };
+        if (!isDefaultOnlyUpdate) {
+          updateFields.name = nameStr;
+          updateFields.slug = newSlugLower;
+          updateFields.description = descStr;
+          updateFields.useSlugAsPublicUrl = slugPublic;
+        }
+        if (isDefault !== undefined) {
+          updateFields.isDefault = setAsDefault;
+        }
+
         await orgs.updateOne(
           { uuid },
-          { $set: { name: nameStr, slug: newSlugLower, description: descStr, useSlugAsPublicUrl: slugPublic, updatedAt: isoNow() } }
+          { $set: updateFields }
         );
 
         // Functional: If slug changed, denormalize to cards.orgSlug
         // Strategic: Maintains data consistency across collections; slug is read-often field
-        if (org.slug !== newSlugLower) {
+        if (!isDefaultOnlyUpdate && org.slug !== newSlugLower) {
           await cards.updateMany(
             { orgUuid: uuid },
             { $set: { orgSlug: newSlugLower, updatedAt: isoNow() } }
