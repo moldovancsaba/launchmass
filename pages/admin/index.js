@@ -236,15 +236,17 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
 
   // Functional: Fetch organizations using SSO session (cookies sent automatically)
   // Strategic: No Authorization header needed - withSsoAuth middleware validates session
-  async function fetchOrgs() {
+  async function fetchOrgs(skipSelection = false) {
     try {
       const res = await fetch('/api/organizations', { credentials: 'include' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       const list = Array.isArray(data.organizations) ? data.organizations : [];
       setOrgs(list);
-      // If no selection yet, prefer forcedOrgUuid, otherwise default slug or first org
-      if (!selectedOrgUuid) {
+      
+      // WHAT: Only auto-select org if skipSelection is false and no org is selected
+      // WHY: Prevents overriding user's org selection from URL param or localStorage
+      if (!skipSelection && !selectedOrgUuid) {
         if (forcedOrgUuid) {
           setSelectedOrgUuid(forcedOrgUuid);
           if (typeof window !== 'undefined') localStorage.setItem('admin.selectedOrgUuid', forcedOrgUuid);
@@ -301,7 +303,9 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
     setSelectedOrgUuid(savedOrg);
     
     // Prime data - SSO cookies sent automatically
-    fetchOrgs();
+    // WHAT: Pass skipSelection=true if we already have a saved org from URL/localStorage
+    // WHY: Prevents fetchOrgs from overriding our selection with default org
+    fetchOrgs(!!savedOrg);
     fetchItems(savedOrg);
     fetchTags(savedOrg);
     
