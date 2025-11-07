@@ -24,6 +24,21 @@ function coerceBoolean(v) {
 // Functional: ISO 8601 UTC timestamp helper (project standard)
 function isoNow() { return new Date().toISOString(); }
 
+// WHAT: Default background gradient for organizations
+// WHY: Consistent with card default background
+const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
+
+// WHAT: Normalize background input to extract CSS value
+// WHY: Handle multi-line CSS paste format like cards do
+function normalizeBg(input) {
+  if (!input) return DEFAULT_BG;
+  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
+  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
+  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
+  return pick || DEFAULT_BG;
+}
+
 // Functional: Protect organization operations with SSO authentication and permission checks
 // Strategic: GET requires org.read, PUT requires org.write, DELETE requires org.delete
 export default async function handler(req, res) {
@@ -78,12 +93,13 @@ export default async function handler(req, res) {
       req.query.orgUuid = uuid;
       
       return withOrgPermission('org.write', async (req, res) => {
-    const { name, slug, description, useSlugAsPublicUrl, isDefault } = req.body || {};
+    const { name, slug, description, useSlugAsPublicUrl, isDefault, background } = req.body || {};
     const nameStr = String(name || '').trim();
     const newSlugLower = normalizeSlug(slug);
     const descStr = String(description || '');
     const slugPublic = coerceBoolean(useSlugAsPublicUrl);
     const setAsDefault = coerceBoolean(isDefault);
+    const bg = background !== undefined ? normalizeBg(background) : undefined;
 
     // WHAT: Allow updating just isDefault field without other required fields
     // WHY: Radio button only sends isDefault: true
@@ -124,6 +140,11 @@ export default async function handler(req, res) {
         }
         if (isDefault !== undefined) {
           updateFields.isDefault = setAsDefault;
+        }
+        // WHAT: Update background if provided
+        // WHY: Allow organizations to have custom backgrounds like cards
+        if (bg !== undefined) {
+          updateFields.background = bg;
         }
 
         await orgs.updateOne(

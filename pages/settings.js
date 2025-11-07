@@ -6,12 +6,25 @@ import { validateSsoSession, getOAuthLoginUrl } from '../lib/auth-oauth.js';
 // Functional: Single place to manage organizations (list/create/edit/delete).
 // Strategic: OAuth-based authentication - no admin tokens needed.
 
+const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
+
+// WHAT: Normalize background input (same as cards)
+// WHY: Handle multi-line CSS paste format
+function normalizeBg(input) {
+  if (!input) return DEFAULT_BG;
+  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
+  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
+  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
+  return pick || DEFAULT_BG;
+}
+
 export default function Settings() {
   // Organizations state
   const [orgs, setOrgs] = useState([]);
-  const [form, setForm] = useState({ name: '', slug: '', description: '', useSlugAsPublicUrl: false });
+  const [form, setForm] = useState({ name: '', slug: '', description: '', useSlugAsPublicUrl: false, background: '', _bgInput: '' });
   const [editing, setEditing] = useState(null); // uuid
-  const [editForm, setEditForm] = useState({ name: '', slug: '', description: '', useSlugAsPublicUrl: false });
+  const [editForm, setEditForm] = useState({ name: '', slug: '', description: '', useSlugAsPublicUrl: false, background: '', _bgInput: '' });
   const [status, setStatus] = useState('');
 
   useEffect(() => {
@@ -44,7 +57,8 @@ export default function Settings() {
           name: form.name, 
           slug: (form.slug || '').toLowerCase(), 
           description: form.description,
-          useSlugAsPublicUrl: !!form.useSlugAsPublicUrl 
+          useSlugAsPublicUrl: !!form.useSlugAsPublicUrl,
+          background: form.background || DEFAULT_BG
         })
       });
       if (!res.ok) {
@@ -52,9 +66,9 @@ export default function Settings() {
         console.error('Create org failed:', res.status, errorText);
         throw new Error(errorText);
       }
-      setForm({ name:'', slug:'', description:'', useSlugAsPublicUrl: false });
+      setForm({ name:'', slug:'', description:'', useSlugAsPublicUrl: false, background: '', _bgInput: '' });
       await refreshOrgs();
-      setStatus('Organization created'); 
+      setStatus('Organization created');
       setTimeout(() => setStatus(''), 1200);
     } catch (error) {
       console.error('Create org error:', error);
@@ -69,13 +83,15 @@ export default function Settings() {
       name: org.name, 
       slug: org.slug, 
       description: org.description || '',
-      useSlugAsPublicUrl: !!org.useSlugAsPublicUrl
+      useSlugAsPublicUrl: !!org.useSlugAsPublicUrl,
+      background: org.background || DEFAULT_BG,
+      _bgInput: org.background ? ('background: ' + org.background) : ('background: ' + DEFAULT_BG)
     });
   }
   
   function cancelEdit(){ 
     setEditing(null); 
-    setEditForm({ name:'', slug:'', description:'', useSlugAsPublicUrl: false }); 
+    setEditForm({ name:'', slug:'', description:'', useSlugAsPublicUrl: false, background: '', _bgInput: '' }); 
   }
 
   async function setDefaultOrg(uuid) {
@@ -112,12 +128,13 @@ export default function Settings() {
           name: editForm.name, 
           slug: (editForm.slug || '').toLowerCase(), 
           description: editForm.description,
-          useSlugAsPublicUrl: !!editForm.useSlugAsPublicUrl
+          useSlugAsPublicUrl: !!editForm.useSlugAsPublicUrl,
+          background: editForm.background
         })
       });
       if (!res.ok) throw new Error(await res.text());
       setEditing(null);
-      setEditForm({ name:'', slug:'', description:'', useSlugAsPublicUrl: false });
+      setEditForm({ name:'', slug:'', description:'', useSlugAsPublicUrl: false, background: '', _bgInput: '' });
       await refreshOrgs();
       setStatus('Organization updated'); 
       setTimeout(() => setStatus(''), 1200);
@@ -205,6 +222,15 @@ export default function Settings() {
             />
             <span>Use slug as public URL</span>
           </label>
+          <label>
+            Background (paste your 2 lines)
+            <textarea
+              placeholder={"background: #2A7B9B;\nbackground: linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%);"}
+              value={form._bgInput}
+              onChange={e => setForm(prev => ({ ...prev, _bgInput: e.target.value, background: normalizeBg(e.target.value) }))}
+              rows={4}
+            />
+          </label>
           <button type="submit">Create Organization</button>
         </form>
 
@@ -248,6 +274,15 @@ export default function Settings() {
                         onChange={(e) => setEditForm(prev => ({ ...prev, useSlugAsPublicUrl: e.target.checked }))}
                       />
                       <span>Use slug as public URL</span>
+                    </label>
+                    <label>
+                      Background (paste your 2 lines)
+                      <textarea
+                        placeholder={"background: #2A7B9B;\nbackground: linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%);"}
+                        value={editForm._bgInput}
+                        onChange={e => setEditForm(prev => ({ ...prev, _bgInput: e.target.value, background: normalizeBg(e.target.value) }))}
+                        rows={4}
+                      />
                     </label>
                     <div style={{ display:'flex', gap: 8 }}>
                       <button type="submit">Save</button>

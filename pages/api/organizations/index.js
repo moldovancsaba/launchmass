@@ -27,6 +27,21 @@ function coerceBoolean(v) {
   return false;
 }
 
+// WHAT: Default background gradient for organizations
+// WHY: Consistent with card default background
+const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
+
+// WHAT: Normalize background input to extract CSS value
+// WHY: Handle multi-line CSS paste format like cards do
+function normalizeBg(input) {
+  if (!input) return DEFAULT_BG;
+  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
+  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
+  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
+  return pick || DEFAULT_BG;
+}
+
 export default async function handler(req, res) {
   const client = await clientPromise;
   const db = client.db(process.env.DB_NAME || 'launchmass');
@@ -92,11 +107,12 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'User authentication error: missing ssoUserId' });
       }
 
-      const { name, slug, description, useSlugAsPublicUrl } = req.body || {};
+      const { name, slug, description, useSlugAsPublicUrl, background } = req.body || {};
       const nameStr = String(name || '').trim();
       const slugLower = normalizeSlug(slug);
       const descStr = String(description || '');
       const slugPublic = coerceBoolean(useSlugAsPublicUrl);
+      const bg = normalizeBg(background);
 
       if (!nameStr || !slugLower) return res.status(400).json({ error: 'name and slug required' });
       if (!validateSlug(slugLower)) return res.status(400).json({ error: 'invalid slug format' });
@@ -109,7 +125,7 @@ export default async function handler(req, res) {
       const existing = await col.findOne({ slug: slugLower });
       if (existing) return res.status(409).json({ error: 'slug already exists' });
 
-      const doc = { uuid, name: nameStr, slug: slugLower, description: descStr, isActive: true, createdAt: now, updatedAt: now, useSlugAsPublicUrl: slugPublic };
+      const doc = { uuid, name: nameStr, slug: slugLower, description: descStr, isActive: true, createdAt: now, updatedAt: now, useSlugAsPublicUrl: slugPublic, background: bg };
       const r = await col.insertOne(doc);
 
       // Functional: Automatically add creator as admin in organizationMembers
