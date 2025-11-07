@@ -183,10 +183,31 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
                   <div style={{ borderTop: '1px solid rgba(0, 0, 0, 0.1)', margin: '8px 0' }} />
                   <button
                     className="menu-item"
-                    onClick={() => {
-                      const ssoUrl = 'https://sso.doneisbetter.com';
-                      const returnUrl = encodeURIComponent(window.location.origin);
-                      window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
+                    onClick={async () => {
+                      try {
+                        // WHAT: Call Launchmass logout API to clear local session
+                        // WHY: Must clear both Launchmass AND SSO sessions
+                        const response = await fetch('/api/auth/logout', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                        });
+                        
+                        const data = await response.json();
+                        
+                        // WHAT: Redirect to SSO logout which will redirect back
+                        // WHY: Complete the full logout flow
+                        if (data.redirectUrl) {
+                          window.location.href = data.redirectUrl;
+                        } else {
+                          window.location.href = '/';
+                        }
+                      } catch (error) {
+                        console.error('Logout failed:', error);
+                        // Fallback: direct redirect to SSO logout
+                        const ssoUrl = 'https://sso.doneisbetter.com';
+                        const returnUrl = encodeURIComponent(window.location.origin);
+                        window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
+                      }
                     }}
                     style={{
                       background: 'rgba(255, 100, 100, 0.1)',
