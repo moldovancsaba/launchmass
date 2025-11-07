@@ -2,10 +2,18 @@ import OversizedLink from '../components/OversizedLink';
 import Header from '../components/Header';
 import clientPromise from '../lib/db';
 
-export default function Home({ cards, activeTag, orgName }) {
+export default function Home({ cards, activeTag, orgName, orgBackground }) {
   const hasCards = Array.isArray(cards) && cards.length > 0;
   return (
     <>
+      {/* Default organization background override */}
+      {orgBackground && (
+        <style jsx global>{`
+          .background-content::before {
+            background: ${orgBackground} !important;
+          }
+        `}</style>
+      )}
       <Header orgName={orgName || 'launchmass'} />
       {!hasCards && (
         <section style={{ padding: '16px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background:'rgba(0,0,0,0.05)', borderRadius: 12, color:'#111' }}>
@@ -78,7 +86,7 @@ export async function getServerSideProps(context) {
       ...(createdAt && { createdAt: toISOString(createdAt) }),
       ...(updatedAt && { updatedAt: toISOString(updatedAt) })
     }));
-    return { props: { cards: safe, activeTag: filterTag || null, orgName: defaultOrg?.name || null } };
+    return { props: { cards: safe, activeTag: filterTag || null, orgName: defaultOrg?.name || null, orgBackground: defaultOrg?.background || null } };
   } catch {
     // DB unavailable → render empty state with quick-access links
     return { props: { cards: [], activeTag: null } };
