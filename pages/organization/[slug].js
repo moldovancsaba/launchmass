@@ -1,4 +1,5 @@
 import OversizedLink from '../../components/OversizedLink';
+import Header from '../../components/Header';
 import clientPromise from '../../lib/db';
 import { getOrgBySlugCached, getOrgByUuid } from '../../lib/org.js';
 
@@ -9,6 +10,7 @@ import { getOrgBySlugCached, getOrgByUuid } from '../../lib/org.js';
 export default function OrgHome({ org, cards, activeTag }) {
   return (
     <>
+      <Header orgName={org?.name || 'Organization'} />
       {activeTag ? (
         <div className="filter-bar" style={{ padding: '8px 16px' }}>
           <span>Filtering by</span>
