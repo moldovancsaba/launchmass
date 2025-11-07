@@ -8,8 +8,20 @@ import { getOrgBySlugCached, getOrgByUuid } from '../../lib/org.js';
 // Strategic: Mirrors narimato's path-based routing; uses server-side org resolution and org-scoped DB queries.
 
 export default function OrgHome({ org, cards, activeTag }) {
+  // WHAT: Apply organization-specific background if set
+  // WHY: Each organization can have its own visual identity via custom background
+  const orgBackground = org?.background || null;
+  
   return (
     <>
+      {/* Organization-specific background override */}
+      {orgBackground && (
+        <style jsx global>{`
+          .background-content::before {
+            background: ${orgBackground} !important;
+          }
+        `}</style>
+      )}
       <Header orgName={org?.name || 'Organization'} />
       {activeTag ? (
         <div className="filter-bar" style={{ padding: '8px 16px' }}>
@@ -76,9 +88,9 @@ export async function getServerSideProps(context) {
       ...(updatedAt && { updatedAt: toISOString(updatedAt) })
     }));
 
-    return { props: { org: { uuid: org.uuid, slug: org.slug, name: org.name }, cards: safe, activeTag: filterTag || null } };
+    return { props: { org: { uuid: org.uuid, slug: org.slug, name: org.name, background: org.background || null }, cards: safe, activeTag: filterTag || null } };
   } catch (error) {
     console.error('[organization/[slug]] Error fetching cards:', error);
-    return { props: { org: { uuid: org.uuid, slug: org.slug, name: org.name }, cards: [], activeTag: null } };
+    return { props: { org: { uuid: org.uuid, slug: org.slug, name: org.name, background: org.background || null }, cards: [], activeTag: null } };
   }
 }
