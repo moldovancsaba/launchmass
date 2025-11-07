@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Header from '../components/Header';
+import { validateSsoSession, getOAuthLoginUrl } from '../lib/auth-oauth.js';
 
 // Settings page for Organizations management.
 // Functional: Single place to manage organizations (list/create/edit/delete).
@@ -304,4 +305,44 @@ export default function Settings() {
     </main>
     </>
   );
+}
+
+// WHAT: SSR guard for settings page - validates SSO session on every page load
+// WHY: Organization management requires authentication; prevents unauthorized access
+export async function getServerSideProps(context) {
+  try {
+    const { req, resolvedUrl } = context;
+    
+    // WHAT: Validate OAuth-based SSO session from sso_session cookie
+    // WHY: OAuth 2.0 flow - tokens stored in HttpOnly cookie, validated server-side
+    const { isValid } = await validateSsoSession(req);
+    
+    if (!isValid) {
+      // WHAT: Redirect to OAuth authorization URL
+      // WHY: OAuth 2.0 authorization code flow - user authenticates at SSO, redirected back with code
+      const loginUrl = getOAuthLoginUrl(resolvedUrl);
+      
+      return {
+        redirect: {
+          destination: loginUrl,
+          permanent: false,
+        },
+      };
+    }
+    
+    return { props: {} };
+  } catch (err) {
+    // WHAT: Graceful error handling - redirect to OAuth login on any error
+    // WHY: Prevents 500 errors from blocking access; user can retry OAuth authentication
+    console.error('[settings] getServerSideProps error:', err.message);
+    
+    const loginUrl = getOAuthLoginUrl(context.resolvedUrl || '/settings');
+    
+    return {
+      redirect: {
+        destination: loginUrl,
+        permanent: false,
+      },
+    };
+  }
 }
