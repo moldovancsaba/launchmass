@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // Header component with hamburger menu and organization title
-// WHAT: Provides consistent navigation across all public pages
+// WHAT: Provides consistent navigation across all public pages with auth-aware menu
 // WHY: Centralized menu reduces UI clutter and provides mobile-friendly navigation
 
-export default function Header({ orgName }) {
+export default function Header({ orgName, onAddCard, showAddCard = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // WHAT: Check authentication status on mount
+  // WHY: Show/hide auth-protected menu items based on login state
+  useEffect(() => {
+    fetch('/api/auth/validate', { credentials: 'include', cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => setIsAuthenticated(!!data.isValid))
+      .catch(() => setIsAuthenticated(false));
+  }, []);
 
   return (
     <>
@@ -82,6 +92,31 @@ export default function Header({ orgName }) {
             {orgName}
           </h1>
         )}
+
+        {/* Add Card Button - Top Right (admin pages only) */}
+        {showAddCard && onAddCard && (
+          <button
+            onClick={onAddCard}
+            style={{
+              position: 'absolute',
+              right: '16px',
+              background: 'rgba(0, 150, 255, 0.9)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={e => e.currentTarget.style.background = 'rgba(0, 150, 255, 1)'}
+            onMouseOut={e => e.currentTarget.style.background = 'rgba(0, 150, 255, 0.9)'}
+          >
+            + Add Card
+          </button>
+        )}
       </header>
 
       {/* Dropdown Menu */}
@@ -121,27 +156,59 @@ export default function Header({ orgName }) {
               >
                 🏠 Home
               </a>
-              <a
-                href="/admin"
-                className="menu-item"
-                onClick={() => setMenuOpen(false)}
-              >
-                ⚙️ Admin
-              </a>
-              <a
-                href="/settings"
-                className="menu-item"
-                onClick={() => setMenuOpen(false)}
-              >
-                🔧 Settings
-              </a>
-              <a
-                href="/admin/users"
-                className="menu-item"
-                onClick={() => setMenuOpen(false)}
-              >
-                👥 Users
-              </a>
+              
+              {isAuthenticated && (
+                <>
+                  <a
+                    href="/admin"
+                    className="menu-item"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    ⚙️ Admin
+                  </a>
+                  <a
+                    href="/settings"
+                    className="menu-item"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    🏢 Organizations
+                  </a>
+                  <a
+                    href="/admin/users"
+                    className="menu-item"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    👥 Manage Users
+                  </a>
+                  <div style={{ borderTop: '1px solid rgba(0, 0, 0, 0.1)', margin: '8px 0' }} />
+                  <button
+                    className="menu-item"
+                    onClick={() => {
+                      const ssoUrl = 'https://sso.doneisbetter.com';
+                      const returnUrl = encodeURIComponent(window.location.origin);
+                      window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
+                    }}
+                    style={{
+                      background: 'rgba(255, 100, 100, 0.1)',
+                      border: 'none',
+                      width: '100%',
+                      textAlign: 'left',
+                    }}
+                  >
+                    🚪 Logout
+                  </button>
+                </>
+              )}
+              
+              {!isAuthenticated && (
+                <a
+                  href="/admin"
+                  className="menu-item"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  🔐 Login
+                </a>
+              )}
             </div>
           </nav>
         </>
