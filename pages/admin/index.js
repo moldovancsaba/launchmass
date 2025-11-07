@@ -292,8 +292,12 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
   // Functional: Initial data load and session monitoring
   // Strategic: SSO session validated by SSR guard; client monitors for expiration
   useEffect(() => {
+    // WHAT: Check URL query parameter for orgUuid (from org admin redirect)
+    // WHY: Ensures immediate org selection when redirected from /organization/[slug]/admin
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const orgUuidFromUrl = urlParams?.get('orgUuid') || '';
     const savedOrgLocal = typeof window !== 'undefined' ? localStorage.getItem('admin.selectedOrgUuid') || '' : '';
-    const savedOrg = forcedOrgUuid || savedOrgLocal;
+    const savedOrg = forcedOrgUuid || orgUuidFromUrl || savedOrgLocal;
     setSelectedOrgUuid(savedOrg);
     
     // Prime data - SSO cookies sent automatically

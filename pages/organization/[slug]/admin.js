@@ -10,10 +10,12 @@ export default function OrgAdminPage({ org }) {
   const router = useRouter();
   useEffect(() => {
     try {
+      // WHAT: Set localStorage AND pass via query parameter
+      // WHY: Query parameter ensures immediate org selection; localStorage as backup
       if (typeof window !== 'undefined') {
         localStorage.setItem('admin.selectedOrgUuid', org.uuid);
       }
-      router.replace('/admin');
+      router.replace(`/admin?orgUuid=${encodeURIComponent(org.uuid)}`);
     } catch {}
   }, [org?.uuid]);
   return (
