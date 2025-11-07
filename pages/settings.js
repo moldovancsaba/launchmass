@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Header from '../components/Header';
 
 // Settings page for Organizations management.
 // Functional: Single place to manage organizations (list/create/edit/delete).
@@ -146,18 +147,9 @@ export default function Settings() {
   }
 
   return (
-    <main style={{ padding: 16, color: '#111' }}>
-      <h1>Settings</h1>
-
-      {/* Quick Links */}
-      <section style={{ marginBottom: 16, padding: 12, background: 'rgba(0,0,0,0.05)', borderRadius: 12 }}>
-        <h2 style={{ marginTop: 0 }}>Quick Links</h2>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <a href="/" className="tag-chip">Home</a>
-          <a href="#organizations" className="tag-chip">Organizations</a>
-          <a href="/admin" className="tag-chip">Admin</a>
-        </div>
-      </section>
+    <>
+      <Header orgName="Organizations" />
+      <main style={{ padding: 16, color: '#111' }}>
 
       {/* Organizations Manager */}
       <section id="organizations" style={{ padding: 12, background: 'rgba(0,0,0,0.05)', borderRadius: 12 }}>
@@ -310,5 +302,6 @@ export default function Settings() {
         )}
       </section>
     </main>
+    </>
   );
 }

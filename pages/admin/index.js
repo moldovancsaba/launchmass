@@ -3,6 +3,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from 
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import dynamic from 'next/dynamic';
+import Header from '../../components/Header';
 // Functional: Import OAuth-based SSO authentication utilities
 // Strategic: Migrated from legacy cookie-forwarding (lib/auth.js) to OAuth 2.0 flow (lib/auth-oauth.js)
 import { validateSsoSession, getOAuthLoginUrl } from '../../lib/auth-oauth.js';
@@ -460,53 +461,32 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
     window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
   }
 
+  // WHAT: Get current organization name for header title
+  // WHY: Show which organization is being managed in the header
+  const currentOrg = orgs.find(o => o.uuid === selectedOrgUuid);
+  const orgName = currentOrg ? currentOrg.name : 'Admin';
+
   return (
-    <main style={{ padding: 16 }}>
-      {/* Functional: Admin header with authenticated user info and controls */}
-      {/* Strategic: Replaces token input; shows who is logged in and enables logout */}
-      <section style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 8 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', marginRight: 'auto' }}>
-          <span style={{ fontSize: 14, fontWeight: 600 }}>{user.name || user.email || 'Admin User'}</span>
-          <span style={{ fontSize: 11, opacity: 0.7 }}>{user.email || 'Authenticated via SSO'}</span>
-        </div>
-        {/* Functional: Link to user management page */}
-        {/* Strategic: Allows admins to approve pending users and manage access */}
-        <a href="/admin/users" className="tag-chip" style={{ textDecoration: 'none', padding: '6px 12px' }}>Manage Users</a>
-        <button onClick={handleLogout} style={{ background: 'rgba(255,100,100,0.2)', border: '1px solid rgba(255,100,100,0.5)', padding: '6px 12px', borderRadius: 4, cursor: 'pointer' }}>Logout</button>
-      </section>
-
-      {/* Functional: Organization and card management controls */}
-      <section style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
-        {/* Functional: Organization selector to scope admin operations */}
-        {/* Strategic: Clear alternative to breadcrumbs; keeps UI minimal */}
-        <select value={selectedOrgUuid} onChange={onChangeOrg} disabled={!!forcedOrgUuid} style={{ minWidth: 220 }}>
-          <option value="">Select organization</option>
-          {orgs.map(o => (
-            <option key={o.uuid} value={o.uuid}>{o.name} /{o.slug}</option>
-          ))}
-        </select>
-        <button onClick={() => fetchOrgs()}>Refresh orgs</button>
-        <a href="/settings#organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</a>
-        <button onClick={addItem} disabled={!selectedOrgUuid}>Add new card</button>
-        <span style={{ opacity:.7, fontSize:12 }}>Org: {selectedOrgUuid ? '✓' : '✗'}</span>
-        {status ? <span style={{ opacity:.75 }}>{status}</span> : null}
-      </section>
-
-      {/* Inline Create Organization (minimal) */}
-      <section style={{ marginBottom: 16 }}>
-        <details>
-          <summary style={{ cursor:'pointer' }}>Create Organization</summary>
-          <form onSubmit={createOrganization} style={{ display:'grid', gap: 8, marginTop: 8, maxWidth: 520 }}>
-            <label>Name<input value={orgForm.name} onChange={e => setOrgForm(prev => ({ ...prev, name: e.target.value }))} required /></label>
-            <label>Slug<input value={orgForm.slug} onChange={e => setOrgForm(prev => ({ ...prev, slug: e.target.value.toLowerCase() }))} required /></label>
-            <label>Description<textarea value={orgForm.description} onChange={e => setOrgForm(prev => ({ ...prev, description: e.target.value }))} rows={3} /></label>
-            <div style={{ display:'flex', gap: 8 }}>
-              <button type="submit">Create</button>
-              <a href="/settings#organizations" className="tag-chip">Open org manager</a>
-            </div>
-          </form>
-        </details>
-      </section>
+    <>
+      <Header 
+        orgName={orgName}
+        showAddCard={!!selectedOrgUuid}
+        onAddCard={addItem}
+      />
+      <main style={{ padding: 16 }}>
+        {/* Functional: Organization selector and status */}
+        <section style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 8 }}>
+          {/* Functional: Organization selector to scope admin operations */}
+          {/* Strategic: Clear alternative to breadcrumbs; keeps UI minimal */}
+          <select value={selectedOrgUuid} onChange={onChangeOrg} disabled={!!forcedOrgUuid} style={{ minWidth: 220, padding: '6px 10px', borderRadius: 4 }}>
+            <option value="">Select organization</option>
+            {orgs.map(o => (
+              <option key={o.uuid} value={o.uuid}>{o.name} / {o.slug}</option>
+            ))}
+          </select>
+          <span style={{ opacity:.7, fontSize:12 }}>Org: {selectedOrgUuid ? '✓' : '✗'}</span>
+          {status ? <span style={{ opacity:.75, marginLeft: 'auto' }}>{status}</span> : null}
+        </section>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map(i => i._id)} strategy={verticalListSortingStrategy}>
@@ -531,5 +511,6 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
         </SortableContext>
       </DndContext>
     </main>
+    </>
   );
 }

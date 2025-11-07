@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import Header from '../../components/Header';
 import { validateSsoSession } from '../../lib/auth-oauth';
 
 export default function AdminUsers({ currentUser }) {
@@ -151,29 +152,9 @@ export default function AdminUsers({ currentUser }) {
   const pendingCount = users.filter(u => u.appStatus === 'pending').length;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0b1021', color: '#e6e8f2', padding: '2rem' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        {/* Current User Display */}
-        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#12172b', border: '1px solid #22284a', borderRadius: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>Logged in as:</span>
-            <span style={{ fontWeight: '600' }}>{currentUser?.name || currentUser?.email || 'Unknown User'}</span>
-            {currentUser?.email && currentUser?.name && (
-              <span style={{ fontSize: '0.85rem', opacity: 0.6 }}>({currentUser.email})</span>
-            )}
-            {currentUser?.appRole && (
-              <span style={{
-                padding: '0.25rem 0.75rem',
-                background: getRoleColor(currentUser.appRole),
-                borderRadius: '12px',
-                fontSize: '0.8rem',
-                textTransform: 'capitalize',
-              }}>
-                {currentUser.appRole}
-              </span>
-            )}
-          </div>
-        </div>
+    <>
+      <Header orgName="User Management" />
+      <div style={{ minHeight: '100vh', background: '#0b1021', color: '#e6e8f2', padding: '2rem' }}>        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {/* Header */}
         <div style={{ marginBottom: '2rem' }}>
@@ -385,21 +366,9 @@ export default function AdminUsers({ currentUser }) {
           </div>
         )}
 
-        {/* Back Link */}
-        <div style={{ marginTop: '2rem' }}>
-          <a
-            href="/admin"
-            style={{
-              color: '#4054d6',
-              textDecoration: 'none',
-              fontSize: '0.9rem',
-            }}
-          >
-            ← Back to Admin
-          </a>
-        </div>
       </div>
     </div>
+    </>
   );
 }
 
