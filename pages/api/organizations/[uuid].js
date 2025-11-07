@@ -72,8 +72,12 @@ export default async function handler(req, res) {
   if (req.method === 'PUT') {
     // Functional: Require org.write permission
     // Strategic: Only org admins can update org details; users cannot
-    return withSsoAuth(
-      withOrgPermission('org.write', async (req, res) => {
+    return withSsoAuth(async (req, res) => {
+      // WHAT: Manually set org context from URL path UUID
+      // WHY: withOrgPermission expects orgUuid in headers/query, but we have it in URL path
+      req.query.orgUuid = uuid;
+      
+      return withOrgPermission('org.write', async (req, res) => {
     const { name, slug, description, useSlugAsPublicUrl, isDefault } = req.body || {};
     const nameStr = String(name || '').trim();
     const newSlugLower = normalizeSlug(slug);
@@ -145,8 +149,8 @@ export default async function handler(req, res) {
             _id: updated?._id?.toString?.() || String(updated?._id),
           },
         });
-      })
-    )(req, res);
+      })(req, res);
+    })(req, res);
   }
 
   // ===================================================================
@@ -156,8 +160,12 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     // Functional: Require org.delete permission
     // Strategic: Only org admins can delete org; users cannot
-    return withSsoAuth(
-      withOrgPermission('org.delete', async (req, res) => {
+    return withSsoAuth(async (req, res) => {
+      // WHAT: Manually set org context from URL path UUID
+      // WHY: withOrgPermission expects orgUuid in headers/query, but we have it in URL path
+      req.query.orgUuid = uuid;
+      
+      return withOrgPermission('org.delete', async (req, res) => {
         const org = await orgs.findOne({ uuid });
         if (!org || org.isActive === false) {
           return res.status(404).json({ error: 'Organization not found' });
@@ -175,8 +183,8 @@ export default async function handler(req, res) {
           message: 'Organization deleted successfully',
           uuid,
         });
-      })
-    )(req, res);
+      })(req, res);
+    })(req, res);
   }
 
   res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
