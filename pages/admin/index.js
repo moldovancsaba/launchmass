@@ -452,13 +452,33 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
     setStatus('Organization selected'); setTimeout(() => setStatus(''), 1000);
   }
 
-  // Functional: Logout handler - redirects to OAuth logout endpoint with return URL
-  // Strategic: OAuth logout clears sso_session cookie and terminates SSO session
-  function handleLogout() {
-    // Hardcoded SSO URL since this is client-side code
-    const ssoUrl = 'https://sso.doneisbetter.com';
-    const returnUrl = encodeURIComponent(window.location.origin);
-    window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
+  // Functional: Logout handler - clears local session then SSO session
+  // Strategic: Two-phase logout ensures both Launchmass and SSO sessions are cleared
+  async function handleLogout() {
+    try {
+      // WHAT: Call Launchmass logout API to clear local session
+      // WHY: Must clear both Launchmass AND SSO sessions
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      const data = await response.json();
+      
+      // WHAT: Redirect to SSO logout which will redirect back
+      // WHY: Complete the full logout flow
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Fallback: direct redirect to SSO logout
+      const ssoUrl = 'https://sso.doneisbetter.com';
+      const returnUrl = encodeURIComponent(window.location.origin);
+      window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
+    }
   }
 
   // WHAT: Get current organization name for header title
