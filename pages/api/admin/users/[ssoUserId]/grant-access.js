@@ -28,10 +28,10 @@ async function handler(req, res) {
       });
     }
 
-    if (!['user', 'admin', 'superadmin'].includes(role)) {
+    if (!['user', 'admin'].includes(role)) {
       return res.status(400).json({
         error: 'Invalid role',
-        message: 'Role must be: user, admin, or superadmin',
+        message: 'Role must be: user or admin',
       });
     }
 
@@ -70,8 +70,7 @@ async function handler(req, res) {
           appRole: role,
           appStatus: 'active',
           hasAccess: true,
-          isAdmin: (role === 'admin' || role === 'superadmin'),
-          isSuperAdmin: (role === 'superadmin'),
+          isAdmin: (role === 'admin'),
           updatedAt: now,
           lastSyncedAt: now,
         },
