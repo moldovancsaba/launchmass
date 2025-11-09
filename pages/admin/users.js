@@ -318,7 +318,6 @@ export default function AdminUsers({ currentUser }) {
                             <option value="" disabled>Grant as...</option>
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
-                            <option value="superadmin">Superadmin</option>
                           </select>
                         </div>
                       ) : (user.appStatus === 'active' || user.appStatus === 'approved') ? (
@@ -338,7 +337,6 @@ export default function AdminUsers({ currentUser }) {
                           >
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
-                            <option value="superadmin">Superadmin</option>
                           </select>
                           <button
                             onClick={() => handleRevokeAccess(user.ssoUserId)}
