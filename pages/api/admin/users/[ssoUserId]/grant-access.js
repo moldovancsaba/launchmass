@@ -8,6 +8,7 @@
 
 import { withSsoAuth } from '../../../../../lib/auth-oauth';
 import clientPromise from '../../../../../lib/db';
+import { syncPermissionToSSO } from '../../../../../lib/ssoPermissions.mjs';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -44,6 +45,23 @@ async function handler(req, res) {
     const usersCol = db.collection('users');
 
     const now = new Date().toISOString();
+
+    // WHAT: Sync permission to SSO first (Phase 4D integration)
+    // WHY: SSO is the source of truth for permissions
+    // HOW: Use client_credentials OAuth to authenticate with SSO
+    try {
+      await syncPermissionToSSO(ssoUserId, {
+        role,
+        status: 'approved',
+        grantedBy: req.user?.email || 'launchmass-admin',
+      });
+      console.log('[SSO Sync] Permission synced successfully', { ssoUserId, role });
+    } catch (ssoError) {
+      console.error('[SSO Sync] Failed to sync permission to SSO:', ssoError.message);
+      // WHAT: Continue with local update even if SSO sync fails
+      // WHY: Don't block admin workflow if SSO is temporarily unavailable
+      // TODO: Queue for retry or show warning to admin
+    }
 
     const result = await usersCol.updateOne(
       { ssoUserId },
