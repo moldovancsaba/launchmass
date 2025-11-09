@@ -8,6 +8,7 @@
 
 import { withSsoAuth } from '../../../../../lib/auth-oauth';
 import clientPromise from '../../../../../lib/db';
+import { syncPermissionToSSO } from '../../../../../lib/ssoPermissions.mjs';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -35,8 +36,21 @@ async function handler(req, res) {
 
     // TODO: Check if req.user is superadmin
 
-    // WHAT: Update local user directly (simplified permission management)
-    // WHY: Manage permissions locally without depending on SSO API calls
+    // WHAT: Sync role change to SSO first (Phase 4D integration)
+    // WHY: SSO is the source of truth for permissions
+    try {
+      await syncPermissionToSSO(ssoUserId, {
+        role,
+        status: 'approved',
+        grantedBy: req.user?.email || 'launchmass-admin',
+      });
+      console.log('[SSO Sync] Role updated in SSO', { ssoUserId, role });
+    } catch (ssoError) {
+      console.error('[SSO Sync] Failed to sync role change to SSO:', ssoError.message);
+      // Continue with local update even if SSO sync fails
+    }
+
+    // WHAT: Update local user directly
     const client = await clientPromise;
     const db = client.db(process.env.DB_NAME || 'launchmass');
     const usersCol = db.collection('users');
