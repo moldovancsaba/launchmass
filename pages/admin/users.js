@@ -15,6 +15,8 @@ export default function AdminUsers({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending'); // 'all' | 'pending' | 'active'
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
 
   // WHAT: Load users from local database
   // WHY: Show all users who have attempted to access launchmass
@@ -90,6 +92,42 @@ export default function AdminUsers({ currentUser }) {
     } catch (error) {
       console.error('Error revoking access:', error);
       setMessage({ type: 'error', text: error.message });
+    }
+  };
+
+  // WHAT: Batch sync all users to SSO
+  // WHY: Manual reconciliation when automatic sync fails or for initial migration
+  const handleBatchSync = async () => {
+    if (!confirm('Sync all user permissions to SSO? This will update SSO with current Launchmass permissions.')) {
+      return;
+    }
+
+    setSyncLoading(true);
+    setSyncResult(null);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const res = await fetch('/api/admin/batch-sync-sso', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Batch sync failed');
+      }
+
+      const result = await res.json();
+      setSyncResult(result);
+      setMessage({ 
+        type: 'success', 
+        text: `Batch sync completed: ${result.synced} synced, ${result.errors} errors` 
+      });
+    } catch (error) {
+      console.error('Error in batch sync:', error);
+      setMessage({ type: 'error', text: error.message });
+    } finally {
+      setSyncLoading(false);
     }
   };
 
@@ -192,8 +230,9 @@ export default function AdminUsers({ currentUser }) {
           </div>
         )}
 
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        {/* Filters and Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
           {['all', 'pending', 'active'].map(f => (
             <button
               key={f}
@@ -222,7 +261,78 @@ export default function AdminUsers({ currentUser }) {
               )}
             </button>
           ))}
+          </div>
+          
+          {/* Sync to SSO Button */}
+          <button
+            onClick={handleBatchSync}
+            disabled={syncLoading}
+            style={{
+              padding: '0.5rem 1rem',
+              background: syncLoading ? '#5a6d8a' : '#4054d6',
+              color: 'white',
+              border: 0,
+              borderRadius: '6px',
+              cursor: syncLoading ? 'not-allowed' : 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            {syncLoading ? (
+              <>
+                <span style={{ 
+                  display: 'inline-block',
+                  width: '14px',
+                  height: '14px',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: 'white',
+                  borderRadius: '50%',
+                  animation: 'spin 0.6s linear infinite'
+                }} />
+                Syncing...
+              </>
+            ) : (
+              <>
+                🔄 Sync to SSO
+              </>
+            )}
+          </button>
         </div>
+        
+        {/* Sync Result Details */}
+        {syncResult && syncResult.details && syncResult.details.length > 0 && (
+          <div style={{
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            background: '#12172b',
+            border: '1px solid #22284a',
+            borderRadius: '8px',
+            maxHeight: '200px',
+            overflowY: 'auto',
+          }}>
+            <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: '500' }}>
+              Sync Details ({syncResult.synced} successful, {syncResult.errors} errors)
+            </h3>
+            <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>
+              {syncResult.details.map((detail, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    padding: '0.5rem',
+                    marginBottom: '0.25rem',
+                    background: detail.error ? '#3a1a1a' : '#1a2a1a',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <strong>{detail.email}</strong>: {detail.error || `${detail.role} (${detail.status})`}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Users Table */}
         {loading ? (
