@@ -2,6 +2,18 @@
 
 ## Completed Tasks
 
+### ✅ v1.14.0 — Version Automation & Documentation Governance (Completed 2025-12-21T14:30:00.000Z)
+- ✅ Create scripts/bump-version.sh for automated version updates
+- ✅ Create scripts/verify-docs-consistency.js for validation
+- ✅ Add pre-commit hook for version consistency enforcement
+- ✅ Create .github/workflows/docs-check.yml for CI/CD validation
+- ✅ Mark lib/auth.js as DEPRECATED with migration warnings
+- ✅ Create DEPRECATED_AUTH.md migration guide
+- ✅ Add monthly documentation review process to ROADMAP.md
+- ✅ Add npm scripts: bump-version, verify-docs
+
+**Note:** Implemented Q1 2026 automation tasks ahead of schedule (originally planned for Jan-Mar 2026)
+
 ### ✅ v1.13.0 — SSO Permission Sync Integration (Completed 2025-12-20T20:15:22.000Z)
 - ✅ Create lib/ssoPermissions.mjs for SSO permission synchronization
 - ✅ Implement batch sync to SSO with visual feedback in admin UI
@@ -59,13 +71,8 @@
 - Title: Documentation consistency maintenance
   Owner: AI Agent
   Expected Delivery: Ongoing
-  Details: Ensure version numbers, release notes, and architecture docs stay synchronized
-
-### P1 — High Priority
-- Title: Version automation implementation
-  Owner: moldovan
-  Expected Delivery: 2026-Q1
-  Details: Implement pre-commit hooks and scripts to automate version bumping across all files (from overdue P2 task)
+  Details: Automated via pre-commit hook and CI/CD checks (v1.14.0)
+  Status: ✅ Automated - manual oversight still required monthly
 
 ### P2 — Medium Priority
 - Title: Permission system enhancements
@@ -74,7 +81,7 @@
   Details: Refine organization permission matrix based on usage patterns, consider granular permissions
 
 ### P3 — Low Priority
-- Title: Legacy auth cleanup
+- Title: Legacy auth cleanup - Phase 2
   Owner: moldovan
-  Expected Delivery: 2026-Q2
-  Details: Remove deprecated lib/auth.js after confirming no dependencies, consolidate to OAuth 2.0 only
+  Expected Delivery: v2.0.0 (Q2 2026)
+  Details: Phase 1 complete (deprecation warnings, migration guide). Phase 2: Remove lib/auth.js entirely after migration period

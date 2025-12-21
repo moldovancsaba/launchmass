@@ -1,7 +1,7 @@
 # Documentation Remediation Summary
 
 **Date:** 2025-12-21T13:33:53.000Z  
-**Version Updated To:** 1.13.0  
+**Version Updated To:** 1.14.0  
 **Audit Report:** DOCUMENTATION_AUDIT_2025-12-21.md
 
 ---

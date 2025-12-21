@@ -5,6 +5,71 @@
 
 ---
 
+## 📋 Monthly Documentation Review Process
+
+**Schedule:** First Monday of each month  
+**Duration:** 30-45 minutes  
+**Responsible:** Project lead + AI developer
+
+### Review Checklist
+
+#### Version Consistency
+- [ ] Run `npm run verify-docs` to validate version sync
+- [ ] Check that package.json version matches all documentation
+- [ ] Verify RELEASE_NOTES.md has entries for all versions
+- [ ] Confirm timestamps use ISO 8601 format (YYYY-MM-DDTHH:MM:SS.sssZ)
+
+#### Documentation Completeness
+- [ ] README.md reflects current features and architecture
+- [ ] ARCHITECTURE.md documents all major components
+- [ ] TASKLIST.md shows only active/upcoming tasks (completed tasks moved to RELEASE_NOTES.md)
+- [ ] ROADMAP.md has forward-looking milestones (no historical entries)
+- [ ] LEARNINGS.md captures recent insights and challenges
+- [ ] AUTH_CURRENT.md accurately describes authentication flow
+
+#### Code-Documentation Alignment
+- [ ] New features added in code are documented in ARCHITECTURE.md
+- [ ] Deprecated code is marked in both code comments and documentation
+- [ ] Environment variables in code match those documented in README.md and .env.example
+- [ ] API routes documented with their authentication/authorization requirements
+
+#### Automation Health
+- [ ] Pre-commit hook is working (test with intentional version mismatch)
+- [ ] GitHub Actions docs-check workflow passes on latest commit
+- [ ] Version bump script works for patch/minor/major bumps
+- [ ] No manual version updates bypassing automation
+
+#### Cleanup Opportunities
+- [ ] Identify outdated documentation to archive in docs/archive/
+- [ ] Remove redundant or conflicting documentation
+- [ ] Update external links that may have changed
+- [ ] Refresh screenshots/examples if UI has changed significantly
+
+### Action Items Template
+
+After each review, document action items in TASKLIST.md:
+
+```markdown
+## Documentation Maintenance - [YYYY-MM]
+- [ ] [Action item 1]
+- [ ] [Action item 2]
+- [ ] [Action item 3]
+```
+
+### Review Log
+
+Record completion of monthly reviews in LEARNINGS.md under "Process" category:
+
+```markdown
+### Monthly Documentation Review - YYYY-MM-DD
+- Consistency score: X/100 (from verify-docs)
+- Issues found: [count]
+- Issues resolved: [count]
+- Key improvements: [brief summary]
+```
+
+---
+
 ## Q1 2026 - Developer Experience & Automation
 
 ### Version Management Automation
