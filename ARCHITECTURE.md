@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.16.0**
+**Version: 1.17.0**
 
 ## Overview
 
@@ -211,10 +211,10 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - `logoutOAuth(res)` - Clears session cookie and returns SSO logout URL
 - Returns 401 for invalid sessions, attaches `req.user` for valid sessions
 
-**Server-Side (`lib/auth.js`) - Legacy Cookie-Forwarding (Deprecated):**
-- **Status**: Deprecated but maintained for compatibility
-- Original v1.5.0 implementation using cookie forwarding to SSO validate endpoints
-- Most code now uses `lib/auth-oauth.js` instead
+**Server-Side (`lib/auth.js`) - REMOVED:**
+- **Status**: Removed in v1.17.0 (deprecated in v1.14.0)
+- Was original v1.5.0 implementation using cookie forwarding to SSO validate endpoints
+- All code now uses `lib/auth-oauth.js` exclusively
 
 **Server-Side (`lib/users.js`):**
 - `getUsersCollection()` - Returns MongoDB users collection with auto-indexing

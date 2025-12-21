@@ -1,5 +1,42 @@
 # Release Notes - launchmass
 
+## [v1.17.0] — 2025-12-21T19:28:19.000Z
+
+### 🧹 Cleanup & Planning - Legacy Auth Removal & Permission System Design
+
+**Removed:**
+- Deleted `lib/auth.js` (legacy cookie-forwarding authentication)
+- Completed Phase 2 of legacy auth cleanup (Phase 1: deprecation warnings in v1.14.0)
+- Removed 243 lines of deprecated authentication code
+
+**Added:**
+- Created `PERMISSIONS_DESIGN.md` (374 lines) - Comprehensive permission system enhancement design
+- Designed custom role system with per-organization RBAC
+- Specified 5 role templates: admin, user, editor, viewer, moderator
+- Defined 18 granular permissions (expanded from 8)
+- Planned 4-phase implementation strategy for Q2 2026
+
+**Changed:**
+- No active code imports `lib/auth.js` - all authentication now via `lib/auth-oauth.js`
+- Permission system remains stable (binary admin/user roles)
+- Future-ready architecture for custom roles
+
+**Documentation:**
+- All documentation references updated to reflect auth.js removal
+- ROADMAP.md updated with completed Q1 2026 automation tasks
+- TASKLIST.md updated to mark legacy auth cleanup complete
+- LEARNINGS.md updated with design process insights
+
+**Impact:**
+- ✅ Codebase simplified - single authentication system (OAuth 2.0)
+- ✅ Permission system roadmap clarified for Q2 2026
+- ✅ No breaking changes - backward compatible
+- ✅ Reduced technical debt
+
+**Build Status:** ✅ Ready for deployment
+
+---
+
 ## [v1.16.0] — 2025-12-21T18:45:01.000Z
 
 ### 🔐 Security - Critical Next.js Vulnerability Fix

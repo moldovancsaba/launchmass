@@ -1,8 +1,23 @@
 # Task List - launchmass
 
-**Version: 1.16.0**
+**Version: 1.17.0**
 
 ## Completed Tasks
+
+### ✅ v1.17.0 — Legacy Auth Cleanup & Permission System Design (Completed 2025-12-21T19:28:19.000Z)
+- ✅ Removed lib/auth.js (legacy cookie-forwarding authentication)
+- ✅ Created comprehensive permission system enhancement design (PERMISSIONS_DESIGN.md)
+- ✅ Designed custom role system with 5 role templates
+- ✅ Specified 18 granular permissions for future implementation
+- ✅ Planned Q2 2026 implementation strategy
+- ✅ Completed P0 documentation review (all checks passed)
+
+**Note:** Permission system design complete; implementation scheduled for Q2 2026
+
+### ✅ v1.16.0 — Critical Security Fix (Completed 2025-12-21T18:45:01.000Z)
+- ✅ Updated Next.js from 15.5.4 to 15.5.9
+- ✅ Resolved 3 critical CVEs (RCE, source exposure, DoS)
+- ✅ Corrected Vercel's automated PR (used 15.4.10 instead of 15.5.9)
 
 ### ✅ v1.14.0 — Version Automation & Documentation Governance (Completed 2025-12-21T14:30:00.000Z)
 - ✅ Create scripts/bump-version.sh for automated version updates
@@ -82,8 +97,8 @@
   Expected Delivery: 2026-Q1
   Details: Refine organization permission matrix based on usage patterns, consider granular permissions
 
-### P3 — Low Priority
-- Title: Legacy auth cleanup - Phase 2
+### P1 — High Priority
+- Title: Implement custom role system
   Owner: moldovan
-  Expected Delivery: v2.0.0 (Q2 2026)
-  Details: Phase 1 complete (deprecation warnings, migration guide). Phase 2: Remove lib/auth.js entirely after migration period
+  Expected Delivery: Q2 2026
+  Details: Implementation of PERMISSIONS_DESIGN.md - custom roles, permission templates, granular permissions. See design document for full specification.
