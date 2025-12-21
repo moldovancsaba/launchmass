@@ -1,104 +1,143 @@
 # Development Roadmap - launchmass
 
-## Q1 2025 - Analytics Foundation
-
-### Analytics Enhancement
-- **Priority: High**
-- **Dependencies: Google Analytics v1.0.1 implementation**
-- **Milestone: Data-Driven Optimization**
-  
-  Expand analytics capabilities to support comprehensive user behavior analysis:
-  - Enhanced event tracking for card interactions
-  - Admin panel usage analytics
-  - Performance metrics integration
-  - User journey analysis setup
-
-### Admin Interface Improvements
-- **Priority: Medium**
-- **Dependencies: Current drag-and-drop functionality**
-- **Milestone: Enhanced Admin Experience**
-
-  Streamline administrative workflows based on analytics insights:
-  - Bulk operations for card management
-  - Analytics dashboard integration
-  - Usage pattern reporting within admin interface
-
-## Q2 2025 - Performance Optimization
-
-### Analytics-Driven Optimization
-- **Priority: High**
-- **Dependencies: Q1 2025 analytics data**
-- **Milestone: Performance Enhancement**
-
-  Leverage collected analytics data to optimize application performance:
-  - Identify and optimize high-traffic interaction patterns
-  - Database query optimization based on usage patterns
-  - Mobile performance improvements guided by user behavior data
-
-### Integration Expansion
-- **Priority: Medium**
-- **Dependencies: Stable analytics foundation**
-- **Milestone: Extended Monitoring**
-
-Expand monitoring and analytics ecosystem:
-  - Additional tracking integrations as needed
-  - Performance monitoring solutions
-  - Error tracking and reporting systems
-
-## Q4 2025 — Tag System Enhancements (Forward-Looking)
-
-## Q1 2026 — Organization Enhancements (Forward-Looking)
-
-- Milestone: Roles & Membership (Path-Only Routing)
-  - Priority: P1
-  - Dependencies: Organizations v1.3.x
-  - Scope:
-    - Path-only organization routes (no subdomains): /organization/[id]
-    - Basic roles: owner, admin, member scoped by orgUuid
-    - Admin UX: organization management extended with members and roles
-    - API: org-scoped membership endpoints (invite/remove/list)
-
-- Milestone: Path-Only Admin Routes
-  - Priority: P2
-  - Scope:
-    - Optional path-based admin routes per org (e.g., /organization/[id]/admin)
-    - Keep top-level /admin selector as primary for MVP simplicity
-
-### Milestone: v1.4.0 Tag UX Enhancements
-- Priority: P1
-- Dependencies: v1.3.0 released
-- Scope:
-  - Multi-tag filtering on main page (e.g., `?tags=a,b`)
-  - Tag rename/merge utility in admin
-  - Optional: tag color theming
+**Current Version:** v1.13.0  
+**Last Updated:** 2025-12-21T13:33:53.000Z
 
 ---
 
-## Q1 2025 - Security & Authentication
+## Q1 2026 - Developer Experience & Automation
 
-### ✅ SSO Integration (v1.5.0 - Completed 2025-10-02T14:18:45.000Z)
-- **Priority: Critical (P0)**
-- **Status: ✅ Production Ready**
-- **Build Status: ✅ Passed**
-- **Timeline: Completed 2025-10-02**
+### Version Management Automation
+- **Priority: P1 (High)**
+- **Dependencies: Current manual versioning workflow**
+- **Milestone: Automated Governance**
 
-  ✅ Complete migration from bearer token authentication to centralized SSO:
-  - ✅ Replaced ADMIN_TOKEN system with SSO validation via sso.doneisbetter.com
-  - ✅ Implemented server-side session validation with cookie forwarding
-  - ✅ Created users collection for local user persistence and audit trails
-  - ✅ Added authLogs collection for compliance and security monitoring
-  - ✅ Auto-admin rights for all authenticated SSO users (initial phase)
-  - ✅ SSR guard on admin routes with `getServerSideProps`
-  - ✅ Client-side session monitoring (5-minute intervals)
-  - ✅ Production domain: launchmass.doneisbetter.com (*.doneisbetter.com required)
-  - ✅ Comprehensive documentation (SSO_IMPLEMENTATION.md, DEPLOYMENT_GUIDE.md)
-  
-  **Deployment Pending**: See DEPLOYMENT_GUIDE.md for production checklist
+Implement automated version management to prevent documentation drift:
+- Pre-commit hooks to enforce version consistency
+- Automated version bumping script across all documentation files
+- Validation checks in CI/CD pipeline
+- Update package.json, README, ARCHITECTURE, TASKLIST, LEARNINGS automatically
+- Enforce semantic versioning rules (PATCH before dev, MINOR before commit)
 
-## Plan Log (Delivery Protocol)
-- 2025-10-02T14:18:45.000Z — ✅ SSO Integration v1.5.0 COMPLETED: Full SSO authentication system deployed. 6 new files created (lib/auth.js, lib/users.js, migration script, API proxy, SSO client, 2 comprehensive docs). 11 files modified (all API routes, admin UI, environment). Build passed. Documentation synchronized. Ready for production deployment. Priority: P0 → Completed. Owner: AI Agent (Warp).
-- 2025-10-02T13:26:20.000Z — SSO Integration Migration: Complete replacement of ADMIN_TOKEN with centralized SSO authentication. New lib/auth.js and lib/users.js modules; users and authLogs collections; API route protection with withSsoAuth middleware; admin UI overhaul with SSR guard and session monitoring. Priority: P0. Owner: AI Agent (Warp).
-- 2025-09-25T17:04:52.000Z — Redirect homepage to default organization by UUID; added org banner on /organization/[id]; roadmap updated to path-only (no subdomains) and roles milestones. Owner: AI Agent (Warp).
-- 2025-09-25T10:48:49.000Z — Begin rollout of organizations Phase 1–3: data model, org helpers, CRUD/resolver, and cards API scoping. Owner: AI Agent (Warp).
-- 2025-09-16 19:12 CET — Hashtags feature released in v1.3.0. Roadmap updated to track future tag UX enhancements. Owner: AI Agent (Warp).
-- 2025-10-01T09:24:28.000Z — Commit and push v1.4.0 to main; synchronize documentation and governance files; verify production build prior to commit. Owner: AI Agent (Warp).
+### Legacy Auth Cleanup
+- **Priority: P3 (Low)**
+- **Dependencies: OAuth 2.0 stable (v1.7.0+)**
+- **Milestone: Codebase Simplification**
+
+Remove deprecated authentication code:
+- Deprecate and remove `lib/auth.js` (cookie-forwarding approach)
+- Consolidate all authentication to `lib/auth-oauth.js`
+- Update any remaining references
+- Archive old SSO documentation (v1.5.0, v1.6.0) to docs/archive/
+- Create single authoritative AUTH_CURRENT.md
+
+## Q2 2026 - Permission System Evolution
+
+### Granular Permissions
+- **Priority: P2 (Medium)**
+- **Dependencies: Current permission matrix (v1.7.0+)**
+- **Milestone: Fine-Grained Access Control**
+
+Expand permission system beyond admin/user dichotomy:
+- Per-organization permission templates
+- Custom role definitions (beyond user/admin)
+- Permission inheritance and delegation
+- Audit trail for permission changes
+- UI for managing custom roles
+
+### SSO Permission Sync Enhancements
+- **Priority: P2 (Medium)**
+- **Dependencies: SSO permission sync (v1.13.0)**
+- **Milestone: Unified Access Control**
+
+Enhance cross-application permission synchronization:
+- Real-time permission sync (webhooks from SSO)
+- Conflict resolution strategies
+- Permission diff visualization
+- Batch operations optimization
+- Rollback capability for permission changes
+
+## Q3 2026 - Analytics & Insights
+
+### Enhanced Analytics Dashboard
+- **Priority: P1 (High)**
+- **Dependencies: Google Analytics (v1.0.1)**
+- **Milestone: Data-Driven Optimization**
+
+Build admin analytics dashboard:
+- Card interaction heatmaps
+- Organization usage statistics
+- User engagement metrics
+- Performance monitoring integration
+- Custom report builder
+
+### Usage Pattern Analysis
+- **Priority: P2 (Medium)**
+- **Dependencies: Analytics dashboard**
+- **Milestone: Behavioral Insights**
+
+Leverage analytics for product improvements:
+- Identify most-used features
+- Optimize card ordering algorithms based on clicks
+- A/B testing framework for UI changes
+- Mobile vs desktop usage patterns
+- Peak usage time analysis
+
+## Q4 2026 - Scale & Performance
+
+### Database Optimization
+- **Priority: P1 (High)**
+- **Dependencies: Production usage data**
+- **Milestone: Performance at Scale**
+
+Optimize database for growing data:
+- Index optimization based on query patterns
+- Implement database sharding for multi-tenancy
+- Add caching layer (Redis/Memcached)
+- Query performance monitoring
+- Automated index recommendations
+
+### API Performance Enhancements
+- **Priority: P2 (Medium)**
+- **Dependencies: Analytics data**
+- **Milestone: Sub-100ms Response Times**
+
+Improve API response times:
+- Implement GraphQL for flexible queries
+- Add API request caching
+- Optimize MongoDB aggregation pipelines
+- Implement pagination for large result sets
+- Add compression for API responses
+
+### Tag System Enhancements
+- **Priority: P3 (Low)**
+- **Dependencies: Current hashtag system (v1.3.0)**
+- **Milestone: Advanced Tagging**
+
+Expand tag functionality:
+- Multi-tag filtering (e.g., `?tags=a,b`)
+- Tag rename/merge utility in admin
+- Tag color theming and icons
+- Tag hierarchies (parent/child tags)
+- Tag usage analytics
+
+---
+
+## Future Considerations (2027+)
+
+### Mobile App
+- Native iOS/Android applications
+- Offline-first architecture
+- Push notifications for admin updates
+
+### Advanced Organization Features
+- Organization themes and branding
+- Custom domains per organization
+- White-label capabilities
+- Organization analytics and reporting
+
+### Integration Ecosystem
+- Slack/Teams notifications
+- Webhook system for external integrations
+- Public API with rate limiting
+- OAuth provider capabilities

@@ -1,8 +1,8 @@
 # SSO Integration Implementation Summary
 
-**Version:** 1.5.0  
+**Version:** 1.5.0 (Archived - See AUTH_CURRENT.md for OAuth 2.0)  
 **Date:** 2025-10-02T14:09:28.000Z  
-**Status:** ✅ Complete - Production Ready
+**Status:** ⚠️ DEPRECATED - Superseded by OAuth 2.0 in v1.7.0
 
 ## Overview
 
