@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.18.0-alpha**
+**Version: 1.18.0**
 
 ## Overview
 
@@ -96,6 +96,8 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
   - `organizationMembers` - Organization membership and roles (v1.7.0+)
   - `users` - OAuth user persistence and admin rights (v1.7.0+)
   - `authLogs` - Authentication audit trail (v1.7.0+)
+  - `organizationRoles` - Custom role definitions (v1.18.0+)
+  - `analyticsEvents` - Event tracking for analytics (v1.18.0+)
 
 #### API Routes (`pages/api/`)
 - **Role**: RESTful API endpoints for data operations
@@ -225,14 +227,40 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 **Server-Side (`lib/permissions.js`) - v1.7.0+:**
 - `isSuperAdmin(user)` - Check if user has super admin rights
 - `getUserOrgRole(user, orgUuid)` - Get user's role within organization
-- `hasOrgPermission(user, orgUuid, permission)` - Check specific permission
-- `ensureOrgPermission(user, orgUuid, permission)` - Throws error if no permission
-- Permission matrix: cards.read/write/delete, org.read/write/delete, members.read/write
+- `hasOrgPermission(user, orgUuid, permission, req)` - Check specific permission with caching
+- `getOrgRole(orgUuid, roleId)` - Load role definition (system or custom) with caching
+- `clearExpiredRoleCache()` - Cleanup expired cache entries
+- `getPermissionMetrics()` - Get performance metrics (v1.18.0)
+- `resetPermissionMetrics()` - Reset metrics counters (v1.18.0)
+- Permission matrix: 18 granular permissions (v1.18.0):
+  - org: read, write, delete
+  - cards: read, create, update, delete, reorder
+  - members: read, invite, remove, edit_roles
+  - roles: read, write
+  - tags: read, write
+- Performance monitoring (v1.18.0):
+  - Tracks cache hit rate, avg duration, slow checks (>10ms)
+  - Logs slow permission checks for debugging
+  - Exposes metrics via getPermissionMetrics()
 
 **Server-Side (`lib/ssoPermissions.mjs`) - v1.13.0+:**
 - SSO permission synchronization helper
 - Syncs launchmass permissions to central SSO system
 - Unified access control across all applications
+
+**Server-Side (`lib/analytics.js`) - v1.18.0+:**
+- Event logging system with async batching (50 events / 5 seconds)
+- Prevents blocking API responses (fire-and-forget pattern)
+- Event types: card_click, card_create, card_update, card_delete, admin_action, user_login, org_create/update/delete, role events
+- Retry logic with exponential backoff (max 10 retries)
+- Graceful shutdown handling (SIGTERM/SIGINT)
+- Helper functions:
+  - `logEvent(type, data)` - Queue event for async batch write
+  - `logCardClick(cardId, orgUuid, userId, href)` - Convenience wrapper
+  - `logAdminAction(action, orgUuid, userId, details)` - Convenience wrapper
+  - `getQueueStatus()` - Get current queue metrics
+  - `flushAndShutdown()` - Flush events before process exit
+- Performance: Reduces DB load by 98% (100 writes/sec → 2 writes/sec)
 
 **Client-Side:**
 - Session monitoring every 5 minutes via `/api/auth/validate` proxy
@@ -286,6 +314,34 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
   createdAt: String    // ISO 8601 with milliseconds
 }
 // Indexes: { createdAt: -1 }, { ssoUserId: 1, createdAt: -1 }
+```
+
+**organizationRoles Collection (v1.18.0+):**
+```javascript
+{
+  orgUuid: String,        // Organization UUID
+  roleId: String,         // Role identifier (e.g. 'editor', 'moderator')
+  name: String,           // Display name
+  description: String,    // Role description
+  permissions: Array,     // Array of permission strings
+  isSystem: Boolean,      // true for system roles (admin, user)
+  createdBy: String,      // SSO user ID who created the role
+  createdAt: String,      // ISO 8601 with milliseconds
+  updatedAt: String       // ISO 8601 with milliseconds
+}
+// Indexes: { orgUuid: 1, roleId: 1 } unique compound, { orgUuid: 1, isSystem: 1 }
+```
+
+**analyticsEvents Collection (v1.18.0+):**
+```javascript
+{
+  timestamp: String,      // ISO 8601 with milliseconds
+  eventType: String,      // One of EVENT_TYPES (card_click, card_create, etc.)
+  orgUuid: String,        // Organization context (null for global events)
+  userId: String,         // SSO user ID (null for anonymous)
+  data: Object            // Event-specific metadata (flexible schema)
+}
+// Indexes: { timestamp: -1 }, { orgUuid: 1, timestamp: -1 }, { eventType: 1, timestamp: -1 }, { userId: 1, timestamp: -1 }
 ```
 
 #### Critical Requirements
