@@ -1,6 +1,6 @@
 {
   "name": "launchmass",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -10,7 +10,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "bump-version": "bash scripts/bump-version.sh",
+    "verify-docs": "node scripts/verify-docs-consistency.js"
   },
   "keywords": [],
   "author": "",

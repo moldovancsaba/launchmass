@@ -1,0 +1,67 @@
+name: Documentation Consistency Check
+
+# This workflow validates documentation integrity and version consistency
+# on all pull requests to ensure project standards are maintained.
+#
+# Runs automated checks for:
+# - Version consistency across package.json and all documentation
+# - Required documentation files existence
+# - ISO 8601 timestamp format compliance
+#
+# This enforces the versioning and documentation protocols defined in project rules.
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'package.json'
+      - '**.md'
+      - 'scripts/verify-docs-consistency.js'
+
+  # Allow manual triggering from Actions tab
+  workflow_dispatch:
+
+jobs:
+  validate-documentation:
+    runs-on: ubuntu-latest
+    
+    name: Validate Documentation Consistency
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run documentation validation
+        run: npm run verify-docs
+      
+      - name: Validation results
+        if: success()
+        run: |
+          echo "✅ Documentation validation passed!"
+          echo "All version references are consistent."
+          echo "All required documentation files exist."
+          echo "All timestamps follow ISO 8601 format."
+      
+      - name: Validation failed
+        if: failure()
+        run: |
+          echo "❌ Documentation validation failed!"
+          echo ""
+          echo "Common fixes:"
+          echo "  - Run 'npm run bump-version patch' to update versions"
+          echo "  - Ensure all required documentation files exist"
+          echo "  - Check timestamp format (YYYY-MM-DDTHH:MM:SS.sssZ)"
+          echo ""
+          echo "See logs above for specific issues."
+          exit 1
