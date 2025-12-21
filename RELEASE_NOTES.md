@@ -1,5 +1,35 @@
 # Release Notes - launchmass
 
+## [v1.16.0] — 2025-12-21T18:45:01.000Z
+
+### 🔐 Security - Critical Next.js Vulnerability Fix
+
+**Fixed:**
+- Updated Next.js from 15.5.4 to 15.5.9 to address critical vulnerabilities
+- Resolved GHSA-9qr9-h5gf-34mp: Remote Code Execution (RCE) in React flight protocol
+- Resolved GHSA-w37m-7fhw-fmv9: Next Server Actions Source Code Exposure
+- Resolved GHSA-mwv6-3258-q52c: Denial of Service (DoS) with Server Components
+
+**Changed:**
+- Updated package.json Next.js dependency from ^15.4.7 to ^15.5.9
+- Updated package-lock.json with safe Next.js version
+
+**Security Impact:**
+- Eliminated critical RCE vulnerability allowing remote code execution
+- Prevented server action source code exposure to unauthorized users
+- Resolved DoS attack vector in Server Components
+
+**Verification:**
+- npm audit: 0 vulnerabilities after update
+- All security patches applied successfully
+
+**Trigger:**
+- Vercel security notification prompted immediate remediation
+
+**Build Status:** ✅ Security patches applied
+
+---
+
 ## [v1.7.0] — 2025-10-06T18:12:17.000Z
 
 ### 🔐 Security - OAuth 2.0 Migration (Breaking Change)

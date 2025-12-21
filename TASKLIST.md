@@ -1,4 +1,6 @@
-# Task List - launchmass v1.13.0
+# Task List - launchmass
+
+**Version: 1.16.0**
 
 ## Completed Tasks
 
