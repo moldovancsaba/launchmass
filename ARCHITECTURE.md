@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.17.0**
+**Version: 1.18.0-alpha**
 
 ## Overview
 

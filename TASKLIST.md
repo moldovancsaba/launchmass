@@ -1,6 +1,6 @@
 # Task List - launchmass
 
-**Version: 1.17.0**
+**Version: 1.18.0-alpha**
 
 ## Completed Tasks
 
@@ -84,21 +84,148 @@
 
 ## Active Tasks
 
-### P0 — Critical
-- Title: Documentation consistency maintenance
-  Owner: AI Agent
-  Expected Delivery: Ongoing
-  Details: Automated via pre-commit hook and CI/CD checks (v1.14.0)
-  Status: ✅ Automated - manual oversight still required monthly
+### 🏗️ Phase 1: Foundation & Analysis (v1.18.0) - IN PROGRESS
 
-### P2 — Medium Priority
-- Title: Permission system enhancements
-  Owner: moldovan
-  Expected Delivery: 2026-Q1
-  Details: Refine organization permission matrix based on usage patterns, consider granular permissions
+#### P0 — Critical: Track C - Database Optimization
+- **Ticket**: TRACK-C-01
+- **Title**: Run index creation on production
+- **Owner**: moldovan
+- **Expected Delivery**: Week 1
+- **Command**: `node scripts/create-indexes.mjs`
+- **Impact**: 80% reduction in slow queries
+- **Status**: ⏳ Ready to run
 
-### P1 — High Priority
-- Title: Implement custom role system
-  Owner: moldovan
-  Expected Delivery: Q2 2026
-  Details: Implementation of PERMISSIONS_DESIGN.md - custom roles, permission templates, granular permissions. See design document for full specification.
+#### P1 — High: Track A - Custom Roles Schema
+- **Ticket**: TRACK-A-01
+- **Title**: Create organizationRoles collection migration
+- **Owner**: moldovan  
+- **Expected Delivery**: Week 1
+- **Tasks**:
+  - [ ] Create `scripts/migrate-organization-roles.mjs`
+  - [ ] Define system roles (admin, user)
+  - [ ] Seed all existing organizations with system roles
+  - [ ] Add indexes (orgUuid+roleId unique, orgUuid+isSystem)
+- **Files to create**: `scripts/migrate-organization-roles.mjs`
+- **Status**: 📝 Next task
+
+#### P1 — High: Track A - Update Permissions Library
+- **Ticket**: TRACK-A-02  
+- **Title**: Add custom role support to lib/permissions.js
+- **Owner**: moldovan
+- **Expected Delivery**: Week 1
+- **Tasks**:
+  - [ ] Add `getOrgRole(orgUuid, roleId)` function
+  - [ ] Update `hasOrgPermission()` to load custom roles
+  - [ ] Add role caching (5-minute TTL)
+  - [ ] Maintain backward compatibility with admin/user
+- **Files to modify**: `lib/permissions.js`
+- **Status**: 📝 After TRACK-A-01
+
+#### P1 — High: Track B - Analytics Infrastructure  
+- **Ticket**: TRACK-B-01
+- **Title**: Create analytics event logging system
+- **Owner**: moldovan
+- **Expected Delivery**: Week 1
+- **Tasks**:
+  - [ ] Create `lib/analytics.js` with event logging utilities
+  - [ ] Define analyticsEvents schema
+  - [ ] Add `logEvent(type, data)` function
+  - [ ] Implement async batching (prevent perf impact)
+  - [ ] Add event types: card_click, card_create, admin_action
+- **Files to create**: `lib/analytics.js`
+- **Status**: 📝 Can run in parallel
+
+#### P2 — Medium: Track D - Permission Auditing
+- **Ticket**: TRACK-D-01
+- **Title**: Add permission check performance logging
+- **Owner**: moldovan
+- **Expected Delivery**: Week 1  
+- **Tasks**:
+  - [ ] Add timing measurements to `hasOrgPermission()`
+  - [ ] Log slow permission checks (>10ms)
+  - [ ] Track permission check frequency
+  - [ ] Add cache hit/miss metrics
+- **Files to modify**: `lib/permissions.js`
+- **Status**: 📝 Low priority
+
+### 🚀 Phase 2: Core Implementation (v1.19.0) - PLANNED
+
+#### P1 — High: Track A - Custom Roles API
+- **Ticket**: TRACK-A-03
+- **Title**: Implement role CRUD endpoints
+- **Owner**: moldovan
+- **Expected Delivery**: Week 2
+- **Endpoints**:
+  - [ ] GET /api/organizations/{uuid}/roles
+  - [ ] POST /api/organizations/{uuid}/roles
+  - [ ] PUT /api/organizations/{uuid}/roles/{roleId}
+  - [ ] DELETE /api/organizations/{uuid}/roles/{roleId}
+  - [ ] GET /api/roles/templates
+- **Files to create**: 5 new API route files
+- **Status**: 📅 Week 2
+
+#### P1 — High: Track B - Analytics API
+- **Ticket**: TRACK-B-02  
+- **Title**: Create analytics summary endpoint
+- **Owner**: moldovan
+- **Expected Delivery**: Week 2
+- **Endpoints**:
+  - [ ] GET /api/analytics/summary
+  - [ ] GET /api/analytics/cards
+  - [ ] GET /api/analytics/users
+  - [ ] GET /api/analytics/organizations
+- **Files to create**: `pages/api/analytics/` directory
+- **Status**: 📅 Week 2
+
+### 🎨 Phase 3: UI & Polish (v1.20.0) - PLANNED
+
+#### P1 — High: Track A - Roles Management UI
+- **Ticket**: TRACK-A-04
+- **Title**: Build /settings/roles page
+- **Owner**: moldovan
+- **Expected Delivery**: Week 3
+- **Components**:
+  - [ ] Role list table
+  - [ ] Role creation modal
+  - [ ] Role edit modal
+  - [ ] Permission checklist
+  - [ ] Role deletion with validation
+- **Files to create**: `pages/settings/roles.js`
+- **Status**: 📅 Week 3
+
+#### P1 — High: Track B - Analytics Dashboard UI
+- **Ticket**: TRACK-B-03
+- **Title**: Build /admin/analytics page
+- **Owner**: moldovan  
+- **Expected Delivery**: Week 3
+- **Components**:
+  - [ ] Summary cards (total clicks, users, orgs)
+  - [ ] Card interaction chart
+  - [ ] Date range selector
+  - [ ] Export functionality
+- **Files to create**: `pages/admin/analytics.js`
+- **Status**: 📅 Week 3
+
+### 📚 Phase 4: Testing & Documentation (v1.21.0) - PLANNED
+
+#### P0 — Critical: Comprehensive Testing
+- **Ticket**: TEST-ALL
+- **Title**: Test all 4 tracks end-to-end
+- **Owner**: moldovan
+- **Expected Delivery**: Week 4
+- **Tasks**:
+  - [ ] Test custom roles creation/assignment
+  - [ ] Verify backward compatibility (admin/user still work)
+  - [ ] Test analytics event capture
+  - [ ] Load test permission checks
+  - [ ] Security audit for permission escalation
+- **Status**: 📅 Week 4
+
+### 📋 Ongoing Maintenance
+
+#### P0 — Critical: Documentation Consistency
+- **Title**: Documentation consistency maintenance
+- **Owner**: AI Agent
+- **Expected Delivery**: Ongoing
+- **Details**: Automated via pre-commit hook and CI/CD checks (v1.14.0)
+- **Status**: ✅ Automated - manual oversight required monthly
