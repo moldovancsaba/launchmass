@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.16.0**
+**Version: 1.17.0**
 
 ## Frontend
 
@@ -29,6 +29,31 @@
 - Configuration object approach enables clean tracking ID management
 
 ## Process
+
+### Legacy Code Removal Strategy (2025-12-21T19:28:19.000Z)
+**Issue**: lib/auth.js deprecated in v1.14.0 but still present in codebase, causing potential confusion  
+**Solution**: Complete removal after verification that no active code depends on it  
+**Key Learning**:
+- Deprecation warnings (Phase 1) allow gradual migration without breaking changes
+- File removal (Phase 2) requires thorough grep search for imports and requires
+- Documentation-only references are safe to leave (no code impact)
+- Archive old docs rather than updating them (historical context preserved)
+- Two-phase approach (deprecate → remove) is safer than immediate deletion
+- Always verify build passes after removal
+**Pattern**: Deprecate with warnings → Wait for migration period → Remove entirely
+
+### Permission System Design Process (2025-12-21T19:28:19.000Z)
+**Issue**: Need granular permissions beyond binary admin/user but unclear requirements  
+**Solution**: Create comprehensive design document before implementation  
+**Key Learning**:
+- Design-first approach prevents over-engineering and scope creep
+- Document data model, API changes, migration strategy, and success metrics upfront
+- Role templates (editor, viewer, moderator) emerge from user stories
+- Backward compatibility is critical constraint (existing admin/user must work)
+- Implementation phases (schema → API → UI → testing) provide clear roadmap
+- Design documents enable async collaboration and stakeholder review
+- MVP factory benefits from detailed designs that can be executed in phases
+**Pattern**: Analyze current system → Design comprehensive solution → Phase implementation → Iterate
 
 ### Versioning Protocol Application
 **Issue**: Strict versioning requirements with specific increment rules  

@@ -1,7 +1,7 @@
 # Development Roadmap - launchmass
 
-**Current Version:** v1.16.0  
-**Last Updated:** 2025-12-21T18:45:01.000Z
+**Current Version:** v1.17.0  
+**Last Updated:** 2025-12-21T19:28:19.000Z
 
 ---
 
@@ -70,45 +70,52 @@ Record completion of monthly reviews in LEARNINGS.md under "Process" category:
 
 ---
 
-## Q1 2026 - Developer Experience & Automation
+## ✅ Q1 2026 - Developer Experience & Automation (COMPLETED)
 
-### Version Management Automation
+### ✅ Version Management Automation (COMPLETED v1.14.0)
 - **Priority: P1 (High)**
-- **Dependencies: Current manual versioning workflow**
+- **Status: ✅ Completed 2025-12-21**
 - **Milestone: Automated Governance**
 
-Implement automated version management to prevent documentation drift:
-- Pre-commit hooks to enforce version consistency
-- Automated version bumping script across all documentation files
-- Validation checks in CI/CD pipeline
-- Update package.json, README, ARCHITECTURE, TASKLIST, LEARNINGS automatically
-- Enforce semantic versioning rules (PATCH before dev, MINOR before commit)
+Implemented automated version management:
+- ✅ Pre-commit hooks to enforce version consistency
+- ✅ Automated version bumping script (scripts/bump-version.sh)
+- ✅ Validation checks in CI/CD pipeline (.github/workflows/docs-check.yml)
+- ✅ Updates package.json, README, ARCHITECTURE, TASKLIST, LEARNINGS, etc.
+- ✅ Enforces semantic versioning rules (PATCH before dev, MINOR before commit)
 
-### Legacy Auth Cleanup
+**Note:** Implemented 3 months ahead of schedule
+
+### ✅ Legacy Auth Cleanup (COMPLETED v1.17.0)
 - **Priority: P3 (Low)**
-- **Dependencies: OAuth 2.0 stable (v1.7.0+)**
+- **Status: ✅ Completed 2025-12-21**
 - **Milestone: Codebase Simplification**
 
-Remove deprecated authentication code:
-- Deprecate and remove `lib/auth.js` (cookie-forwarding approach)
-- Consolidate all authentication to `lib/auth-oauth.js`
-- Update any remaining references
-- Archive old SSO documentation (v1.5.0, v1.6.0) to docs/archive/
-- Create single authoritative AUTH_CURRENT.md
+Completed deprecated authentication code removal:
+- ✅ Deprecated `lib/auth.js` with warnings (v1.14.0)
+- ✅ Removed `lib/auth.js` entirely (v1.17.0)
+- ✅ All authentication now via `lib/auth-oauth.js`
+- ✅ Old SSO documentation archived to docs/archive/
+- ✅ AUTH_CURRENT.md is single authoritative source
 
 ## Q2 2026 - Permission System Evolution
 
-### Granular Permissions
-- **Priority: P2 (Medium)**
-- **Dependencies: Current permission matrix (v1.7.0+)**
+### Custom Role System Implementation
+- **Priority: P1 (High)**
+- **Dependencies: PERMISSIONS_DESIGN.md (created v1.17.0)**
 - **Milestone: Fine-Grained Access Control**
+- **Design Status: ✅ Complete**
+- **Implementation Status: 📝 Planned**
 
-Expand permission system beyond admin/user dichotomy:
-- Per-organization permission templates
-- Custom role definitions (beyond user/admin)
-- Permission inheritance and delegation
-- Audit trail for permission changes
-- UI for managing custom roles
+Implement custom role-based permission system:
+- Per-organization custom roles (beyond admin/user)
+- 5 role templates: admin, user, editor, viewer, moderator
+- 18 granular permissions (expanded from 8)
+- Role management UI at `/settings/roles`
+- Permission templates for common patterns
+- Backward compatible with existing admin/user roles
+
+**Reference:** See PERMISSIONS_DESIGN.md for complete specification
 
 ### SSO Permission Sync Enhancements
 - **Priority: P2 (Medium)**
