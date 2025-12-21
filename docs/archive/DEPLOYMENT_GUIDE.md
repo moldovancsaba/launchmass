@@ -1,8 +1,8 @@
 # SSO Integration - Deployment Guide
 
-**Status:** ✅ Ready for Production  
+**Status:** ⚠️ DEPRECATED (See AUTH_CURRENT.md for OAuth 2.0)  
 **Build Status:** ✅ Passed (1467ms compile time)  
-**Version:** 1.4.1 → 1.5.0 (pending version bump)  
+**Version:** 1.5.0 (Archived)  
 **Date:** 2025-10-02T14:12:00.000Z
 
 ---

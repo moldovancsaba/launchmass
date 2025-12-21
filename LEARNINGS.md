@@ -1,4 +1,4 @@
-# Development Learnings - launchmass v1.5.0
+# Development Learnings - launchmass v1.13.0
 
 ## Frontend
 
@@ -65,6 +65,80 @@
 - SSR validation prevents UI flash and ensures auth check before page render
 - Client-side session monitoring (5-min intervals) provides graceful logout on expiration
 - Use Vercel preview deployments with *.doneisbetter.com for admin testing during development
+**Status**: Superseded by OAuth 2.0 in v1.7.0
+
+### OAuth 2.0 Migration (2025-10-07T09:26:28.000Z)
+**Issue**: Initial v1.5.0 SSO implementation assumed simple cookie-forwarding, but actual SSO system uses OAuth 2.0 / OpenID Connect  
+**Solution**: Complete rewrite to proper OAuth 2.0 authorization code flow with token exchange, ID token parsing, and session cookie storage  
+**Key Learning**:
+- OAuth requires client credentials (client_id, client_secret) registered in SSO admin panel
+- Authorization code flow: user → authorize endpoint → callback with code → token exchange → session storage
+- ID tokens (JWT) contain user claims, eliminating need for separate user info endpoint
+- Session cookies store all OAuth tokens (access_token, id_token, refresh_token) as base64-encoded JSON
+- OAuth callback must be exactly registered in SSO (https://launchmass.doneisbetter.com/api/oauth/callback)
+- Client secrets must NEVER be exposed to browser (server-side only in token exchange)
+- State parameter preserves user's intended destination across OAuth flow
+**Files Created**: `lib/auth-oauth.js`, `/api/oauth/callback.js`, replaced all imports from `lib/auth.js`
+
+### Organization Permission System (2025-10-07T20:36:19.000Z)
+**Issue**: Need role-based access control for organization-scoped operations  
+**Solution**: Created `lib/permissions.js` with permission matrix and `withOrgPermission` middleware combining authentication + authorization  
+**Key Learning**:
+- Separate concerns: authentication (who are you) vs. authorization (what can you do)
+- Permission matrix approach scales better than hardcoded role checks
+- Middleware composition: `withOrgPermission` wraps `withSsoAuth` for DRY principle
+- Organization context resolution via headers (X-Organization-UUID) enables multi-tenant APIs
+- Permission checks should fail fast with clear error messages (400/401/403 status codes)
+- Cache organization lookups with TTL to reduce database queries
+**Permission Types**: cards.read/write/delete, org.read/write/delete, members.read/write
+
+### User Management System (2025-10-07T21:40:55.000Z)
+**Issue**: Need admin UI to manage user access and roles without manual database editing  
+**Solution**: Created `/admin/users` page with batch operations for access control and SSO permission sync  
+**Key Learning**:
+- Distinguish between appRole (launchmass-specific) and ssoRole (from SSO system)
+- appStatus field enables pending/active/suspended user workflow
+- hasAccess boolean provides simple on/off access control
+- Batch sync to SSO ensures permissions stay in sync across applications
+- User management requires its own permission checks (only admins should access)
+- Current user should always be visible in user list for transparency
+**Database Fields**: appRole ('user'|'admin'), appStatus ('active'|'pending'|'suspended'), hasAccess (boolean)
+
+### Navigation Consolidation with Hamburger Menu (2025-11-07T09:48:34.000Z)
+**Issue**: Multiple navigation patterns across pages caused inconsistent UX  
+**Solution**: Created unified Header component with auth-aware hamburger menu across all pages  
+**Key Learning**:
+- Auth-aware navigation: menu options change based on authentication state
+- Hamburger menu pattern works better for mobile-first design than traditional nav bars
+- Consistent header across pages improves user orientation and reduces cognitive load
+- MUI IconButton + Menu components provide accessible dropdown navigation
+- Organization title in header provides context for multi-tenant apps
+- "Add Card" button in admin header reduces clicks for common operations
+**Component**: `components/Header.jsx` with Material-UI for responsive design
+
+### Organization Background Theming (2025-11-07T11:01:46.000Z)
+**Issue**: Organizations need visual identity and consistent theming across pages  
+**Solution**: Added `background` field to organizations collection, applied to all org-scoped pages  
+**Key Learning**:
+- Reuse existing card background logic for organizations (DRY principle)
+- CSS gradients and solid colors both supported via same field
+- Background should apply to both organization pages AND main page for consistency
+- Parse background from multi-line CSS input in admin interface
+- Store as single string in database for simplicity
+- Background field optional (falls back to default gradient if not set)
+**Database**: Added `background` field to `organizations` collection (v1.12.0)
+
+### Timestamp Handling in Serverless Functions (2025-11-06T12:38:20.000Z)
+**Issue**: MongoDB returns dates as Date objects, but JSON serialization converts to ISO strings, causing inconsistent handling  
+**Solution**: Normalize timestamp handling to support both Date objects and ISO 8601 strings throughout codebase  
+**Key Learning**:
+- Serverless functions may serialize/deserialize data between execution contexts
+- Always check `instanceof Date` before calling date methods
+- Provide fallback: `new Date(value)` handles both Date objects and ISO strings
+- Consistent timestamp format (ISO 8601 with milliseconds) critical for sorting and display
+- MongoDB driver returns Date objects, but Next.js JSON serialization converts to strings
+- Handle gracefully rather than throw errors (defensive programming)
+**Pattern**: `const date = value instanceof Date ? value : new Date(value)`
 
 ### User Persistence and Audit Logging
 **Issue**: Need to track SSO users locally for admin rights and maintain audit trail of authentication attempts  

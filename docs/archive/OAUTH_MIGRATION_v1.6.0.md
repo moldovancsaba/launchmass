@@ -1,8 +1,9 @@
 # OAuth 2.0 Migration — v1.6.0
 
 **Date:** 2025-10-03T09:27:40.000Z  
-**Status:** ✅ Code Complete - Awaiting Client Credentials  
+**Status:** ⚠️ Historical Document (OAuth completed in v1.7.0)  
 **Build:** ✅ Passed (1459ms)
+**Note:** OAuth 2.0 successfully implemented and deployed. See AUTH_CURRENT.md for current implementation.
 
 ---
 

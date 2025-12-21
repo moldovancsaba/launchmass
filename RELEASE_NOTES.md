@@ -47,6 +47,220 @@
 
 ---
 
+## [v1.13.0] — 2025-12-20T20:15:22.000Z
+
+### 🔐 Security - SSO Permission Sync Integration
+
+**Added:**
+- Phase 4D: SSO permissions helper library (`lib/ssoPermissions.js`)
+- Phase 5: Batch sync to SSO with visual feedback in admin UI
+- SSO OAuth configuration utility scripts for managing OAuth clients
+- Integration of SSO permission sync into admin endpoints
+- Batch synchronization of user permissions to SSO system
+
+**Changed:**
+- Removed superadmin role from launchmass - only user and admin roles supported
+- Simplified permission model to align with SSO capabilities
+- Enhanced admin endpoints with permission synchronization
+
+**Fixed:**
+- Replaced logger import with console fallback in ssoPermissions module
+
+**Note:** This release focuses on integrating launchmass permissions with the central SSO system for unified access control.
+
+---
+
+## [v1.12.3] — 2025-11-07T11:56:03.000Z
+
+### 🐛 Bug Fixes
+
+**Fixed:**
+- Organization selection override bug in admin page
+- Ensures selected organization persists correctly during admin operations
+
+---
+
+## [v1.12.2] — 2025-11-07T11:07:34.000Z
+
+### ✨ Features
+
+**Changed:**
+- Apply organization background to both organization-specific pages and main page
+- Consistent visual theming across all public-facing pages
+
+---
+
+## [v1.12.1] — 2025-11-07T11:06:06.000Z
+
+### 🐛 Bug Fixes
+
+**Fixed:**
+- Organization admin redirect now uses query parameter instead of localStorage only
+- More reliable navigation for organization-scoped admin interface
+
+---
+
+## [v1.12.0] — 2025-11-07T11:01:46.000Z
+
+### ✨ Features
+
+**Added:**
+- Background field support for organizations (same functionality as cards)
+- Organizations can now have custom gradient or solid color backgrounds
+- Visual customization for organization-specific pages
+
+**Database Schema:**
+- Added `background` field to `organizations` collection
+- Supports CSS gradients and solid colors
+
+---
+
+## [v1.11.3] — 2025-11-07T10:04:57.000Z
+
+### 🐛 Bug Fixes
+
+**Fixed:**
+- Organization update/delete operations by injecting UUID from URL path to permission middleware
+- Proper authorization checks for organization management
+
+---
+
+## [v1.11.2] — 2025-11-07T09:57:10.000Z
+
+### 🔐 Security
+
+**Added:**
+- OAuth authentication guard to settings page
+- Settings page now requires valid OAuth session
+
+---
+
+## [v1.11.1] — 2025-11-07T09:52:46.000Z
+
+### 🧹 Cleanup
+
+**Removed:**
+- Failsafe navigation menu from `_document.js`
+- Consolidated navigation approach via hamburger menu
+
+---
+
+## [v1.11.0] — 2025-11-07T09:48:34.000Z
+
+### ✨ Features - Navigation Consolidation
+
+**Added:**
+- Auth-aware hamburger menu for global navigation
+- "Add Card" button in admin header for quick card creation
+- Unified navigation pattern across all pages
+
+**Changed:**
+- Consolidated all navigation into single hamburger menu component
+- Navigation adapts based on user authentication status
+- Improved mobile-first navigation UX
+
+**Fixed:**
+- Logout flow now clears local session before SSO logout
+
+---
+
+## [v1.10.0] — 2025-11-07T09:36:44.000Z
+
+### ✨ Features - Header Component
+
+**Added:**
+- New Header component with hamburger menu
+- Organization title display in header
+- Mobile-responsive navigation system
+- Consistent header across all application pages
+
+**Components:**
+- `components/Header.jsx` - Main header with navigation
+
+**Debug Tools:**
+- Debug scripts for organization membership troubleshooting
+
+---
+
+## [v1.9.4] — 2025-11-06T12:38:20.000Z
+
+### 🐛 Bug Fixes
+
+**Fixed:**
+- Timestamp handling across all pages (index, organization slug, cards API)
+- Consistent timestamp processing throughout application
+- Supports both Date objects and ISO 8601 strings
+
+---
+
+## [v1.9.3] — 2025-11-06T10:27:26.000Z
+
+### 🐛 Bug Fixes
+
+**Fixed:**
+- Timestamp handling to support both Date objects and strings
+- Graceful handling of mixed timestamp formats from MongoDB
+
+---
+
+## [v1.9.2] — 2025-11-06T10:14:40.000Z
+
+### 🐛 Bug Fixes - Critical Database Connection Fix
+
+**Fixed:**
+- CRITICAL: Database connection for serverless functions
+- Comprehensive error logging in cards API and organization context
+- Memberships handling with improved error logging
+
+**Added:**
+- Debug endpoint to test card queries
+- Enhanced error visibility for troubleshooting
+
+**Changed:**
+- Default organization support and slug-based URLs
+- Improved organization creation error handling
+- Fixed 'approved' status handling in user management
+- User management now shows current user correctly
+
+**Note:** This version includes critical fixes for production stability.
+
+---
+
+## [v1.7.3] — 2025-10-07T09:26:28.000Z
+
+### 🧹 Cleanup
+
+**Removed:**
+- Redundant NEXT_PUBLIC OAuth environment variables
+- Simplified OAuth configuration
+
+**Documentation:**
+- Updated environment variable documentation
+
+---
+
+## [v1.7.1-v1.7.2] — 2025-10-07
+
+### 🐛 Bug Fixes
+
+**Added:**
+- Phase 2: OAuth flow integration with permission checking
+- Phase 3: Admin user management UI and APIs
+- "Manage Users" link to admin navigation
+
+**Fixed:**
+- OAuth endpoint URLs to include /api prefix
+- OAuth callback error handling with detailed error URLs
+
+**Removed:**
+- Deprecated Admin Token UI from Settings page
+
+**Added:**
+- OAuth debug callback endpoint for troubleshooting token_exchange_failed errors
+- Improved OAuth error messaging
+
+---
+
 ## [v1.5.0] — 2025-10-02T14:18:45.000Z
 
 ### 🔐 Security - SSO Integration (Breaking Change for Development)
