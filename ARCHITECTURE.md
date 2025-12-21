@@ -1,4 +1,6 @@
-# System Architecture - launchmass v1.13.0
+# System Architecture - launchmass
+
+**Version: 1.16.0**
 
 ## Overview
 
@@ -8,7 +10,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 
 ### Frontend Layer
 
-#### Next.js Framework (v15.5.4)
+#### Next.js Framework (v15.5.9)
 - **Role**: Application framework and server-side rendering
 - **Dependencies**: React 19.1.1, React-DOM 19.1.1
 - **Status**: Active - Core application foundation

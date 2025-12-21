@@ -1,4 +1,6 @@
-# Development Learnings - launchmass v1.13.0
+# Development Learnings - launchmass
+
+**Version: 1.16.0**
 
 ## Frontend
 
@@ -55,6 +57,19 @@
 **Key Learning**: Comments should explain not just what code does, but why specific approaches were chosen, especially for architectural decisions like script injection methods
 
 ## Security
+
+### Critical Dependency Vulnerability Response (2025-12-21T18:45:01.000Z)
+**Issue**: Vercel detected critical vulnerabilities in Next.js 15.5.4 (RCE, source code exposure, DoS)  
+**Solution**: Immediate update via `npm audit fix` to Next.js 15.5.9, followed by version bump and full documentation sync  
+**Key Learning**:
+- Security vulnerabilities require immediate response regardless of development cycle
+- `npm audit` provides actionable remediation for known vulnerabilities
+- Vercel's security notifications are critical early warning system
+- Security patches should be applied, tested, documented, and deployed ASAP
+- Version bump follows standard protocol (MINOR increment) even for security-only updates
+- Critical patches (RCE, DoS) take precedence over feature development
+- Always verify `npm audit` shows 0 vulnerabilities after applying fixes
+**Vulnerabilities Resolved**: GHSA-9qr9-h5gf-34mp (RCE), GHSA-w37m-7fhw-fmv9 (source exposure), GHSA-mwv6-3258-q52c (DoS)
 
 ### SSO Integration with Cross-Domain Cookies (2025-10-02T14:18:45.000Z)
 **Issue**: Need centralized authentication replacing bearer token system, but SSO uses HttpOnly cookies with specific domain requirements  
