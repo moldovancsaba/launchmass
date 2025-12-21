@@ -47,6 +47,22 @@
 
 ---
 
+## [v1.15.0] — 2025-12-21T18:31:29.000Z
+
+### 🧰 Developer Experience - Preferred Dev Port Range
+
+**Added:**
+- `scripts/dev-port-range.js` launcher that selects the first free port in 6500–6800 and starts Next.js there
+- Updated `npm run dev` to use the launcher (prefers 6500–6800)
+
+**Changed:**
+- `.env.example` BASE_URL now reflects the new preferred port (6500) to avoid 3000 conflicts
+
+**Notes:**
+- This avoids collisions with common local services on port 3000 while keeping behavior automatic
+
+---
+
 ## [v1.14.0] — 2025-12-21T14:12:39.000Z
 
 ### 🤖 Developer Experience - Version Automation & Documentation Governance

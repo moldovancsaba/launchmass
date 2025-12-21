@@ -1,6 +1,6 @@
 {
   "name": "launchmass",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "next dev",
+    "dev": "node scripts/dev-port-range.js",
     "build": "next build",
     "start": "next start",
     "bump-version": "bash scripts/bump-version.sh",
