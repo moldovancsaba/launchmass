@@ -1,6 +1,6 @@
 # Documentation Remediation Summary
 
-**Current Project Version: 1.18.0-alpha**
+**Current Project Version: 1.18.0**
 
 Historical Remediation Date: 2025-12-21T13:33:53.000Z  
 Remediation Version Scope: 1.13.0 → 1.14.0  
