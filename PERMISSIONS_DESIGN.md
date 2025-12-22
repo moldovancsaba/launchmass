@@ -1,8 +1,8 @@
 # Permission System Enhancement Design
 
-**Version: 1.17.0**  
-**Status: Design Phase**  
-**Target Implementation: Q2 2026**
+**Version: 1.18.0**  
+**Status: Phase 1 Complete (Foundation)**  
+**Phase 2 Target: Q2 2026 (API/UI)**
 
 ---
 
@@ -10,18 +10,22 @@
 
 This document outlines the design for enhancing launchmass's permission system from a binary admin/user model to a flexible, organization-scoped role-based access control (RBAC) system with custom roles, permission templates, and granular controls.
 
-**Current State:**
-- Two hardcoded roles: `admin`, `user`
-- Fixed permission matrix in code
-- 8 permission types
-- Organization-scoped
-
-**Proposed State:**
-- Unlimited custom roles per organization
-- Permission templates for common patterns
-- Extensible permission system
-- Role composition and inheritance
+**Phase 1 Status (v1.18.0): ✅ COMPLETE**
+- organizationRoles collection created
+- Migration script: `scripts/migrate-organization-roles.mjs`
+- Custom role support in `lib/permissions.js` with caching
+- 18 granular permissions (expanded from 8)
+- System roles (admin/user) hardcoded for performance
+- Custom roles loaded from MongoDB with 5-minute TTL cache
+- Performance monitoring built-in
 - Backward compatible with existing admin/user roles
+
+**Phase 2 Target (Q2 2026):**
+- Role CRUD API endpoints
+- Role management UI at `/settings/roles`
+- Permission templates UI
+- Role assignment in member management
+- Comprehensive testing and documentation
 
 ---
 
