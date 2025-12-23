@@ -165,6 +165,16 @@ export default async function handler(req, res) {
         console.error('   ❌ Error creating permission record:', err.message);
         permissionStatus = 'error';
       }
+    } else if (permissionResponse.status === 401) {
+      // WHAT: Permission API returned 401 - treat as no permission (pending)
+      // WHY: SSO permission API may have auth issues, but user successfully logged in
+      // FALLBACK: Create pending state and let admin approve manually
+      console.log('   ⚠️  Permission API returned 401, treating as pending approval');
+      console.log('   User will need manual approval in admin panel');
+      
+      permissionStatus = 'pending';
+      requestedAt = new Date().toISOString();
+      hasAccess = false; // Ensure user goes to pending page
     } else {
       // Unexpected error from permission API
       console.error('   ❌ Unexpected permission API error:', permissionResponse.status);
