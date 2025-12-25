@@ -97,99 +97,83 @@ export default async function handler(req, res) {
 
     console.log('👤 User identified:', user.email);
 
-    // WHAT: Check if user has permission to access launchmass
-    // WHY: Implements approval-based access control - users need admin approval
-    // HOW: Query SSO API for user's app permission record
-    console.log('🔐 Checking app permissions...');
+    // WHAT: Check local database for user access permissions
+    // WHY: Self-contained permission management - no dependency on external SSO permission API
+    // HOW: Query local MongoDB users collection, auto-grant on first login
+    console.log('🔐 Checking local permissions...');
     
-    const permissionResponse = await fetch(
-      `${ssoServerUrl}/api/users/${user.id}/apps/${clientId}/permissions`,
-      {
-        headers: {
-          'Authorization': `Bearer ${access_token}`,
-        },
-      }
-    );
-
-    console.log('   Permission check status:', permissionResponse.status);
-
+    const { upsertUserFromSso, recordAuthEvent } = await import('../../../lib/users.js');
+    
     let hasAccess = false;
-    let userRole = 'none';
-    let permissionStatus = 'none';
-    let requestedAt = null;
-
-    if (permissionResponse.ok) {
-      // WHAT: Permission record exists - check access status
-      const permission = await permissionResponse.json();
-      hasAccess = permission.hasAccess;
-      userRole = permission.role;
-      permissionStatus = permission.status;
-      requestedAt = permission.requestedAt;
+    let userRole = 'user'; // Default role for new users
+    let permissionStatus = 'active';
+    let isFirstLogin = false;
+    
+    try {
+      // Check if user exists in local database
+      const clientPromise = await import('../../../lib/db.js').then(m => m.default);
+      const client = await clientPromise;
+      const db = client.db(process.env.DB_NAME || 'launchmass');
+      const usersCol = db.collection('users');
       
-      console.log('   Has access:', hasAccess);
-      console.log('   Role:', userRole);
-      console.log('   Status:', permissionStatus);
-    } else if (permissionResponse.status === 404) {
-      // WHAT: No permission record exists - create one in "pending" state
-      // WHY: First access attempt creates pending approval request
-      console.log('   No permission record found, creating request...');
+      const existingUser = await usersCol.findOne({ ssoUserId: user.id });
       
-      try {
-        const requestAccessResponse = await fetch(
-          `${ssoServerUrl}/api/users/${user.id}/apps/${clientId}/request-access`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: user.email,
-              name: user.name,
-              ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
-              userAgent: req.headers['user-agent'],
-            }),
-          }
-        );
-
-        if (requestAccessResponse.ok) {
-          const requestData = await requestAccessResponse.json();
-          permissionStatus = 'pending';
-          requestedAt = requestData.permission?.requestedAt || new Date().toISOString();
-          console.log('   ✅ Access request created');
+      if (existingUser) {
+        // WHAT: Existing user - use their stored permissions
+        // WHY: Admins control access through /admin/users interface
+        hasAccess = existingUser.hasAccess !== false; // Default to true if not explicitly set
+        userRole = existingUser.appRole || 'user';
+        permissionStatus = existingUser.appStatus || 'active';
+        
+        console.log('   📋 Existing user found');
+        console.log('   Has access:', hasAccess);
+        console.log('   Role:', userRole);
+        console.log('   Status:', permissionStatus);
+      } else {
+        // WHAT: New user - check environment variable for auto-grant policy
+        // WHY: Allow configuration of open vs approval-based access
+        // DEFAULT: Auto-grant access (launchmass is internal tool)
+        isFirstLogin = true;
+        const autoGrantAccess = process.env.AUTO_GRANT_ACCESS !== 'false'; // Default true
+        
+        if (autoGrantAccess) {
+          hasAccess = true;
+          userRole = 'user';
+          permissionStatus = 'active';
+          console.log('   ✅ New user - auto-granting access (AUTO_GRANT_ACCESS=true)');
         } else {
-          console.error('   ❌ Failed to create access request:', requestAccessResponse.status);
-          permissionStatus = 'error';
+          hasAccess = false;
+          userRole = 'none';
+          permissionStatus = 'pending';
+          console.log('   ⏳ New user - pending approval (AUTO_GRANT_ACCESS=false)');
         }
-      } catch (err) {
-        console.error('   ❌ Error creating permission record:', err.message);
-        permissionStatus = 'error';
       }
-    } else if (permissionResponse.status === 401) {
-      // WHAT: Permission API returned 401 - treat as no permission (pending)
-      // WHY: SSO permission API may have auth issues, but user successfully logged in
-      // FALLBACK: Create pending state and let admin approve manually
-      console.log('   ⚠️  Permission API returned 401, treating as pending approval');
-      console.log('   User will need manual approval in admin panel');
-      
-      permissionStatus = 'pending';
-      requestedAt = new Date().toISOString();
-      hasAccess = false; // Ensure user goes to pending page
-    } else {
-      // Unexpected error from permission API
-      console.error('   ❌ Unexpected permission API error:', permissionResponse.status);
-      const permError = await permissionResponse.text().catch(() => 'Unknown error');
-      return res.redirect(`/?error=permission_check_failed&detail=${encodeURIComponent(permError)}&status=${permissionResponse.status}`);
+    } catch (dbError) {
+      console.error('   ❌ Database error checking permissions:', dbError.message);
+      // WHAT: On DB error, deny access for security
+      // WHY: Fail-safe - don't grant access if we can't verify
+      hasAccess = false;
+      permissionStatus = 'error';
     }
-
+    
     // WHAT: If user doesn't have access, redirect to pending page
     // WHY: Users must be approved by admin before accessing app
     if (!hasAccess) {
-      // Functional: Log access attempt for admin review
-      // Strategic: Admins can see who tried to access and when
-      console.log('⏳ User does not have access yet, redirecting to pending page');
+      console.log('⏳ User does not have access, redirecting to pending page');
       
-      const { recordAuthEvent } = await import('../../../lib/users.js');
+      // WHAT: Create user record in database with pending status
+      // WHY: Admin can see pending users in /admin/users and approve them
+      try {
+        await upsertUserFromSso({
+          ...user,
+          appRole: userRole,
+          appStatus: permissionStatus,
+          hasAccess: false,
+        });
+      } catch (err) {
+        console.error('   ⚠️  Failed to create user record:', err.message);
+      }
+      
       await recordAuthEvent({
         ssoUserId: user.id,
         email: user.email,
@@ -202,7 +186,7 @@ export default async function handler(req, res) {
       // WHAT: Redirect to access pending page with status information
       // WHY: User needs to know their request is being reviewed
       return res.redirect(
-        `/access-pending?status=${permissionStatus}&requested=${encodeURIComponent(requestedAt || '')}`
+        `/access-pending?status=${permissionStatus}&requested=${encodeURIComponent(new Date().toISOString())}`
       );
     }
 
@@ -231,10 +215,8 @@ export default async function handler(req, res) {
 
     console.log('🔄 Syncing user to local database...');
 
-    // Functional: Sync user to local MongoDB with permission info
-    // Strategic: Cache SSO permissions locally for performance
-    const { upsertUserFromSso, recordAuthEvent } = await import('../../../lib/users.js');
-    
+    // Functional: Create or update user in local MongoDB
+    // Strategic: Store user permissions locally for fast access
     try {
       await upsertUserFromSso({
         ...user,
