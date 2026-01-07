@@ -97,63 +97,147 @@ export default async function handler(req, res) {
 
     console.log('👤 User identified:', user.email);
 
-    // WHAT: Check local database for user access permissions
-    // WHY: Self-contained permission management - no dependency on external SSO permission API
-    // HOW: Query local MongoDB users collection, auto-grant on first login
-    console.log('🔐 Checking local permissions...');
+    // WHAT: Fetch permissions from SSO first (source of truth)
+    // WHY: SSO is where admins grant access, so we need to check SSO permissions
+    // HOW: Use getPermissionFromSSO to query SSO permission API
+    console.log('🔐 Fetching permissions from SSO...');
     
     const { upsertUserFromSso, recordAuthEvent } = await import('../../../lib/users.js');
+    const { getPermissionFromSSO } = await import('../../../lib/ssoPermissions.mjs');
     
     let hasAccess = false;
     let userRole = 'user'; // Default role for new users
     let permissionStatus = 'active';
     let isFirstLogin = false;
+    let ssoPermission = null;
     
+    // WHAT: Try to fetch permissions from SSO
+    // WHY: SSO is the source of truth for user permissions
     try {
-      // Check if user exists in local database
-      const clientPromise = await import('../../../lib/db.js').then(m => m.default);
-      const client = await clientPromise;
-      const db = client.db(process.env.DB_NAME || 'launchmass');
-      const usersCol = db.collection('users');
+      ssoPermission = await getPermissionFromSSO(user.id);
       
-      const existingUser = await usersCol.findOne({ ssoUserId: user.id });
-      
-      if (existingUser) {
-        // WHAT: Existing user - use their stored permissions
-        // WHY: Admins control access through /admin/users interface
-        hasAccess = existingUser.hasAccess !== false; // Default to true if not explicitly set
-        userRole = existingUser.appRole || 'user';
-        permissionStatus = existingUser.appStatus || 'active';
+      if (ssoPermission) {
+        // WHAT: SSO has permission record - use it as source of truth
+        // WHY: SSO is where admins grant access
+        console.log('   ✅ SSO permission found');
+        console.log('   SSO role:', ssoPermission.role);
+        console.log('   SSO status:', ssoPermission.status);
         
-        console.log('   📋 Existing user found');
+        // Map SSO permission to launchmass format
+        // WHAT: Map SSO roles to launchmass roles
+        // WHY: Launchmass only supports 'user' and 'admin', but SSO also has 'superadmin'
+        const ssoRole = ssoPermission.role || 'user';
+        if (ssoRole === 'superadmin') {
+          userRole = 'admin'; // Map superadmin to admin in launchmass
+        } else {
+          userRole = ssoRole; // 'user' or 'admin' map directly
+        }
+        
+        // Map SSO status to launchmass status
+        if (ssoPermission.status === 'approved') {
+          hasAccess = true;
+          permissionStatus = 'active';
+        } else if (ssoPermission.status === 'pending') {
+          hasAccess = false;
+          permissionStatus = 'pending';
+        } else if (ssoPermission.status === 'revoked') {
+          hasAccess = false;
+          permissionStatus = 'suspended';
+        } else {
+          // Unknown status - default to pending
+          hasAccess = false;
+          permissionStatus = 'pending';
+        }
+        
+        console.log('   Mapped to launchmass:');
         console.log('   Has access:', hasAccess);
         console.log('   Role:', userRole);
         console.log('   Status:', permissionStatus);
       } else {
-        // WHAT: New user - check environment variable for auto-grant policy
-        // WHY: Allow configuration of open vs approval-based access
-        // DEFAULT: Auto-grant access (launchmass is internal tool)
-        isFirstLogin = true;
-        const autoGrantAccess = process.env.AUTO_GRANT_ACCESS !== 'false'; // Default true
+        // WHAT: No SSO permission record - check local database as fallback
+        // WHY: Support legacy users or cases where SSO sync hasn't happened yet
+        console.log('   ⚠️  No SSO permission found, checking local database...');
         
-        if (autoGrantAccess) {
-          hasAccess = true;
-          userRole = 'user';
-          permissionStatus = 'active';
-          console.log('   ✅ New user - auto-granting access (AUTO_GRANT_ACCESS=true)');
-        } else {
+        try {
+          const clientPromise = await import('../../../lib/db.js').then(m => m.default);
+          const client = await clientPromise;
+          const db = client.db(process.env.DB_NAME || 'launchmass');
+          const usersCol = db.collection('users');
+          
+          const existingUser = await usersCol.findOne({ ssoUserId: user.id });
+          
+          if (existingUser) {
+            // WHAT: Existing user in local DB - use their stored permissions
+            // WHY: Fallback for users created before SSO permission sync
+            hasAccess = existingUser.hasAccess !== false; // Default to true if not explicitly set
+            userRole = existingUser.appRole || 'user';
+            permissionStatus = existingUser.appStatus || 'active';
+            
+            console.log('   📋 Existing user found in local DB');
+            console.log('   Has access:', hasAccess);
+            console.log('   Role:', userRole);
+            console.log('   Status:', permissionStatus);
+          } else {
+            // WHAT: New user - check environment variable for auto-grant policy
+            // WHY: Allow configuration of open vs approval-based access
+            // DEFAULT: Auto-grant access (launchmass is internal tool)
+            isFirstLogin = true;
+            const autoGrantAccess = process.env.AUTO_GRANT_ACCESS !== 'false'; // Default true
+            
+            if (autoGrantAccess) {
+              hasAccess = true;
+              userRole = 'user';
+              permissionStatus = 'active';
+              console.log('   ✅ New user - auto-granting access (AUTO_GRANT_ACCESS=true)');
+            } else {
+              hasAccess = false;
+              userRole = 'none';
+              permissionStatus = 'pending';
+              console.log('   ⏳ New user - pending approval (AUTO_GRANT_ACCESS=false)');
+            }
+          }
+        } catch (dbError) {
+          console.error('   ❌ Database error checking permissions:', dbError.message);
+          // WHAT: On DB error, deny access for security
+          // WHY: Fail-safe - don't grant access if we can't verify
           hasAccess = false;
-          userRole = 'none';
-          permissionStatus = 'pending';
-          console.log('   ⏳ New user - pending approval (AUTO_GRANT_ACCESS=false)');
+          permissionStatus = 'error';
         }
       }
-    } catch (dbError) {
-      console.error('   ❌ Database error checking permissions:', dbError.message);
-      // WHAT: On DB error, deny access for security
-      // WHY: Fail-safe - don't grant access if we can't verify
-      hasAccess = false;
-      permissionStatus = 'error';
+    } catch (ssoError) {
+      // WHAT: SSO permission fetch failed - fallback to local database
+      // WHY: Don't block login if SSO is temporarily unavailable
+      console.error('   ⚠️  Failed to fetch SSO permissions:', ssoError.message);
+      console.log('   Falling back to local database...');
+      
+      try {
+        const clientPromise = await import('../../../lib/db.js').then(m => m.default);
+        const client = await clientPromise;
+        const db = client.db(process.env.DB_NAME || 'launchmass');
+        const usersCol = db.collection('users');
+        
+        const existingUser = await usersCol.findOne({ ssoUserId: user.id });
+        
+        if (existingUser) {
+          hasAccess = existingUser.hasAccess !== false;
+          userRole = existingUser.appRole || 'user';
+          permissionStatus = existingUser.appStatus || 'active';
+          
+          console.log('   📋 Using local DB permissions (SSO unavailable)');
+          console.log('   Has access:', hasAccess);
+          console.log('   Role:', userRole);
+          console.log('   Status:', permissionStatus);
+        } else {
+          // No local user either - deny access
+          hasAccess = false;
+          permissionStatus = 'pending';
+          console.log('   ⏳ No local user found - access denied');
+        }
+      } catch (dbError) {
+        console.error('   ❌ Database error:', dbError.message);
+        hasAccess = false;
+        permissionStatus = 'error';
+      }
     }
     
     // WHAT: If user doesn't have access, redirect to pending page
