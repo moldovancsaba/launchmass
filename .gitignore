@@ -4,3 +4,7 @@ node_modules/
 .env
 .vercel
 .env.local
+.env.local.backup
+.env*.backup
+*.backup
+*.bak

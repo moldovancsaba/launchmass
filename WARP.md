@@ -82,8 +82,7 @@ components/
 
 lib/
 ├── db.js                    # MongoDB connection with dev/prod pooling
-├── auth.js                  # Legacy SSO session validation (cookie-based)
-├── auth-oauth.js            # OAuth 2.0 SSO authentication
+├── auth-oauth.js            # OAuth 2.0 SSO authentication (lib/auth.js removed in v1.17.0)
 ├── org.js                   # Organization context and caching
 ├── permissions.js           # Role-based permission matrix
 └── users.js                 # User management and admin rights
@@ -200,7 +199,7 @@ This project follows strict development protocols:
 ## Integration Points
 
 When working with this codebase, pay attention to:
-- OAuth authentication flow in `lib/auth-oauth.js` and `lib/auth.js`
+- OAuth authentication flow in `lib/auth-oauth.js` (legacy `lib/auth.js` removed in v1.17.0)
 - MongoDB connection patterns in `lib/db.js`
 - Organization context resolution in `lib/org.js` (caches by slug)
 - Permission matrix and role checking in `lib/permissions.js`
@@ -256,4 +255,4 @@ MONGODB_URI=mongodb+srv://...
 DB_NAME=launchmass
 ```
 
-**For detailed implementation:** See `SSO_IMPLEMENTATION.md`, `OAUTH_MIGRATION_v1.6.0.md`, and `DEPLOYMENT_GUIDE.md`
+**For detailed implementation:** See `AUTH_CURRENT.md` (authoritative auth guide) and `ARCHITECTURE.md`
