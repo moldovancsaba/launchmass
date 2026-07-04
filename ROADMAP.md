@@ -34,6 +34,7 @@
 - [ ] API routes documented with their authentication/authorization requirements
 
 #### Automation Health
+> ⚠️ **Audit note (2026-07-04):** the pre-commit hook and the GitHub Actions docs-check workflow were removed (`.github/` deleted). The first two items below are **not currently operational** — restore them or revise this checklist.
 - [ ] Pre-commit hook is working (test with intentional version mismatch)
 - [ ] GitHub Actions docs-check workflow passes on latest commit
 - [ ] Version bump script works for patch/minor/major bumps
