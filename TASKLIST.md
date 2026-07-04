@@ -99,6 +99,11 @@
 
 ## Active Tasks
 
+> **Audit note (2026-07-04):** A repository issue audit re-baselined the items below.
+> - **Schedule is stale:** Phase 2–4 were framed as "Week 2/3/4" relative to the Dec 2025 planning date. None have been started (verified: no `pages/api/analytics/`, no roles API under `pages/api/organizations/[uuid]/roles`, no `pages/settings/roles.js`, no `pages/admin/analytics.js`). Treat all "Week N" dates below as **unscheduled / not started**.
+> - **Automation removed:** the docs-check GitHub Actions workflow and the version-consistency pre-commit hook referenced in this file are **no longer present** (`.github/` was removed). Doc consistency is currently manual via `npm run verify-docs`.
+> - **Open contradiction (unresolved):** the `TEST-ALL` testing ticket (Phase 4) conflicts with the WARP.md project rule "tests are forbidden." Needs an explicit decision before that ticket is actioned.
+
 ### 🏗️ Phase 1: Foundation & Analysis (v1.18.0) - ✅ COMPLETED
 
 **All Phase 1 tasks completed and committed. Ready for Phase 2 implementation.**
@@ -171,6 +176,7 @@
 
 #### P0 — Critical: Comprehensive Testing
 - **Ticket**: TEST-ALL
+- **⚠️ Unresolved**: This ticket conflicts with the WARP.md rule "Tests are forbidden — no testing allowed." Confirm whether automated testing is permitted before starting.
 - **Title**: Test all 4 tracks end-to-end
 - **Owner**: moldovan
 - **Expected Delivery**: Week 4
@@ -188,5 +194,5 @@
 - **Title**: Documentation consistency maintenance
 - **Owner**: AI Agent
 - **Expected Delivery**: Ongoing
-- **Details**: Automated via pre-commit hook and CI/CD checks (v1.14.0)
-- **Status**: ✅ Automated - manual oversight required monthly
+- **Details**: The pre-commit hook and CI/CD docs-check workflow (v1.14.0) were removed when `.github/` was deleted; consistency is currently enforced manually via `npm run verify-docs`.
+- **Status**: ⚠️ Manual - automation needs restoration, or this claim needs revision
