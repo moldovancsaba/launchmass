@@ -5,6 +5,11 @@
  * Strategic: Exchanges authorization code for tokens, validates them, creates session cookie
  */
 
+// Functional: Debug logger gated behind OAUTH_DEBUG.
+// Strategic: The OAuth callback previously logged auth codes, emails, and token
+// presence on every login. Gate that behind a flag so production logs don't leak PII.
+const dlog = (...args) => { if (process.env.OAUTH_DEBUG === 'true') console.log(...args); };
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -32,9 +37,9 @@ export default async function handler(req, res) {
     const clientSecret = process.env.SSO_CLIENT_SECRET;
     const redirectUri = process.env.SSO_REDIRECT_URI || 'https://launchmass.doneisbetter.com/api/oauth/callback';
 
-    console.log('🔍 OAuth callback initiated');
-    console.log('   Code:', code.substring(0, 12) + '...');
-    console.log('   State:', state);
+    dlog('🔍 OAuth callback initiated');
+    dlog('   Code:', code.substring(0, 12) + '...');
+    dlog('   State:', state);
 
     // Functional: Validate required OAuth configuration
     // Strategic: Missing config prevents secure token exchange
@@ -43,7 +48,7 @@ export default async function handler(req, res) {
       return res.redirect('/?error=config_error&detail=Missing OAuth credentials');
     }
 
-    console.log('🔄 Exchanging authorization code for tokens...');
+    dlog('🔄 Exchanging authorization code for tokens...');
 
     // Functional: Exchange authorization code for access token
     // Strategic: POST to token endpoint with client credentials (OAuth 2.0 standard flow)
@@ -61,7 +66,7 @@ export default async function handler(req, res) {
       }),
     });
 
-    console.log('📨 Token response status:', tokenResponse.status);
+    dlog('📨 Token response status:', tokenResponse.status);
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
@@ -76,14 +81,14 @@ export default async function handler(req, res) {
     const tokens = await tokenResponse.json();
     const { access_token, id_token, refresh_token } = tokens;
 
-    console.log('✅ Tokens received successfully');
-    console.log('   Has access_token:', !!access_token);
-    console.log('   Has id_token:', !!id_token);
-    console.log('   Has refresh_token:', !!refresh_token);
+    dlog('✅ Tokens received successfully');
+    dlog('   Has access_token:', !!access_token);
+    dlog('   Has id_token:', !!id_token);
+    dlog('   Has refresh_token:', !!refresh_token);
 
     // Functional: Decode ID token to get user info (JWT)
     // Strategic: ID token contains user claims (email, name, sub) per OpenID Connect spec
-    console.log('🔍 Decoding ID token...');
+    dlog('🔍 Decoding ID token...');
     const idTokenPayload = JSON.parse(
       Buffer.from(id_token.split('.')[1], 'base64').toString()
     );
@@ -95,12 +100,12 @@ export default async function handler(req, res) {
       role: idTokenPayload.role,
     };
 
-    console.log('👤 User identified:', user.email);
+    dlog('👤 User identified:', user.email);
 
     // WHAT: Fetch permissions from SSO first (source of truth)
     // WHY: SSO is where admins grant access, so we need to check SSO permissions
     // HOW: Use getPermissionFromSSO to query SSO permission API
-    console.log('🔐 Fetching permissions from SSO...');
+    dlog('🔐 Fetching permissions from SSO...');
     
     const { upsertUserFromSso, recordAuthEvent } = await import('../../../lib/users.js');
     const { getPermissionFromSSO } = await import('../../../lib/ssoPermissions.mjs');
@@ -119,9 +124,9 @@ export default async function handler(req, res) {
       if (ssoPermission) {
         // WHAT: SSO has permission record - use it as source of truth
         // WHY: SSO is where admins grant access
-        console.log('   ✅ SSO permission found');
-        console.log('   SSO role:', ssoPermission.role);
-        console.log('   SSO status:', ssoPermission.status);
+        dlog('   ✅ SSO permission found');
+        dlog('   SSO role:', ssoPermission.role);
+        dlog('   SSO status:', ssoPermission.status);
         
         // Map SSO permission to launchmass format
         // WHAT: Map SSO roles to launchmass roles
@@ -149,14 +154,14 @@ export default async function handler(req, res) {
           permissionStatus = 'pending';
         }
         
-        console.log('   Mapped to launchmass:');
-        console.log('   Has access:', hasAccess);
-        console.log('   Role:', userRole);
-        console.log('   Status:', permissionStatus);
+        dlog('   Mapped to launchmass:');
+        dlog('   Has access:', hasAccess);
+        dlog('   Role:', userRole);
+        dlog('   Status:', permissionStatus);
       } else {
         // WHAT: No SSO permission record - check local database as fallback
         // WHY: Support legacy users or cases where SSO sync hasn't happened yet
-        console.log('   ⚠️  No SSO permission found, checking local database...');
+        dlog('   ⚠️  No SSO permission found, checking local database...');
         
         try {
           const clientPromise = await import('../../../lib/db.js').then(m => m.default);
@@ -173,10 +178,10 @@ export default async function handler(req, res) {
             userRole = existingUser.appRole || 'user';
             permissionStatus = existingUser.appStatus || 'active';
             
-            console.log('   📋 Existing user found in local DB');
-            console.log('   Has access:', hasAccess);
-            console.log('   Role:', userRole);
-            console.log('   Status:', permissionStatus);
+            dlog('   📋 Existing user found in local DB');
+            dlog('   Has access:', hasAccess);
+            dlog('   Role:', userRole);
+            dlog('   Status:', permissionStatus);
           } else {
             // WHAT: New user - check environment variable for auto-grant policy
             // WHY: Allow configuration of open vs approval-based access
@@ -188,12 +193,12 @@ export default async function handler(req, res) {
               hasAccess = true;
               userRole = 'user';
               permissionStatus = 'active';
-              console.log('   ✅ New user - auto-granting access (AUTO_GRANT_ACCESS=true)');
+              dlog('   ✅ New user - auto-granting access (AUTO_GRANT_ACCESS=true)');
             } else {
               hasAccess = false;
               userRole = 'none';
               permissionStatus = 'pending';
-              console.log('   ⏳ New user - pending approval (AUTO_GRANT_ACCESS=false)');
+              dlog('   ⏳ New user - pending approval (AUTO_GRANT_ACCESS=false)');
             }
           }
         } catch (dbError) {
@@ -208,7 +213,7 @@ export default async function handler(req, res) {
       // WHAT: SSO permission fetch failed - fallback to local database
       // WHY: Don't block login if SSO is temporarily unavailable
       console.error('   ⚠️  Failed to fetch SSO permissions:', ssoError.message);
-      console.log('   Falling back to local database...');
+      dlog('   Falling back to local database...');
       
       try {
         const clientPromise = await import('../../../lib/db.js').then(m => m.default);
@@ -223,15 +228,15 @@ export default async function handler(req, res) {
           userRole = existingUser.appRole || 'user';
           permissionStatus = existingUser.appStatus || 'active';
           
-          console.log('   📋 Using local DB permissions (SSO unavailable)');
-          console.log('   Has access:', hasAccess);
-          console.log('   Role:', userRole);
-          console.log('   Status:', permissionStatus);
+          dlog('   📋 Using local DB permissions (SSO unavailable)');
+          dlog('   Has access:', hasAccess);
+          dlog('   Role:', userRole);
+          dlog('   Status:', permissionStatus);
         } else {
           // No local user either - deny access
           hasAccess = false;
           permissionStatus = 'pending';
-          console.log('   ⏳ No local user found - access denied');
+          dlog('   ⏳ No local user found - access denied');
         }
       } catch (dbError) {
         console.error('   ❌ Database error:', dbError.message);
@@ -243,7 +248,7 @@ export default async function handler(req, res) {
     // WHAT: If user doesn't have access, redirect to pending page
     // WHY: Users must be approved by admin before accessing app
     if (!hasAccess) {
-      console.log('⏳ User does not have access, redirecting to pending page');
+      dlog('⏳ User does not have access, redirecting to pending page');
       
       // WHAT: Create user record in database with pending status
       // WHY: Admin can see pending users in /admin/users and approve them
@@ -274,11 +279,14 @@ export default async function handler(req, res) {
       );
     }
 
-    console.log('💾 Creating session...');
+    dlog('💾 Creating session...');
 
-    // WHAT: User has access - store tokens and permission info in session
-    // WHY: Session needs to include user's role for authorization checks
-    const sessionData = JSON.stringify({
+    // WHAT: User has access - store tokens and permission info in an HMAC-signed session
+    // WHY: The session must be tamper-evident. A plain base64 cookie could be forged
+    //      into an admin session; signing binds the payload to a server-held secret.
+    //      Authorization is still re-verified against the DB on every request.
+    const { signSession } = await import('../../../lib/session.js');
+    const signedSession = signSession({
       access_token,
       id_token,
       refresh_token,
@@ -292,12 +300,12 @@ export default async function handler(req, res) {
     });
 
     res.setHeader('Set-Cookie', [
-      `sso_session=${Buffer.from(sessionData).toString('base64')}; ` +
+      `sso_session=${signedSession}; ` +
       `HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=86400; ` +
       `Domain=.doneisbetter.com`,
     ]);
 
-    console.log('🔄 Syncing user to local database...');
+    dlog('🔄 Syncing user to local database...');
 
     // Functional: Create or update user in local MongoDB
     // Strategic: Store user permissions locally for fast access
@@ -309,7 +317,7 @@ export default async function handler(req, res) {
         hasAccess: true,
       });
       
-      console.log('   ✅ User synced to database');
+      dlog('   ✅ User synced to database');
     } catch (dbError) {
       console.error('   ⚠️  Database sync failed (non-fatal):', dbError.message);
       // Continue anyway - session is created, DB sync can happen later
@@ -324,8 +332,8 @@ export default async function handler(req, res) {
       userAgent: req.headers['user-agent'],
     });
 
-    console.log('✅ OAuth flow completed successfully!');
-    console.log('   Redirecting to:', state || '/admin');
+    dlog('✅ OAuth flow completed successfully!');
+    dlog('   Redirecting to:', state || '/admin');
 
     // Functional: Redirect to original destination or admin page
     // Strategic: Restore user's intended navigation after auth flow
