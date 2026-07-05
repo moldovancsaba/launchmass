@@ -5,7 +5,7 @@ export default function OversizedLink({ href, title, description, background, ta
     ? { background: raw, backgroundImage: raw }
     : raw
       ? { background: raw, backgroundColor: raw }
-      : { background: "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)" };
+      : { background: "linear-gradient(135deg, #B62684 0%, #2C5680 55%, #0085C6 100%)" };
 
   const safeTags = Array.isArray(tags) ? tags : [];
 
