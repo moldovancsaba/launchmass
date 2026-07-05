@@ -1,0 +1,9 @@
+#!/bin/sh
+# launchmass pre-commit hook — enforce documentation/version consistency.
+# Install with: npm run install-hooks  (or it runs automatically after npm install)
+npm run verify-docs || {
+  echo "" >&2
+  echo "✗ pre-commit: verify-docs failed. Fix version/doc consistency before committing." >&2
+  echo "  (run 'npm run verify-docs' to see details)" >&2
+  exit 1
+}

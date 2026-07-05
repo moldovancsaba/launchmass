@@ -99,10 +99,10 @@
 
 ## Active Tasks
 
-> **Audit note (2026-07-04):** A repository issue audit re-baselined the items below.
-> - **Schedule is stale:** Phase 2–4 were framed as "Week 2/3/4" relative to the Dec 2025 planning date. None have been started (verified: no `pages/api/analytics/`, no roles API under `pages/api/organizations/[uuid]/roles`, no `pages/settings/roles.js`, no `pages/admin/analytics.js`). Treat all "Week N" dates below as **unscheduled / not started**.
-> - **Automation removed:** the docs-check GitHub Actions workflow and the version-consistency pre-commit hook referenced in this file are **no longer present** (`.github/` was removed). Doc consistency is currently manual via `npm run verify-docs`.
-> - **Open contradiction (unresolved):** the `TEST-ALL` testing ticket (Phase 4) conflicts with the WARP.md project rule "tests are forbidden." Needs an explicit decision before that ticket is actioned.
+> **Audit note (updated 2026-07-05):** A repository issue audit re-baselined and remediated the items below.
+> - **Schedule:** Phase 2–4 (custom-roles API/UI, analytics API/UI) are **un-started / unscheduled** — verified against code (no `pages/api/analytics/`, no roles API under `pages/api/organizations/[uuid]/roles`, no `pages/settings/roles.js`, no `pages/admin/analytics.js`). The former "Week 2/3/4" framing was relative to the Dec 2025 plan; ignore those dates.
+> - **Automation restored:** the docs-check + build CI workflow (`.github/workflows/ci.yml`) and the version-consistency pre-commit hook (`.githooks/pre-commit`, installed via `npm run install-hooks`) are active again.
+> - **Testing policy resolved:** automated tests remain prohibited (WARP.md "MVP factory" rule). The `TEST-ALL` ticket is reframed as **manual QA / security review**, not an automated test suite.
 
 ### 🏗️ Phase 1: Foundation & Analysis (v1.18.0) - ✅ COMPLETED
 
@@ -128,7 +128,7 @@
   - [ ] DELETE /api/organizations/{uuid}/roles/{roleId}
   - [ ] GET /api/roles/templates
 - **Files to create**: 5 new API route files
-- **Status**: 📅 Week 2
+- **Status**: 📅 Unscheduled (not started)
 
 #### P1 — High: Track B - Analytics API
 - **Ticket**: TRACK-B-02  
@@ -141,7 +141,7 @@
   - [ ] GET /api/analytics/users
   - [ ] GET /api/analytics/organizations
 - **Files to create**: `pages/api/analytics/` directory
-- **Status**: 📅 Week 2
+- **Status**: 📅 Unscheduled (not started)
 
 ### 🎨 Phase 3: UI & Polish (v1.20.0) - PLANNED
 
@@ -157,7 +157,7 @@
   - [ ] Permission checklist
   - [ ] Role deletion with validation
 - **Files to create**: `pages/settings/roles.js`
-- **Status**: 📅 Week 3
+- **Status**: 📅 Unscheduled (not started)
 
 #### P1 — High: Track B - Analytics Dashboard UI
 - **Ticket**: TRACK-B-03
@@ -170,13 +170,13 @@
   - [ ] Date range selector
   - [ ] Export functionality
 - **Files to create**: `pages/admin/analytics.js`
-- **Status**: 📅 Week 3
+- **Status**: 📅 Unscheduled (not started)
 
 ### 📚 Phase 4: Testing & Documentation (v1.21.0) - PLANNED
 
 #### P0 — Critical: Comprehensive Testing
 - **Ticket**: TEST-ALL
-- **⚠️ Unresolved**: This ticket conflicts with the WARP.md rule "Tests are forbidden — no testing allowed." Confirm whether automated testing is permitted before starting.
+- **Note**: Per the WARP.md "tests forbidden" rule, this is **manual QA / security review** — not an automated test suite. Verification is done via `npm run build` + preview deploys.
 - **Title**: Test all 4 tracks end-to-end
 - **Owner**: moldovan
 - **Expected Delivery**: Week 4
@@ -194,5 +194,5 @@
 - **Title**: Documentation consistency maintenance
 - **Owner**: AI Agent
 - **Expected Delivery**: Ongoing
-- **Details**: The pre-commit hook and CI/CD docs-check workflow (v1.14.0) were removed when `.github/` was deleted; consistency is currently enforced manually via `npm run verify-docs`.
-- **Status**: ⚠️ Manual - automation needs restoration, or this claim needs revision
+- **Details**: Enforced automatically via the pre-commit hook (`.githooks/pre-commit`) and the CI workflow (`.github/workflows/ci.yml`), both running `npm run verify-docs`.
+- **Status**: ✅ Automated (restored 2026-07-05)
