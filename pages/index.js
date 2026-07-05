@@ -16,15 +16,15 @@ export default function Home({ cards, activeTag, orgName, orgBackground }) {
       )}
       <Header orgName={orgName || 'launchmass'} />
       {!hasCards && (
-        <section style={{ padding: '16px', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background:'rgba(0,0,0,0.05)', borderRadius: 12, color:'#111' }}>
-          <strong>Welcome to launchmass</strong>
-          <span style={{ opacity: 0.75 }}>No content found yet.</span>
+        <section style={{ margin: '84px 16px 0', padding: '26px 28px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', background: '#fff', border: '1px solid var(--seyu-line)', borderRadius: 'var(--seyu-radius-card)', color: 'var(--seyu-ink)', boxShadow: '0 10px 30px rgba(27,31,60,0.28)' }}>
+          <strong className="anton" style={{ fontSize: 22 }}>Welcome to SEYU</strong>
+          <span style={{ color: 'var(--seyu-muted)', fontWeight: 500 }}>No content found yet.</span>
           <a href="/settings#organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</a>
           <a href="/admin" className="tag-chip">Admin</a>
         </section>
       )}
       {activeTag ? (
-        <div className="filter-bar" style={{ padding: '8px 16px' }}>
+        <div className="filter-bar" style={{ padding: '8px 16px', marginTop: 64, display: 'flex', alignItems: 'center' }}>
           <span>Filtering by</span>
           <a className="tag-chip" href={`/?tag=${encodeURIComponent(activeTag)}`} style={{ marginLeft: 8 }}>#{activeTag}</a>
           <a className="tag-chip" href="/" style={{ marginLeft: 8 }}>Clear</a>
