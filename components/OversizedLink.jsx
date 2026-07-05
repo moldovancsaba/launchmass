@@ -26,10 +26,23 @@ export default function OversizedLink({ href, title, description, background, ta
       <h3 style={{ textShadow: '0 1px 2px rgba(0,0,0,0.35)' }}>{title || 'Untitled'}</h3>
       <p style={{ textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{description || ''}</p>
       {safeTags.length ? (
-        <div className="tag-list" style={{ marginTop: 8 }} onClick={e => e.stopPropagation()}>
-          {safeTags.map((t, i) => (
-            <a key={i} href={`/?tag=${encodeURIComponent(t)}`} className="tag-chip">#{t}</a>
-          ))}
+        <div className="tag-list" style={{ marginTop: 8 }}>
+          {safeTags.map((t, i) => {
+            // Tags navigate to the filtered view. Rendered as spans (not <a>) because this
+            // sits inside the card <a>, and nested anchors are invalid HTML.
+            const go = (e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/?tag=${encodeURIComponent(t)}`; };
+            return (
+              <span
+                key={i}
+                role="link"
+                tabIndex={0}
+                className="tag-chip"
+                style={{ cursor: 'pointer' }}
+                onClick={go}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') go(e); }}
+              >#{t}</span>
+            );
+          })}
         </div>
       ) : null}
     </a>
