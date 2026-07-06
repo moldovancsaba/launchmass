@@ -99,6 +99,11 @@
 
 ## Active Tasks
 
+> **Audit note (updated 2026-07-05):** A repository issue audit re-baselined and remediated the items below.
+> - **Schedule:** Phase 2–4 (custom-roles API/UI, analytics API/UI) are **un-started / unscheduled** — verified against code (no `pages/api/analytics/`, no roles API under `pages/api/organizations/[uuid]/roles`, no `pages/settings/roles.js`, no `pages/admin/analytics.js`). The former "Week 2/3/4" framing was relative to the Dec 2025 plan; ignore those dates.
+> - **Automation restored:** the docs-check + build CI workflow (`.github/workflows/ci.yml`) and the version-consistency pre-commit hook (`.githooks/pre-commit`, installed via `npm run install-hooks`) are active again.
+> - **Testing policy resolved:** automated tests remain prohibited (WARP.md "MVP factory" rule). The `TEST-ALL` ticket is reframed as **manual QA / security review**, not an automated test suite.
+
 ### 🏗️ Phase 1: Foundation & Analysis (v1.18.0) - ✅ COMPLETED
 
 **All Phase 1 tasks completed and committed. Ready for Phase 2 implementation.**
@@ -123,7 +128,7 @@
   - [ ] DELETE /api/organizations/{uuid}/roles/{roleId}
   - [ ] GET /api/roles/templates
 - **Files to create**: 5 new API route files
-- **Status**: 📅 Week 2
+- **Status**: 📅 Unscheduled (not started)
 
 #### P1 — High: Track B - Analytics API
 - **Ticket**: TRACK-B-02  
@@ -136,7 +141,7 @@
   - [ ] GET /api/analytics/users
   - [ ] GET /api/analytics/organizations
 - **Files to create**: `pages/api/analytics/` directory
-- **Status**: 📅 Week 2
+- **Status**: 📅 Unscheduled (not started)
 
 ### 🎨 Phase 3: UI & Polish (v1.20.0) - PLANNED
 
@@ -152,7 +157,7 @@
   - [ ] Permission checklist
   - [ ] Role deletion with validation
 - **Files to create**: `pages/settings/roles.js`
-- **Status**: 📅 Week 3
+- **Status**: 📅 Unscheduled (not started)
 
 #### P1 — High: Track B - Analytics Dashboard UI
 - **Ticket**: TRACK-B-03
@@ -165,12 +170,13 @@
   - [ ] Date range selector
   - [ ] Export functionality
 - **Files to create**: `pages/admin/analytics.js`
-- **Status**: 📅 Week 3
+- **Status**: 📅 Unscheduled (not started)
 
 ### 📚 Phase 4: Testing & Documentation (v1.21.0) - PLANNED
 
 #### P0 — Critical: Comprehensive Testing
 - **Ticket**: TEST-ALL
+- **Note**: Per the WARP.md "tests forbidden" rule, this is **manual QA / security review** — not an automated test suite. Verification is done via `npm run build` + preview deploys.
 - **Title**: Test all 4 tracks end-to-end
 - **Owner**: moldovan
 - **Expected Delivery**: Week 4
@@ -188,5 +194,5 @@
 - **Title**: Documentation consistency maintenance
 - **Owner**: AI Agent
 - **Expected Delivery**: Ongoing
-- **Details**: Automated via pre-commit hook and CI/CD checks (v1.14.0)
-- **Status**: ✅ Automated - manual oversight required monthly
+- **Details**: Enforced automatically via the pre-commit hook (`.githooks/pre-commit`) and the CI workflow (`.github/workflows/ci.yml`), both running `npm run verify-docs`.
+- **Status**: ✅ Automated (restored 2026-07-05)

@@ -12,7 +12,9 @@
     "build": "next build",
     "start": "next start",
     "bump-version": "bash scripts/bump-version.sh",
-    "verify-docs": "node scripts/verify-docs-consistency.js"
+    "verify-docs": "node scripts/verify-docs-consistency.js",
+    "install-hooks": "sh scripts/install-hooks.sh",
+    "prepare": "sh scripts/install-hooks.sh || true"
   },
   "keywords": [],
   "author": "",

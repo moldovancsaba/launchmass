@@ -15,6 +15,9 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
+        {/* SEYU brand fonts — preconnect for faster loading (stylesheet imported in globals.css) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Google Analytics gtag.js implementation */}
         {/* 
           Google Analytics script injection for tracking ID G-HQ5QPLMJC1
