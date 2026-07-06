@@ -34,6 +34,7 @@
 - [ ] API routes documented with their authentication/authorization requirements
 
 #### Automation Health
+> ✅ **Audit note (updated 2026-07-05):** the pre-commit hook (`.githooks/pre-commit`) and the CI docs-check + build workflow (`.github/workflows/ci.yml`) were restored — the items below are operational again.
 - [ ] Pre-commit hook is working (test with intentional version mismatch)
 - [ ] GitHub Actions docs-check workflow passes on latest commit
 - [ ] Version bump script works for patch/minor/major bumps

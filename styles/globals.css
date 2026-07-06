@@ -1,9 +1,50 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+/* SEYU Design System — brand foundations applied to launchmass
+   Fonts: Anton (display), Montserrat (body/UI), Space Mono (labels/specs) */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Space+Mono:wght@400;700&display=swap');
+
+/* ===== SEYU brand tokens ===== */
+:root {
+  /* Core */
+  --seyu-ink: #1B1F3C;        /* base dark, text, broadcast */
+  --seyu-mist: #F2F6F9;       /* app surface, card backdrop */
+  /* Accent */
+  --seyu-magenta: #B62684;    /* primary brand, titles, key actions */
+  --seyu-deep-blue: #2C5680;  /* secondary accents */
+  --seyu-bright-blue: #0085C6;/* product UI, data */
+  /* Neutrals */
+  --seyu-slate: #95AABE;
+  --seyu-line: #E6EAF3;
+  --seyu-muted: #5A6478;
+  --seyu-muted-2: #8A93AB;
+  --seyu-body: #3A4358;
+  /* Radius */
+  --seyu-radius-card: 22px;
+  --seyu-radius-sm: 16px;
+  --seyu-radius-pill: 999px;
+  /* Signature gradients */
+  --gradient-deep-glow: radial-gradient(circle at 50% 50%,#2c5680 0%,#24406a 30%,#1c2444 66%,#1b1f3c 100%);
+  --gradient-card-default: linear-gradient(135deg,#B62684 0%,#2C5680 55%,#0085C6 100%);
+  /* Brand pink glow for primary actions */
+  --seyu-magenta-glow: 0 10px 28px rgba(182,38,132,0.45);
+}
 
 html, body { margin: 0; padding: 0; height: 100%; }
 * { box-sizing: border-box; }
-body { font-family: 'Montserrat', sans-serif; }
+body {
+  font-family: 'Montserrat', system-ui, sans-serif;
+  color: var(--seyu-ink);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--seyu-magenta); color: #fff; }
 
+/* Display type helper — Anton, per SEYU foundations */
+.anton, .seyu-display {
+  font-family: 'Anton', sans-serif !important;
+  font-weight: 400;
+  letter-spacing: -1px;
+}
+
+/* ===== App background: SEYU Deep Glow (stadium-spotlight dark base) ===== */
 .background-content {
   position: fixed;
   inset: 0;
@@ -14,17 +55,16 @@ body { font-family: 'Montserrat', sans-serif; }
   content: "";
   position: absolute;
   inset: 0;
-  background: #370a7a;
-  background: linear-gradient(313deg, rgba(55, 10, 122, 1) 0%, rgba(4, 4, 97, 1) 55%, rgba(0, 212, 255, 1) 100%);
+  background: var(--gradient-deep-glow);
 }
 
+/* ===== Public launch grid ===== */
 .grid {
   display: grid;
   gap: 16px;
   padding: 16px;
-  /* Keep a small distance from the top overlay menu (failsafe nav) on launch page */
-  /* Why: Prevents visual overlap with the fixed top-right quick navigation while keeping UI minimal. */
-  padding-top: 56px;
+  /* Keep a small distance from the fixed top header */
+  padding-top: 72px;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 
@@ -33,57 +73,95 @@ body { font-family: 'Montserrat', sans-serif; }
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  border-radius: 16px;
-  padding: 20px;
+  /* SEYU: cards use standard equal-radius corners (the Leaf is presentation-only) */
+  border-radius: var(--seyu-radius-card);
+  padding: 22px;
   min-height: 140px;
   text-decoration: none;
-
-
-  border: 1px solid #e6e8ef;
-
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 10px 30px rgba(27,31,60,0.28);
+  transition: transform .18s cubic-bezier(.4,0,.2,1), box-shadow .18s cubic-bezier(.4,0,.2,1);
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 44px rgba(27,31,60,0.42);
 }
 
-.card h3 { margin: 0 0 6px 0; font-size: 24px; font-weight: 700; line-height: 1.2; }
-.card p { margin: 0; opacity: 0.8; font-size: 12px; font-weight: 400; }
+.card h3 {
+  margin: 0 0 6px 0;
+  font-family: 'Anton', sans-serif;
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.02;
+  letter-spacing: -0.5px;
+}
+.card p { margin: 0; opacity: 0.9; font-size: 13px; font-weight: 500; line-height: 1.5; }
 
 /* Tag chips used on cards and filter bar */
 .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag-chip {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: 3px 10px;
+  border-radius: var(--seyu-radius-pill);
   background: rgba(255,255,255,0.92);
-  color: #111;
+  color: var(--seyu-ink);
   font-size: 11px;
+  font-weight: 600;
   text-decoration: none;
-  border: 1px solid #e6e8ef;
+  border: 1px solid var(--seyu-line);
+  transition: background .15s, color .15s;
 }
-.tag-chip:hover { background: #fff; }
+.tag-chip:hover { background: var(--seyu-magenta); color: #fff; border-color: var(--seyu-magenta); }
 
-.filter-bar { background: rgba(255,255,255,0.92); border-bottom: 1px solid #e6e8ef; }
+.filter-bar {
+  background: rgba(255,255,255,0.95);
+  border-bottom: 1px solid var(--seyu-line);
+  color: var(--seyu-ink);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* SEYU primary pill button */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: var(--seyu-radius-pill);
+  background: var(--seyu-magenta);
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  border: 0;
+  cursor: pointer;
+  box-shadow: var(--seyu-magenta-glow);
+  transition: filter .15s, transform .15s;
+}
+.btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
 
 .info-bar {
   position: fixed;
   bottom: 0; left: 0; right: 0;
-  background: rgba(255,255,255,0.95);
+  background: var(--seyu-ink);
+  color: #fff;
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 12px;
-  border-top: 1px solid #ccc;
+  padding: 8px 14px;
+  border-top: 1px solid #2A2F52;
   z-index: 9999;
 }
 .info-bar img { display: block; }
-.info-text { font-size: 16px; font-weight: 600; }
+.info-text { font-size: 15px; font-weight: 600; }
 
 @media (min-width: 768px){
   .grid {
     gap: 20px;
     padding: 24px;
-    /* On wider screens, leave some extra space on the right so cards do not sit under the overlay */
-    padding-top: 64px;
+    padding-top: 80px;
     padding-right: 140px;
   }
 }
 
+/* ===== Admin — SEYU skin ===== */
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -91,44 +169,47 @@ body { font-family: 'Montserrat', sans-serif; }
 }
 .admin-card { list-style: none; }
 .admin-card-inner {
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: var(--seyu-radius-card);
+  padding: 16px;
   min-height: 180px;
   color: #fff;
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255,255,255,0.25);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 10px 30px rgba(27,31,60,0.28);
 }
 .admin-card-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.admin-card-top .drag { cursor: grab; border: 0; background: rgba(0,0,0,0.15); color: #fff; border-radius: 8px; padding: 2px 8px; }
+.admin-card-top .drag { cursor: grab; border: 0; background: rgba(27,31,60,0.35); color: #fff; border-radius: 8px; padding: 3px 9px; }
 .admin-card-top .actions { display: flex; gap: 6px; }
 .admin-card-top .actions .edit,
 .admin-card-top .actions .del {
-  border: 0; border-radius: 8px; padding: 4px 8px; color: #111;
-  background: rgba(255,255,255,0.9);
+  border: 0; border-radius: 8px; padding: 4px 9px; color: var(--seyu-ink); font-weight: 600;
+  background: rgba(255,255,255,0.92);
 }
-.admin-card-top .actions .del { background: rgba(255,230,230,0.95); }
+.admin-card-top .actions .del { background: #FDF0F3; color: #C42B57; }
 .admin-card-content { flex: 1; }
-.admin-card-content h3 { margin: 8px 0 4px; font-size: 16px; }
-.admin-card-content p { margin: 0; font-size: 12px; opacity: .9; }
+.admin-card-content h3 { margin: 10px 0 4px; font-family: 'Anton', sans-serif; font-weight: 400; font-size: 18px; letter-spacing: -0.3px; }
+.admin-card-content p { margin: 0; font-size: 12px; opacity: .92; font-weight: 500; }
 .admin-card .visit {
   align-self: flex-start;
-  background: rgba(255,255,255,0.9);
-  color: #111; text-decoration: none;
-  border-radius: 8px; padding: 6px 10px; font-size: 12px; border: 0;
+  background: rgba(255,255,255,0.92);
+  color: var(--seyu-ink); text-decoration: none; font-weight: 600;
+  border-radius: var(--seyu-radius-pill); padding: 6px 14px; font-size: 12px; border: 0;
 }
-.admin-card-form label { display: grid; gap: 4px; margin-bottom: 8px; font-size: 12px; }
+.admin-card-form label { display: grid; gap: 4px; margin-bottom: 8px; font-size: 12px; font-weight: 600; }
 .admin-card-form input, .admin-card-form textarea {
-  width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.5);
-  padding: 6px 8px; background: rgba(255,255,255,0.95); color: #111;
+  width: 100%; border-radius: 10px; border: 1px solid rgba(255,255,255,0.5);
+  padding: 7px 9px; background: rgba(255,255,255,0.96); color: var(--seyu-ink);
+  font-family: inherit;
 }
 .admin-card-form .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
 .admin-card-form .form-actions button {
-  border: 0; border-radius: 8px; padding: 6px 10px; background: rgba(255,255,255,0.9); color: #111;
+  border: 0; border-radius: var(--seyu-radius-pill); padding: 7px 14px; font-weight: 700;
+  background: var(--seyu-magenta); color: #fff; cursor: pointer;
 }
 
 /* Spinner animation for loading states */
@@ -136,3 +217,6 @@ body { font-family: 'Montserrat', sans-serif; }
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* SEYU pulse (brand badge / live dot) */
+@keyframes seyuPulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .65; } }

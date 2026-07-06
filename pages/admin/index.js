@@ -501,19 +501,19 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
         showAddCard={!!selectedOrgUuid}
         onAddCard={addItem}
       />
-      <main style={{ padding: 16 }}>
+      <main style={{ padding: 16, paddingTop: 80 }}>
         {/* Functional: Organization selector and status */}
-        <section style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: 8 }}>
+        <section style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', background: '#fff', border: '1px solid var(--seyu-line)', padding: '12px 16px', borderRadius: 'var(--seyu-radius-card)', boxShadow: '0 10px 30px rgba(27,31,60,0.28)' }}>
           {/* Functional: Organization selector to scope admin operations */}
           {/* Strategic: Clear alternative to breadcrumbs; keeps UI minimal */}
-          <select value={selectedOrgUuid} onChange={onChangeOrg} disabled={!!forcedOrgUuid} style={{ minWidth: 220, padding: '6px 10px', borderRadius: 4 }}>
+          <select value={selectedOrgUuid} onChange={onChangeOrg} disabled={!!forcedOrgUuid} style={{ minWidth: 220, padding: '9px 12px', borderRadius: 10, border: '1px solid var(--seyu-line)', background: 'var(--seyu-mist)', color: 'var(--seyu-ink)', fontFamily: 'inherit', fontWeight: 600 }}>
             <option value="">Select organization</option>
             {orgs.map(o => (
               <option key={o.uuid} value={o.uuid}>{o.name} / {o.slug}</option>
             ))}
           </select>
-          <span style={{ opacity:.7, fontSize:12 }}>Org: {selectedOrgUuid ? '✓' : '✗'}</span>
-          {status ? <span style={{ opacity:.75, marginLeft: 'auto' }}>{status}</span> : null}
+          <span style={{ color: 'var(--seyu-muted)', fontSize: 12, fontWeight: 600 }}>Org: {selectedOrgUuid ? '✓' : '✗'}</span>
+          {status ? <span style={{ color: 'var(--seyu-magenta)', fontWeight: 700, marginLeft: 'auto' }}>{status}</span> : null}
         </section>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
