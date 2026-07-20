@@ -402,6 +402,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **SSO_CLIENT_ID**: OAuth client ID from SSO admin panel
 - **SSO_CLIENT_SECRET**: OAuth client secret (server-side only, sensitive)
 - **SSO_REDIRECT_URI**: OAuth callback URL (https://launchmass.doneisbetter.com/api/oauth/callback)
+- **SESSION_SECRET**: HMAC key that signs/verifies the `sso_session` cookie (server-side only, sensitive; see `lib/session.js`). Falls back to `SSO_CLIENT_SECRET` if unset — set a dedicated value in production so session integrity is independent of the OAuth client secret.
 - **NEXT_PUBLIC_SSO_SERVER_URL**: Client-accessible SSO URL
 - **NEXT_PUBLIC_SSO_CLIENT_ID**: Public client ID for client-side OAuth redirects
 - **NEXT_PUBLIC_SSO_REDIRECT_URI**: Public OAuth callback URL
