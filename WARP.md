@@ -138,7 +138,7 @@ Cards stored in MongoDB `cards` collection with fields:
 Admin operations require valid OAuth session from SSO service. Authentication flow:
 1. User visits `/admin` → server validates `sso_session` HttpOnly cookie
 2. Invalid session → redirect to SSO authorization endpoint
-3. Valid session → server syncs user to local MongoDB. New users default to `appRole: 'user'` (not admin) with `hasAccess: true`, unless `AUTO_GRANT_ACCESS=false`, in which case they land in a pending state awaiting explicit admin approval. Admin rights require an explicit grant via the `admin/users/*` endpoints — first login never auto-grants admin.
+3. Valid session → server syncs user to local MongoDB. Role/access on first login are decided in this precedence order (`pages/api/oauth/callback.js`): (a) if SSO already has a permission record for the user, SSO's `role`/`status` fully govern (`approved`→access granted with that role, `pending`/`revoked`/unknown→no access) — `AUTO_GRANT_ACCESS` is not consulted in this case; (b) if SSO has no record but a local `users` document already exists, that document's stored `appRole`/`hasAccess` govern; (c) only if *neither* exists (a true first-ever login) does `AUTO_GRANT_ACCESS` decide — default `true` grants `appRole: 'user'` + access immediately, `false` leaves the user pending explicit approval. First login never auto-grants **admin** under any of these paths — admin requires an explicit grant via the `admin/users/*` endpoints (or a pre-existing SSO record that already says `admin`/`superadmin`).
 4. Client maintains session via 5-minute interval validation checks
 5. Session expiration → auto-redirect to SSO login
 
@@ -231,7 +231,7 @@ When working with this codebase, pay attention to:
 ### OAuth 2.0 Flow
 1. **Admin Page Access**: User visits `/admin` on launchmass.doneisbetter.com
 2. **Server-Side Validation**: `getServerSideProps` calls `validateSsoSession(req)` from `lib/auth-oauth.js`
-3. **Cookie Validation**: Server reads the HMAC-signed `sso_session` HttpOnly cookie (`lib/session.js`, `SESSION_SECRET`) — the signature is verified before any content is trusted, and the cookie carries identity only; `appRole`/`hasAccess`/`appStatus` are re-read from MongoDB on every request, not taken from the cookie, so a DB-side revocation takes effect immediately
+3. **Cookie Validation**: Server reads the HMAC-signed `sso_session` HttpOnly cookie (`lib/session.js`, `SESSION_SECRET`) — the signature is verified before any content is trusted. The cookie's *physical contents* are sensitive: `access_token`, `id_token`, `refresh_token`, and a `user` object including `appRole`/`appStatus`/`hasAccess` (all set in `pages/api/oauth/callback.js`'s call to `signSession`) — never log or print this cookie's value. What's *trusted for authorization*, however, is narrower than what it contains: `validateSsoSession` re-reads `appRole`/`hasAccess`/`appStatus` from MongoDB on every request rather than trusting the cookie's copies of those fields, so a DB-side revocation takes effect immediately regardless of what the (still-valid, still-signed) cookie says
 4. **User Sync**: New/returning users are synced to the local `users` collection during the OAuth callback (`upsertUserFromSso()`); subsequent requests read the existing DB record rather than re-syncing from the cookie
 5. **Audit Logging**: All authentication attempts logged to `authLogs` collection
 6. **Page Render**: Valid sessions render admin interface; invalid redirects to SSO authorization endpoint
