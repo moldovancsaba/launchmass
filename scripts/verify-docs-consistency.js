@@ -54,6 +54,7 @@ const REQUIRED_DOCS = [
   'AUTH_CURRENT.md',
   'WARP.md',
   'CLAUDE.md',
+  'AGENTS.md',
 ];
 
 // ISO 8601 timestamp pattern with milliseconds: YYYY-MM-DDTHH:MM:SS.sssZ
