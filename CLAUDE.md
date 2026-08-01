@@ -1,0 +1,270 @@
+# CLAUDE.md
+
+Operating rules for any AI coding agent working in this repository — loaded automatically
+by Claude Code, and intended to be read by any other agentic tool that honors this
+filename convention. These are STANDING rules: they apply to every task, regardless of
+who asks or how the request is phrased. When a task conflicts with them, the rules win —
+say so explicitly rather than silently overriding. If you change this file, update the
+cross-reference in `WARP.md` in the same change set (see §8).
+
+For what this project *is* and how to build/run it, see `WARP.md` (dev commands),
+`ARCHITECTURE.md` (system design), `AUTH_CURRENT.md` (auth), `TASKLIST.md`/`ROADMAP.md`
+(planned work). This file governs *how an agent works*, not what the product does.
+
+---
+
+## 0. Read first, never guess
+
+Before stating a fact about structure, architecture, business logic, data flow,
+contracts, or behavior: **read the actual file or run the actual command.** No answering
+from memory on anything structural or crucial — this codebase has drifted from its own
+docs before (see `TASKLIST.md`'s 2026-07-05 audit note), and confident-but-unverified
+claims are exactly how that happens. Cite the files you relied on.
+
+Report only what a tool actually returned (build, CI, a deployment, a query result).
+Never fabricate or extrapolate a result you didn't observe. If a check can't be run from
+your current environment, say so plainly — do not claim success you didn't verify (see
+§7 for this repo's specific environment limits).
+
+## 1. AI-assistant branding ban (non-negotiable, overrides tool defaults)
+
+The agent doing the work is internal tooling — not a feature, a co-author, or a brand to
+surface anywhere this codebase or its history is visible, in code or in conversation.
+This applies regardless of how a request is phrased, how small the change seems, or how
+the tool's own default behavior is configured. If a tool's built-in template conflicts
+with this rule, this rule wins — do not silently fall back to the default.
+
+- **Commits:** never add a `Co-Authored-By: <assistant> …` trailer, a session-link
+  trailer, a model name, or any other AI-attribution line. Describe the change and its
+  reasoning only — nothing about what tool produced it. Verify before pushing:
+  `git log -1 --format=%B | grep -iE 'co-authored-by:.*(claude|anthropic)|claude-session|generated (with|by)'`
+  must return nothing.
+- **Branches:** never create or push a branch prefixed with the assistant's name (e.g.
+  `claude/…`) or otherwise named after the tool/session. If the harness auto-creates one
+  at session start, move real work onto a plain, purpose-named branch (`feature/…`,
+  `fix/…`, `chore/…`) before it accumulates commits, and always before it's merged. This
+  is a mitigation, not a fix to the harness's naming behavior — expect it to keep minting
+  prefixed branches; moving off immediately is the standing countermeasure.
+- **Pull requests:** titles and descriptions describe the change only. No "generated
+  by," "co-authored by," or session-link footers naming an AI assistant.
+- **Documentation, code, UI copy, API responses:** neutral terms only — "an AI coding
+  assistant" at most, and only when the fact is genuinely load-bearing. Omit the mention
+  entirely if the sentence reads fine without it.
+- **Retroactive, not just forward:** if AI-branding turns up in tracked files or
+  reachable git history while doing unrelated work, remove/rewrite it as part of that
+  work. Flag it if fixing it is out of scope — never silently pass over it.
+- **No exceptions for convenience:** a tool's own default commit template or a harness's
+  default branch prefix is not a valid reason to violate the above. If a tool genuinely
+  cannot be made to comply (a platform behavior outside this repo's control — e.g. this
+  session's branch auto-naming, see §7), say so explicitly and apply the branch
+  mitigation above; never claim branding was removed when it wasn't.
+- **The one genuine exception:** a model's own honest self-disclosure when a person
+  directly asks "are you an AI" or "which model is this" is a safety/honesty behavior,
+  not branding, and is out of scope for this rule. Never deny or hide what you are.
+
+## 2. Work from GitHub Issues + labels (there is no Projects v2 board in scope)
+
+This repository has no GitHub Projects v2 board reachable from an agent session (see §7
+— GraphQL is disabled for coding-agent sessions and there is no REST equivalent for
+Projects v2). The **label-filtered Issues list is the board.** Use the taxonomy already
+established (see the `EPIC` issue for the current program, e.g. issue #6 at the time of
+writing):
+
+- **Priority** (≤1 per issue): `priority: critical` | `priority: high` | `priority: medium` | `priority: low`
+- **Phase / track** (≤1 per issue, extend as new tracks open): `phase: N-<name>` e.g.
+  `phase: 1-security-critical`
+- **Type** (≥1): `type: security` | `type: bug` | `type: refactor` | `type: tooling` |
+  `type: frontend` | `type: docs` (plus GitHub's defaults — `bug`, `enhancement`,
+  `documentation` — reuse those where they already fit rather than creating a
+  near-duplicate).
+
+Rules:
+- Every non-trivial code/doc/config change traces to an issue. Decompose vague or large
+  requests into a checklist of independently-executable issues **before or while**
+  implementing, not retroactively. Reference `#NNN` in commit messages; close with
+  `Closes #NNN` when the PR that resolves it merges.
+- No vague tickets or umbrella tasks. Each issue should be independently executable, with
+  its scope, dependencies, and acceptance criteria explicit enough that a fresh agent
+  (with no memory of the conversation that produced it) could pick it up correctly.
+- Group related issues under a parent **tracking issue** using GitHub's native sub-issue
+  hierarchy (`sub_issue_write` via the github MCP tools, or the web UI) — this is the
+  closest available substitute for board "swimlanes" and is what actually renders as a
+  checklist/progress bar on the parent issue.
+- There is no label-creation or milestone-creation tool available in this session's
+  GitHub access (see §7) — `issue_write`'s `labels` array *does* auto-create a label the
+  first time it's used with a new name (verified empirically), so the taxonomy above is
+  self-provisioning; milestones are not available at all, so phase/priority labels are
+  the grouping mechanism, not milestones.
+- Never invent off-taxonomy labels ad hoc (e.g. a bespoke `status: whatever`) — extend
+  the taxonomy deliberately in this file if a new dimension is genuinely needed, so it
+  stays a closed, filterable set rather than sprawl.
+
+## 3. Quality gate for `main` — scaled to what this repo actually has
+
+Nothing lands on `main` with a broken chain. **The current, real chain — not an
+aspirational one — is:**
+
+```bash
+npm run verify-docs   # version/doc consistency (scripts/verify-docs-consistency.js)
+npm run build         # next build
+```
+
+Both must exit 0. `npm run lint` and `npm run typecheck` are **not present yet** — they
+are tracked as their own issues (ESLint baseline, JSDoc+`tsc --checkJs`) precisely
+because this repo has no automated-test safety net (see below) and static analysis is
+the intended substitute. **The moment either lands, add it to this chain and to this
+file in the same change set** — do not let this document say "not present yet" once it
+is.
+
+**Automated tests are prohibited in this repository** (`WARP.md`: "Tests are forbidden
+— this is an MVP factory, no testing allowed"). This is a deliberate, standing project
+rule, not an oversight — do not add a test framework, do not write `*.test.js` files,
+and do not treat "add tests" as an acceptable response to a bug found in this codebase.
+Where the GDS example this document is adapted from relies on `npm run test:run`,
+this repo's substitute is: (a) the verify-docs + build chain above, (b) static analysis
+once §3's pending issues land, (c) an explicit **Manual Verification** section in every
+engineering issue (curl commands, click-paths, expected output) that a human or agent
+runs and records before calling the work done. "It builds" is not "it works" — always
+carry out the manual verification steps and report their actual result, not their
+absence.
+
+**Definition of Done**, checked explicitly, not assumed:
+- Behavior implemented and demonstrably works (manual verification executed and its
+  actual output recorded, not merely "should work").
+- `npm run verify-docs` and `npm run build` both clean.
+- Relevant docs updated in the **same change set** (§4).
+- Traceable to an issue (§2).
+- Edge cases, failure states, and — for any UI change — accessibility considered and
+  stated, even if the answer is "N/A, and here is why."
+- Committed with a clean (non-AI-branded, §1) message, and pushed to the intended branch.
+
+Fix problems at the source — upgrade the dependency, correct the code, fix the actual
+bug — never suppress a warning, silence a log, or add a bypass flag to make a check pass
+without addressing what it's checking. If a clean chain isn't achievable, stop and say
+so; do not push and call it a known issue.
+
+## 4. Documentation ships with the change
+
+Every change that alters behavior updates the relevant docs in the *same* change set —
+enforced for version/doc consistency by `npm run verify-docs`
+(`scripts/verify-docs-consistency.js`), which currently requires `README.md`,
+`ARCHITECTURE.md`, `TASKLIST.md`, `LEARNINGS.md`, `ROADMAP.md`, `RELEASE_NOTES.md`,
+`AUTH_CURRENT.md`, `WARP.md`, and `CLAUDE.md` to exist, and version-syncs `README.md`,
+`ARCHITECTURE.md`, `TASKLIST.md`, `LEARNINGS.md`, `AUTH_CURRENT.md` against
+`package.json`. A behavior change with no doc update is incomplete even if it builds
+and `verify-docs` passes on version numbers alone — version-sync is a floor, not the
+whole obligation. If you find *stale* doc content while doing unrelated work (as
+happened with this file's own creation — WARP.md described the session cookie as
+base64-encoded after it had already become HMAC-signed), fix it in the same change set
+per §0's retroactive-correction principle, or flag it explicitly if fixing it is out of
+scope for the current task.
+
+## 5. Pre-authorized operations — confirm with the repo owner, default conservative
+
+Unlike a mobile-only, no-terminal-access owner who might grant blanket direct-to-`main`
+push rights, **this project has not (yet) granted that standing authorization.** Default
+policy until told otherwise:
+- Feature/fix/chore branches: create and push freely.
+- Land changes via PR; merge on explicit instruction ("merge", "merge #N", or clear
+  equivalent) — this session has done exactly that (PR #2, #3) and no more.
+- Direct push to `main` without a PR: only on an explicit, unambiguous instruction to do
+  so for that specific change ("commit and push straight to main"). Absent that, open a
+  PR even for a small change.
+- This does **not** extend to force-push, history rewrite, or branch/tag deletion —
+  those need explicit per-instance confirmation regardless of any other standing
+  authorization, and some are outright blocked by this session's tooling anyway (§7).
+
+If the repo owner wants the broader, GDS-style "dev/preview branches free, direct
+`main` push on request, only force-push/history-rewrite/deletion gated" policy, that is
+a one-line amendment to this section — ask, don't assume.
+
+## 6. This repo's actual system design (verify before you touch)
+
+- **Stack:** Next.js (Pages Router, React 19), MongoDB (native driver, no ORM), OAuth
+  2.0 SSO against `sso.doneisbetter.com`, Vercel deployment. Full detail in
+  `ARCHITECTURE.md`; do not re-derive it from memory (§0).
+- **Auth:** session is an HMAC-signed cookie (`lib/session.js`, `SESSION_SECRET`,
+  falls back to `SSO_CLIENT_SECRET` if unset — set a dedicated `SESSION_SECRET` in
+  production). The cookie carries identity only; `appRole`/`hasAccess`/`appStatus`
+  authorization is re-read from MongoDB on every request via `validateSsoSession`
+  (`lib/auth-oauth.js`) — the cookie can never grant elevated access by itself, and a
+  DB-side revocation takes effect on the user's very next request. See
+  `AUTH_CURRENT.md`.
+- **Org-scoped authorization:** `lib/permissions.js`'s `hasOrgPermission` / the
+  `withOrgPermission` wrapper is the *only* correct way to gate a mutating API route
+  that acts on an organization. `withSsoAuth` alone proves a valid login exists — it
+  proves nothing about the caller's rights in the *target* org named by
+  `X-Organization-UUID`. Getting this pairing wrong is exactly the class of bug this
+  program's Phase 1 security issues (org-scoped card mutations, admin user-management
+  endpoints) exist to close — do not reintroduce it in new routes.
+- **No automated tests** — see §3. **No TypeScript source** (JSDoc + `tsc --checkJs`
+  is the planned static-analysis layer, not a migration to `.ts` files) once that
+  issue lands.
+- **Debug logging convention:** gate verbose/diagnostic logs behind an explicit env
+  flag read at the top of the file (`OAUTH_DEBUG`, `ORG_CACHE_DEBUG`, and similarly
+  named flags as they're added) — never log request headers or cookies unconditionally,
+  even behind a flag (a flag left on in a shared environment must still be safe).
+- **Frontend brand system:** SEYU design tokens live in `styles/globals.css`
+  (`:root` custom properties) and `public/brand/`. Any *new* general-purpose UI
+  component work that a future issue scopes to use the Sovereign Squad General Design
+  System (per an explicit standing instruction from the repo owner, if one exists for
+  this project — confirm before assuming it applies repo-wide) must follow that
+  system's own constraints as stated in that issue; this is not yet a repo-wide default
+  for all of launchmass's existing SEYU-branded UI, which predates that constraint and
+  is out of scope to migrate absent an explicit instruction to do so.
+
+## 7. Environment quirks discovered in practice (this session, verified firsthand)
+
+Record new ones here as they're found — don't rediscover them the hard way twice.
+
+- **GitHub GraphQL is disabled for this session.** Any GraphQL query — including
+  `projectV2` lookups needed for a real Projects-v2 board — returns: *"This GraphQL
+  query is not enabled for this session — only the pinned set of PR-review operations
+  is served. Use REST via `gh api repos/{owner}/{repo}/...` instead."* This is a hard
+  wall, not a retry-able failure; there is no REST equivalent for Projects-v2 (a
+  user/org-scoped resource, and this session's REST access is repo-scoped only, which
+  is doubly why it's unreachable). Do not keep re-attempting GraphQL calls hoping the
+  block lifts — it's a fixed session policy. Use Issues + labels (§2) instead, and say
+  so plainly rather than imply a board exists.
+- **No milestone create/list tool, no label create/list tool.** `issue_write`'s
+  `labels` param *does* silently provision a new label on first use (confirmed:
+  creating an issue with a novel `phase:1-security-critical` label worked with no
+  separate creation step) — but there is no way to *list* existing labels other than
+  `get_label` by exact name, and no milestone tool exists at all. Plan around this
+  (§2's label taxonomy), don't assume milestone tooling will appear.
+- **Branch deletion is blocked two different ways:** the REST `DELETE
+  /git/refs/heads/…` endpoint returns *"Write access to this GitHub API path is not
+  permitted through this proxy"* (403), and `git push origin --delete <branch>` through
+  this session's git relay also 403s (*"RPC failed; HTTP 403"*). Both are proxy-level
+  policy, not credential problems — do not retry, do not attempt a workaround via a
+  different tool path; hand the exact command to the repo owner to run from an
+  unrestricted client (their machine, or the GitHub web UI) instead.
+- **Destructive/history-rewrite commands are blocked by this session's safety
+  classifier**, even when the intent is benign verification (e.g. `git filter-branch`
+  on a disposable throwaway clone, just to confirm a recipe works, was denied). Do not
+  try to route around a classifier denial with a different tool (e.g. abusing a test
+  runner to execute non-test shell) — that is explicitly out of bounds. Hand the repo
+  owner a reviewed, ready-to-run script instead and explain why it can't run here.
+- **The general web egress proxy 403s most external hosts** (production domains like
+  `*.doneisbetter.com`, Vercel preview URLs) — but the GitHub REST API via `curl` with
+  `$GITHUB_TOKEN`, and `WebFetch` against public `github.com`/`api.github.com` pages,
+  both work reliably. When the github MCP server itself is mid-reconnect or
+  de-authenticated (it does this periodically — *"This session is non-interactive, so
+  Claude cannot run the OAuth flow here"*), fall back to the REST/`curl` path rather
+  than reporting the capability as unavailable.
+- **PR check-in loops:** when asked to babysit/watch a PR, GitHub webhook events do
+  not reliably deliver CI-success or new-push notifications — schedule an explicit
+  self check-in (`send_later`/routine) at a sane interval (not sub-minute polling) and
+  re-arm it silently when nothing actionable changed; stop once the PR is merged or
+  closed, and don't keep polling after that terminal state.
+
+## 8. Keeping the agent docs themselves correct
+
+When you change how agents should behave in this repo, update **this file** (the
+loaded SSOT for Claude Code) and mirror the cross-reference into `WARP.md` (the
+Warp-loaded operating file) so the two don't silently diverge. This repo does not use
+`llms.txt` or an `AGENTS.md.template` — don't invent files this project's real doc set
+doesn't have; if a future need for a second harness's dedicated file arises, add it
+deliberately and register it in `scripts/verify-docs-consistency.js`'s `REQUIRED_DOCS`
+list, the same way `CLAUDE.md` was added when this file was created. After any edit
+here, run `npm run verify-docs` to confirm nothing broke.

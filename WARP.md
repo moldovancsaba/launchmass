@@ -2,6 +2,13 @@
 
 This file provides guidance to WARP (warp.dev) when working with code in this repository.
 
+> **Agent operating rules live in `CLAUDE.md`** (branding/attribution policy, the
+> Issues+labels board taxonomy, the quality gate, environment quirks discovered in
+> practice, pre-authorization policy). This file covers the *project itself* — stack,
+> commands, architecture, and project rules. Keep both accurate; a stale claim in either
+> is a bug, not a rounding error — fix it the moment you notice it, in the same change
+> set as whatever work surfaced it.
+
 ## Project Overview
 
 **launchmass** is a Next.js application that displays a mobile-first grid of oversized buttons/cards with a JSON-driven admin interface. Each card links to external resources and can be customized with gradients/colors. The application uses MongoDB for data persistence and includes drag-and-drop sorting capabilities in the admin panel.
@@ -131,7 +138,7 @@ Cards stored in MongoDB `cards` collection with fields:
 Admin operations require valid OAuth session from SSO service. Authentication flow:
 1. User visits `/admin` → server validates `sso_session` HttpOnly cookie
 2. Invalid session → redirect to SSO authorization endpoint
-3. Valid session → server syncs user to local MongoDB with `isAdmin: true` on first login
+3. Valid session → server syncs user to local MongoDB. New users default to `appRole: 'user'` (not admin) with `hasAccess: true`, unless `AUTO_GRANT_ACCESS=false`, in which case they land in a pending state awaiting explicit admin approval. Admin rights require an explicit grant via the `admin/users/*` endpoints — first login never auto-grants admin.
 4. Client maintains session via 5-minute interval validation checks
 5. Session expiration → auto-redirect to SSO login
 
@@ -174,7 +181,7 @@ This project follows strict development protocols:
   - Timestamp: 2025-10-01T11:15:00.000Z
 
 ### Admin Interface Features
-- OAuth-based SSO authentication with automatic admin rights on first login
+- OAuth-based SSO authentication; new users default to `user` role (auto-granted access unless `AUTO_GRANT_ACCESS=false`), admin rights require explicit approval — see Authentication section below
 - Real-time card editing with optimistic updates
 - Drag-and-drop reordering with bulk database updates
 - Organization selector for multi-tenant card management
@@ -224,8 +231,8 @@ When working with this codebase, pay attention to:
 ### OAuth 2.0 Flow
 1. **Admin Page Access**: User visits `/admin` on launchmass.doneisbetter.com
 2. **Server-Side Validation**: `getServerSideProps` calls `validateSsoSession(req)` from `lib/auth-oauth.js`
-3. **Cookie Validation**: Server reads base64-encoded `sso_session` HttpOnly cookie
-4. **User Sync**: Valid sessions trigger `upsertUserFromSso()` to create/refresh user data
+3. **Cookie Validation**: Server reads the HMAC-signed `sso_session` HttpOnly cookie (`lib/session.js`, `SESSION_SECRET`) — the signature is verified before any content is trusted, and the cookie carries identity only; `appRole`/`hasAccess`/`appStatus` are re-read from MongoDB on every request, not taken from the cookie, so a DB-side revocation takes effect immediately
+4. **User Sync**: New/returning users are synced to the local `users` collection during the OAuth callback (`upsertUserFromSso()`); subsequent requests read the existing DB record rather than re-syncing from the cookie
 5. **Audit Logging**: All authentication attempts logged to `authLogs` collection
 6. **Page Render**: Valid sessions render admin interface; invalid redirects to SSO authorization endpoint
 
@@ -234,7 +241,7 @@ When working with this codebase, pay attention to:
 - **Localhost Limitation**: Admin features DO NOT work on localhost due to cookie domain mismatch
 - **Development Testing**: Use Vercel preview deployments with *.doneisbetter.com subdomain
 - **Public Pages**: Non-admin routes work fine on localhost (no SSO required)
-- **User Management**: First OAuth login automatically grants admin rights via `users` collection
+- **User Management**: First OAuth login creates a `users` collection record with `appRole: 'user'` by default (see Key Rules above) — admin rights are a separate, explicit grant, never automatic
 - **Audit Trail**: All authentication attempts logged in `authLogs` collection with IP/user agent
 - **Session Monitoring**: Client-side 5-minute interval checks with auto-redirect on expiration
 - **Legacy Auth**: ADMIN_TOKEN bearer token system removed (use OAuth 2.0 instead)
