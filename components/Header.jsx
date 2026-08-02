@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTourContext } from './Tour';
 
 // Header component with hamburger menu and organization title
 // WHAT: Provides consistent navigation across all public pages with auth-aware menu
@@ -7,6 +8,21 @@ import { useState, useEffect } from 'react';
 export default function Header({ orgName, onAddCard, showAddCard = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // WHAT: null unless a page wraps its content in <TourProvider> (e.g. /admin, /)
+  // WHY: lets this menu conditionally offer "replay tour" only where one exists,
+  //      without Header needing to know which pages have tours
+  const tour = useTourContext();
+
+  // WHAT: The nav links a tour can spotlight (Organizations, Manage Users) only exist in
+  // the DOM while this dropdown is open, so force it open/closed to match whichever step
+  // is current while a tour is running.
+  // WHY: Without this, those two steps would always hit the "target not found" skip path.
+  useEffect(() => {
+    if (!tour) return;
+    if (!tour.isActive) { setMenuOpen(false); return; }
+    const stepNeedsMenu = tour.currentStepId === 'nav-organizations' || tour.currentStepId === 'nav-manage-users';
+    setMenuOpen(stepNeedsMenu);
+  }, [tour, tour?.isActive, tour?.currentStepId]);
 
   // WHAT: Check authentication status on mount
   // WHY: Show/hide auth-protected menu items based on login state
@@ -35,6 +51,7 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
       }}>
         {/* Hamburger Button - Top Left */}
         <button
+          data-tour="nav-menu-button"
           onClick={() => setMenuOpen(!menuOpen)}
           style={{
             position: 'absolute',
@@ -99,6 +116,7 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
         {/* Add Card Button - Top Right (admin pages only) */}
         {showAddCard && onAddCard && (
           <button
+            data-tour="add-card-button"
             onClick={onAddCard}
             style={{
               position: 'absolute',
@@ -158,7 +176,17 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
               >
                 🏠 Home
               </a>
-              
+
+              {tour && (
+                <button
+                  className="menu-item"
+                  onClick={() => { setMenuOpen(false); tour.start(); }}
+                  style={{ background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                >
+                  ❓ How this works
+                </button>
+              )}
+
               {isAuthenticated && (
                 <>
                   <a
@@ -170,6 +198,7 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
                   </a>
                   <a
                     href="/settings"
+                    data-tour="nav-organizations"
                     className="menu-item"
                     onClick={() => setMenuOpen(false)}
                   >
@@ -177,6 +206,7 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
                   </a>
                   <a
                     href="/admin/users"
+                    data-tour="nav-manage-users"
                     className="menu-item"
                     onClick={() => setMenuOpen(false)}
                   >

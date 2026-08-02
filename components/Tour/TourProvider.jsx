@@ -120,7 +120,19 @@ export default function TourProvider({ steps, children }) {
     setCurrentStepIndex(Math.min(Math.max(0, index), steps.length - 1));
   }
 
-  const value = { isActive, currentStepIndex, totalSteps: steps.length, start, next, prev, skip, goTo };
+  // currentStepId lets a consumer (e.g. Header opening its dropdown for a nav-target step)
+  // react to *which* step is active without needing its own copy of the steps array.
+  const value = {
+    isActive,
+    currentStepIndex,
+    currentStepId: steps[currentStepIndex]?.id ?? null,
+    totalSteps: steps.length,
+    start,
+    next,
+    prev,
+    skip,
+    goTo,
+  };
 
   return (
     <TourContext.Provider value={value}>

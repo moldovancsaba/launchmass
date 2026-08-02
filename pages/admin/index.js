@@ -7,6 +7,9 @@ import Header from '../../components/Header';
 // Functional: Import OAuth-based SSO authentication utilities
 // Strategic: Migrated from legacy cookie-forwarding (lib/auth.js) to OAuth 2.0 flow (lib/auth-oauth.js)
 import { validateSsoSession, getOAuthLoginUrl } from '../../lib/auth-oauth.js';
+import { TourProvider } from '../../components/Tour';
+import { useTourAutoStart } from '../../hooks/useTourAutoStart';
+import { adminTourSteps } from '../../lib/tours/adminTourSteps';
 // Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
 // We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
@@ -101,7 +104,7 @@ function TagInput({ value = [], options = [], onChange }) {
   );
 }
 
-function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange, sortable, tagOptions }) {
+function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange, sortable, tagOptions, isFirst }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item._id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const bg = item.background || DEFAULT_BG;
@@ -114,8 +117,8 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
         {!editing ? (
           <>
             <div className="admin-card-top">
-              <button className="drag" title="Drag" {...attributes} {...listeners}>↕</button>
-              <div className="actions">
+              <button className="drag" title="Drag" data-tour={isFirst ? 'card-drag-handle' : undefined} {...attributes} {...listeners}>↕</button>
+              <div className="actions" data-tour={isFirst ? 'card-edit-delete' : undefined}>
                 <button className="edit" onClick={onStartEdit}>Edit</button>
                 <button className="del" onClick={onDelete}>Delete</button>
               </div>
@@ -495,8 +498,9 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
   const orgName = currentOrg ? currentOrg.name : 'Admin';
 
   return (
-    <>
-      <Header 
+    <TourProvider steps={adminTourSteps}>
+      <AdminTourStart enabled={!!selectedOrgUuid} />
+      <Header
         orgName={orgName}
         showAddCard={!!selectedOrgUuid}
         onAddCard={addItem}
@@ -506,7 +510,7 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
         <section style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', background: '#fff', border: '1px solid var(--seyu-line)', padding: '12px 16px', borderRadius: 'var(--seyu-radius-card)', boxShadow: '0 10px 30px rgba(27,31,60,0.28)' }}>
           {/* Functional: Organization selector to scope admin operations */}
           {/* Strategic: Clear alternative to breadcrumbs; keeps UI minimal */}
-          <select value={selectedOrgUuid} onChange={onChangeOrg} disabled={!!forcedOrgUuid} style={{ minWidth: 220, padding: '9px 12px', borderRadius: 10, border: '1px solid var(--seyu-line)', background: 'var(--seyu-mist)', color: 'var(--seyu-ink)', fontFamily: 'inherit', fontWeight: 600 }}>
+          <select data-tour="org-selector" value={selectedOrgUuid} onChange={onChangeOrg} disabled={!!forcedOrgUuid} style={{ minWidth: 220, padding: '9px 12px', borderRadius: 10, border: '1px solid var(--seyu-line)', background: 'var(--seyu-mist)', color: 'var(--seyu-ink)', fontFamily: 'inherit', fontWeight: 600 }}>
             <option value="">Select organization</option>
             {orgs.map(o => (
               <option key={o.uuid} value={o.uuid}>{o.name} / {o.slug}</option>
@@ -519,7 +523,7 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map(i => i._id)} strategy={verticalListSortingStrategy}>
           <div className="admin-grid">
-            {items.map(it => {
+            {items.map((it, idx) => {
               const editing = editingId === it._id;
               return (
                 <Card
@@ -527,6 +531,7 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
                   item={it}
                   editing={editing}
                   tagOptions={tagOptions}
+                  isFirst={idx === 0}
                   onStartEdit={() => setEditingId(it._id)}
                   onCancel={() => setEditingId('')}
                   onSave={() => saveItem(it)}
@@ -539,6 +544,15 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
         </SortableContext>
       </DndContext>
     </main>
-    </>
+    </TourProvider>
   );
+}
+
+// Functional: Binds the admin tour's auto-start behavior. Must render as a child of
+// <TourProvider> (not a sibling providing it) since useTourAutoStart reads the tour via
+// context — a plain child component is the simplest way to get that without restructuring
+// AdminPageInner's own body into a separate provider layer.
+function AdminTourStart({ enabled }) {
+  useTourAutoStart('admin', enabled);
+  return null;
 }
