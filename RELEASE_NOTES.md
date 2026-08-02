@@ -1,5 +1,38 @@
 # Release Notes - launchmass
 
+## [v1.19.0] — 2026-08-02T16:02:42.000Z
+
+### 🧭 Onboarding Tour
+
+**Status**: Production - Guided walkthrough for admin and public users
+
+**Added:**
+- `components/Tour/` - Generic, dependency-free spotlight-overlay + anchored-tooltip
+  tour engine (`TourProvider`, `TourOverlay`, `TourTooltip`, `TourContext`)
+  - Targets elements via `data-tour="<step.id>"`, never a structural/CSS selector
+  - Focus trap, `Escape`-to-skip, `aria-live` step announcements, `prefers-reduced-motion` handling
+  - Missing targets retry once then skip gracefully with a console warning
+- `lib/tourStorage.js` - localStorage-backed per-tour "seen" flag
+- `hooks/useTourAutoStart.js` - starts a named tour once per browser once its host page is ready
+- `lib/tours/adminTourSteps.js` - 7-step admin tour (nav menu, org selector, add-card, first
+  card's drag handle and edit/delete, Organizations link, Manage Users link)
+- `lib/tours/publicTourSteps.js` - 2-step public visitor tour (first card, first tag chip)
+- "❓ How this works" replay entry in `Header.jsx`, available to both authenticated admins
+  and anonymous visitors
+
+**Changed:**
+- `Header.jsx` now auto-opens/closes its own dropdown menu in step with the active tour's
+  current step, so the two nav-link tour steps have a real target to spotlight
+- `pages/admin/index.js` and `pages/index.js` wrap their content in `<TourProvider>` and
+  auto-start their respective tour once enough data has loaded
+
+**Technical Details:**
+- No new npm dependency
+- MVP scope is localStorage-only persistence; cross-device/DB-backed persistence is a
+  deliberately deferred non-goal
+- Verified with real Playwright browser automation: full step-through of both tours,
+  graceful skip on a missing target, focus containment, and clean teardown on Finish/Escape
+
 ## [v1.18.0] — 2025-12-21T21:30:00.000Z
 
 ### 🏗️ Foundation - Multi-Track Phase 1 Complete

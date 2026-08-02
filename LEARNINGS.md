@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.18.0**
+**Version: 1.19.0**
 
 ## Frontend
 
@@ -27,6 +27,19 @@
 - dataLayer initialization must occur before gtag function definition
 - Document-level injection ensures analytics coverage across all application routes
 - Configuration object approach enables clean tracking ID management
+
+### Onboarding Tour Engine: Targets Hidden by Their Own Conditional Rendering (2026-08-02T16:02:42.000Z)
+**Issue**: Two admin tour steps (Organizations, Manage Users) target links that only exist in the DOM while
+`Header`'s hamburger dropdown is open — the tour engine's own missing-target skip logic silently skipped both
+steps every run, since nothing ever opened the menu during the tour.
+**Solution**: Exposed the current step's `id` on `TourContext` (`currentStepId`, alongside the existing
+`currentStepIndex`) so `Header` can react to which step is active and force its own dropdown open/closed to
+match, without the generic tour engine needing to know anything about menus.
+**Key Learning**: A generic "find the DOM element and skip if missing" engine can't distinguish "this target
+doesn't exist yet" from "this target exists but is inside collapsed/conditional UI the tour itself needs to
+expand" — both fail the same `getBoundingClientRect()` check. Verify each step's target against the actual
+render conditions of the real page (not a synthetic always-rendered harness) before trusting a green
+Playwright run; a harness that hard-codes every target visible from the start will not catch this class of bug.
 
 ## Process
 

@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.18.0**
+**Version: 1.19.0**
 
 ## Overview
 
@@ -80,6 +80,33 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Role**: Individual card rendering with gradient/color support
 - **Dependencies**: React, CSS styling system
 - **Status**: Active - Core UI component
+
+#### Onboarding Tour Engine (`components/Tour/`) - v1.19.0+
+- **Role**: Generic spotlight-overlay + anchored-tooltip walkthrough engine, content-free
+- **Dependencies**: React only — no new npm dependency
+- **Status**: Active - Admin and public onboarding
+- **Architecture**:
+  - `TourContext.js` / `useTourContext()` - shared context, returns `null` with no ancestor `<TourProvider>`
+  - `TourProvider.jsx` - state machine; locates each step's target via `[data-tour="<step.id>"]`, never a
+    structural/CSS selector, so unrelated markup changes can't silently break a tour
+  - `TourOverlay.jsx` - four-band dimmed layer (SEYU ink tint) around a spotlight cut-out, no `clip-path`
+  - `TourTooltip.jsx` - step card with focus trap, `Escape`-to-skip, `aria-live` announcements,
+    `prefers-reduced-motion` handling
+  - Missing targets retry once via `requestAnimationFrame`, then skip with a console warning
+    (`skippedCountRef` guards against an all-targets-missing infinite loop)
+- **Persistence**: `lib/tourStorage.js` — localStorage-only "seen" flag per tour id (`seyu-tour-<id>-completed`);
+  no per-user database persistence (deferred, cross-device sync is an explicit non-goal for this MVP)
+- **Auto-start**: `hooks/useTourAutoStart.js` — starts a named tour once per browser once the host page
+  signals readiness, marks it seen when the tour ends
+- **Step content**: `lib/tours/adminTourSteps.js` (7 steps: nav menu, org selector, add-card, first card's
+  drag handle and edit/delete, Organizations link, Manage Users link) and `lib/tours/publicTourSteps.js`
+  (2 steps: first card, first tag chip) — plain `{ id, title, body }` arrays, no engine changes needed to
+  add a new tour
+- **Wiring**: `pages/admin/index.js` wraps its content in `<TourProvider steps={adminTourSteps}>` and starts
+  once an organization is selected; `pages/index.js` wraps in `<TourProvider steps={publicTourSteps}>` and
+  starts once at least one card is present. `Header.jsx` renders a "❓ How this works" replay entry
+  (`tour.start()`) whenever a `<TourProvider>` ancestor exists, and auto-opens/closes its own dropdown menu
+  in step with the tour's current step id so the two nav-link steps have a target to spotlight
 
 ### Data Layer
 

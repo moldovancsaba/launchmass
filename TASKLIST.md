@@ -1,8 +1,25 @@
 # Task List - launchmass
 
-**Version: 1.18.0**
+**Version: 1.19.0**
 
 ## Completed Tasks
+
+### ✅ v1.19.0 — Onboarding Tour: Engine, Admin Content, Public Content (Completed 2026-08-02T16:02:42.000Z)
+- ✅ Built a generic, dependency-free spotlight-tour engine (`components/Tour/`): dimmed
+  overlay + anchored tooltip, `data-tour` attribute targeting, focus trap, `Escape`-to-skip,
+  `aria-live` announcements, graceful missing-target skip with an infinite-loop guard
+- ✅ Added localStorage-backed "seen" persistence (`lib/tourStorage.js`) and a tour-agnostic
+  auto-start hook (`hooks/useTourAutoStart.js`)
+- ✅ Added a "❓ How this works" replay entry to `Header.jsx`, available to both authenticated
+  admins and anonymous visitors; Header auto-opens its own dropdown for the two tour steps
+  whose targets live inside it
+- ✅ Wired the 7-step admin tour (`lib/tours/adminTourSteps.js`) into `pages/admin/index.js`
+- ✅ Wired the 2-step public visitor tour (`lib/tours/publicTourSteps.js`) into `pages/index.js`
+- ✅ Verified end-to-end with real Playwright browser automation (not just a build check):
+  full step-through of both tours, graceful skip when a target is missing (e.g. no tags on
+  the first card), focus containment, and clean teardown on Finish/Escape
+- ✅ Tracked via EPIC #25, issues #26-#30 (engine, persistence/replay, admin content, public
+  content, docs)
 
 ### ✅ v1.18.0 — Multi-Track Foundation: Custom Roles, Analytics, Database Optimization (Completed 2025-12-21T21:30:00.000Z)
 - ✅ Track A: Custom role foundation with organizationRoles collection
