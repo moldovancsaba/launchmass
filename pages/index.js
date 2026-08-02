@@ -1,11 +1,22 @@
 import OversizedLink from '../components/OversizedLink';
 import Header from '../components/Header';
 import clientPromise from '../lib/db';
+import { TourProvider } from '../components/Tour';
+import { useTourAutoStart } from '../hooks/useTourAutoStart';
+import { publicTourSteps } from '../lib/tours/publicTourSteps';
+
+// Binds the public tour's auto-start; must render as a TourProvider child (see the
+// admin page's AdminTourStart for why — useTourAutoStart reads the tour via context).
+function PublicTourStart({ enabled }) {
+  useTourAutoStart('public', enabled);
+  return null;
+}
 
 export default function Home({ cards, activeTag, orgName, orgBackground }) {
   const hasCards = Array.isArray(cards) && cards.length > 0;
   return (
-    <>
+    <TourProvider steps={publicTourSteps}>
+      <PublicTourStart enabled={hasCards} />
       {/* Default organization background override */}
       {orgBackground && (
         <style jsx global>{`
@@ -39,10 +50,11 @@ export default function Home({ cards, activeTag, orgName, orgBackground }) {
             description={c.description}
             background={c.background}
             tags={Array.isArray(c.tags) ? c.tags : []}
+            isFirst={i === 0}
           />
         ))}
       </main>
-    </>
+    </TourProvider>
   );
 }
 
