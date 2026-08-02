@@ -1,4 +1,4 @@
-export default function OversizedLink({ href, title, description, background, tags }) {
+export default function OversizedLink({ href, title, description, background, tags, isFirst }) {
   const raw = (background || "").trim();
   const isGradient = raw.startsWith("linear-gradient");
   const style = isGradient
@@ -12,6 +12,7 @@ export default function OversizedLink({ href, title, description, background, ta
   return (
     <a
       className="card"
+      data-tour={isFirst ? 'first-card' : undefined}
       href={href || '#'}
       target="_blank"
       rel="noopener noreferrer"
@@ -37,6 +38,7 @@ export default function OversizedLink({ href, title, description, background, ta
                 role="link"
                 tabIndex={0}
                 className="tag-chip"
+                data-tour={isFirst && i === 0 ? 'tag-chip' : undefined}
                 style={{ cursor: 'pointer' }}
                 onClick={go}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') go(e); }}
