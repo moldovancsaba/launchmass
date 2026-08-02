@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTourContext } from './Tour';
 
 // Header component with hamburger menu and organization title
@@ -12,6 +12,14 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
   // WHY: lets this menu conditionally offer "replay tour" only where one exists,
   //      without Header needing to know which pages have tours
   const tour = useTourContext();
+  // WHAT: The hamburger button is the only nav control guaranteed to still be mounted
+  // when a tour started from the dropdown ends.
+  // WHY: TourProvider.start() captures document.activeElement to restore focus to on
+  // end() — the "How this works" button that triggers a replay is itself inside the
+  // dropdown and unmounts the instant the menu closes, so restoring focus to it later
+  // is a no-op on a detached node. Focusing this persistent button first, before
+  // tour.start() captures the active element, gives end() something real to return to.
+  const hamburgerRef = useRef(null);
 
   // WHAT: The nav links a tour can spotlight (Organizations, Manage Users) only exist in
   // the DOM while this dropdown is open, so force it open/closed to match whichever step
@@ -51,6 +59,7 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
       }}>
         {/* Hamburger Button - Top Left */}
         <button
+          ref={hamburgerRef}
           data-tour="nav-menu-button"
           onClick={() => setMenuOpen(!menuOpen)}
           style={{
@@ -180,7 +189,11 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
               {tour && (
                 <button
                   className="menu-item"
-                  onClick={() => { setMenuOpen(false); tour.start(); }}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    hamburgerRef.current?.focus();
+                    tour.start();
+                  }}
                   style={{ background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer' }}
                 >
                   ❓ How this works
