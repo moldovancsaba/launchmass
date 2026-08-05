@@ -1,8 +1,8 @@
 # launchmass
 
-**Version: 1.18.0**
+**Version: 1.19.0**
 
-![Version](https://img.shields.io/badge/version-1.18.0-blue)
+![Version](https://img.shields.io/badge/version-1.19.0-blue)
 
 Mobile-first grid of oversized buttons with a simple JSON-driven admin page. Features Google Analytics tracking and centralized SSO authentication.
 
@@ -83,6 +83,12 @@ npm run start
 - Tag management with autocomplete
 - Hamburger menu navigation (v1.11.0)
 - Mobile-responsive design
+
+### Guided Tour (v1.19.0)
+- Spotlight-and-tooltip walkthrough of the hamburger menu, reachable via "❓ Guided tour"
+- Steps adapt to auth state: Home always shown, Admin/Organizations/Manage Users once signed in, Login when not
+- Same tour engine (`lib/tour/*`, `components/tour/TourOverlay.jsx`) as camera, messmass, and fanmass, built on `@sovereignsquad/gds-core`'s `OverlayManagerProvider`
+- "Seen" state persisted in `localStorage`, replay anytime from the same menu item
 
 ## Documentation
 

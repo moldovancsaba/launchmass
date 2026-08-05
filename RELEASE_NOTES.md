@@ -1,5 +1,38 @@
 # Release Notes - launchmass
 
+## [v1.19.0] — 2026-08-05T13:01:09.000Z
+
+### 🧭 Guided Tour
+
+**Added:**
+- `lib/tour/useTourController.js`, `lib/tour/storage.js`, `lib/tour/config/tourSteps.js`,
+  `components/tour/TourOverlay.jsx` (+ `.module.css`) — a spotlight-and-tooltip guided
+  tour of the hamburger menu in `components/Header.jsx`, ported from the identical
+  engine already shipped in camera, messmass, and fanmass (TypeScript → plain JS +
+  JSDoc, since this repo has no TypeScript source)
+- "❓ Guided tour" entry point in the hamburger menu, steps adapting to auth state:
+  Home always shown; Admin, Organizations, Manage Users once signed in; Login when not
+- "Seen" state persisted in `localStorage`, so the menu item can be replayed anytime
+
+**Changed:**
+- `pages/_app.js` — now wraps the app in `MantineProvider` + `@sovereignsquad/gds-core`'s
+  `OverlayManagerProvider` (app-wide, not admin-scoped, since Header.jsx renders on
+  every page)
+- `components/Header.jsx` — added `data-tour-id` attributes to each menu item and the
+  guided-tour trigger
+
+**Dependencies added:** `@sovereignsquad/gds-core@3.9.0`, `@sovereignsquad/gds-theme@3.9.0`,
+`@mantine/core@8.3.18`, `@mantine/hooks@8.3.18`, `@mantine/modals@8.3.18`,
+`@mantine/notifications@8.3.18`, `@tabler/icons-react@3.44.0` — versions matched to
+messmass's production install, from the public npm registry.
+
+**Verification:** live-driven with headless Chromium against the dev server — menu
+opens, tour starts, spotlight correctly targets Home then Login (this sandbox has no
+outbound MongoDB access, so the authenticated menu items weren't independently
+exercised live, though they render through the same already-verified code path),
+Next/Back/Skip/Done all functional, no tour-related console errors. `npm run
+verify-docs` and `npm run build` both clean.
+
 ## [v1.18.0] — 2025-12-21T21:30:00.000Z
 
 ### 🏗️ Foundation - Multi-Track Phase 1 Complete
