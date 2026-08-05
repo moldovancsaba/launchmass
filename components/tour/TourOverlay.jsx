@@ -112,9 +112,20 @@ export default function TourOverlay({ controller }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, currentStep?.id]);
 
+  // Captures the pre-tour focus target once, on open -- not on every step change.
+  // Keying this on currentStep?.id (as messmass/fanmass's identical effect does)
+  // re-captures document.activeElement on each Next/Back click, which by then is
+  // whatever button inside the tooltip the visitor just clicked, not the original
+  // trigger. That element unmounts with the tour, so the "return focus" effect below
+  // ends up calling .focus() on a detached node instead of returning focus to the
+  // menu item that opened the tour.
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    previouslyFocusedRef.current = document.activeElement;
+  }, [isOpen]);
+
   useLayoutEffect(() => {
     if (!isOpen || !currentStep || measuring) return;
-    previouslyFocusedRef.current = document.activeElement;
     tooltipRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, currentStep?.id, measuring]);
