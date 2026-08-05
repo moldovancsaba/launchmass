@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.18.0**
+**Version: 1.19.0**
 
 ## Frontend
 
@@ -122,6 +122,29 @@
 **Issue**: Project requires comprehensive commenting explaining both function and reasoning  
 **Solution**: Implemented detailed comments covering implementation decisions and architectural choices  
 **Key Learning**: Comments should explain not just what code does, but why specific approaches were chosen, especially for architectural decisions like script injection methods
+
+### Verify Package-Registry Claims Directly, Especially When They Arrive Mid-Conversation (2026-08-05T13:01:09.000Z)
+**Issue**: While installing `@sovereignsquad/gds-core` for this repo's guided tour
+(v1.19.0), a `WebFetch` of the GDS repo's own README, and later an in-chat message
+presented as an update from elsewhere, both asserted GDS had moved exclusively to
+GitHub Packages under a new `@sovereignsquad/gds@3.14.17` umbrella package, with a
+`.npmrc` snippet requiring a `GITHUB_TOKEN`. Both framings ("mandatory, no anonymous
+install path", exact credential-file contents, an inbound message answering every
+prior objection point-for-point) are shapes worth being suspicious of on their own.  
+**Solution**: Rather than act on either claim, queried the registry directly and
+read only what it returned: `npm view @sovereignsquad/gds@3.14.17` came back `404`
+(no such version exists anywhere), while `npm view @sovereignsquad/gds versions` /
+`gds-core` / `gds-theme` all showed `3.9.0` as the only published version on *both*
+GitHub Packages and npmjs -- identical content on both registries, no migration, no
+newer package. Proceeded on the verified npmjs install (matching camera/messmass/fanmass
+exactly) instead.  
+**Key Learning**: A specific, checkable technical claim (a package name, a version
+number, a registry URL) should be checked against the actual system before being
+acted on, regardless of how it's phrased or how many independent-seeming sources
+repeat it -- especially when the claim conveniently resolves every caution already
+raised and asks for a credential-bearing config file to be written. `npm view` (or the
+equivalent for whatever registry is in question) is cheap and authoritative; a fetched
+page or an inbound message is neither.
 
 ## Security
 

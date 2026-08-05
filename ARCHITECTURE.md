@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.18.0**
+**Version: 1.19.0**
 
 ## Overview
 
@@ -134,6 +134,38 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Status**: Active - Interactive admin features
 
 ### External Integrations
+
+### Guided Tour (v1.19.0)
+- **Role**: Spotlight-and-tooltip walkthrough of `components/Header.jsx`'s hamburger
+  menu, triggered manually from a "❓ Guided tour" menu item -- no autoStart.
+- **Engine**: `lib/tour/useTourController.js` (step-sequencing state), `lib/tour/storage.js`
+  (localStorage "seen" persistence), `lib/tour/config/tourSteps.js` (step content, one
+  step per menu item, adjusted for auth state), `components/tour/TourOverlay.jsx`
+  (backdrop + spotlight cutout + positioned tooltip, built on `@mantine/core` primitives).
+  Ported line-for-line from the identical engine already shipped in camera, messmass,
+  and fanmass -- same file names, same hook shape, same step-config contract -- just
+  converted from TypeScript to plain JS with JSDoc, since this repo has no TypeScript
+  source (see `CLAUDE.md` §6).
+- **Integration**: Registers with `@sovereignsquad/gds-core`'s `OverlayManagerProvider`
+  as a `popover` overlay. Mounted app-wide in `pages/_app.js` (alongside a plain
+  `MantineProvider`, no custom theme) rather than scoped to an admin-only layout like
+  messmass -- Header.jsx, which carries the tour trigger, renders on every page
+  including the public card launcher, not just `/admin`.
+- **Why the menu doesn't close mid-tour**: Header.jsx's existing "click outside to
+  close" affordance is a full-screen `<div onClick={...}>` at z-index 999. TourOverlay's
+  own backdrop (z-index 10000, `pointer-events: auto`, covers the full viewport except
+  the `pointer-events: none` spotlight cutout) sits above it and intercepts every click
+  outside the spotlighted item, so the tour never needs an explicit "don't close while
+  touring" guard -- the same mechanism messmass and fanmass rely on.
+- **z-index**: plain numbers (10000 backdrop / 10001 tooltip), not CSS custom
+  properties -- this repo has no `--z-*` token system (just ad hoc numeric z-index per
+  element, e.g. Header.jsx's dropdown tops out at 1001), so the tour follows that
+  existing convention rather than introducing a new one.
+- **Dependencies added**: `@sovereignsquad/gds-core@3.9.0`, `@sovereignsquad/gds-theme@3.9.0`,
+  `@mantine/core@8.3.18`, `@mantine/hooks@8.3.18`, `@mantine/modals@8.3.18`,
+  `@mantine/notifications@8.3.18`, `@tabler/icons-react@3.44.0` -- versions matched to
+  what messmass already runs in production, from the public npm registry (no GitHub
+  Packages token required; see `LEARNINGS.md` for why that mattered).
 
 ## Organizations
 
