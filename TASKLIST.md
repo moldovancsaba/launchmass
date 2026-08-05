@@ -1,8 +1,28 @@
 # Task List - launchmass
 
-**Version: 1.18.0**
+**Version: 1.19.0**
 
 ## Completed Tasks
+
+### ✅ v1.19.0 — Guided Tour (Completed 2026-08-05T13:01:09.000Z)
+- ✅ Installed `@sovereignsquad/gds-core@3.9.0` / `gds-theme@3.9.0` + Mantine 8.3.18 +
+      `@tabler/icons-react` (npmjs, matched to camera/messmass/fanmass's versions)
+- ✅ Ported `lib/tour/useTourController.js`, `lib/tour/storage.js`,
+      `lib/tour/config/tourSteps.js`, `components/tour/TourOverlay.jsx` from
+      messmass/fanmass's identical engine (TypeScript → plain JS + JSDoc)
+- ✅ Wired `MantineProvider` + `OverlayManagerProvider` app-wide in `pages/_app.js`
+- ✅ Wired the tour into `components/Header.jsx`'s hamburger menu: `data-tour-id`
+      attributes on each menu item, a "❓ Guided tour" trigger, steps that adapt to
+      auth state (Home always; Admin/Organizations/Manage Users once signed in; Login
+      when not)
+- ✅ Live-verified with a headless-Chromium run against the dev server: menu opens,
+      tour starts, spotlight correctly targets Home then Login (unauthenticated path --
+      this sandbox has no MongoDB network access, so the authenticated-menu-item path
+      wasn't independently exercised live, though it shares the same, already-verified
+      rendering code path), Next/Back/Skip/Done all functional, no tour-related console
+      errors
+- ✅ Docs: this entry, `ARCHITECTURE.md` Guided Tour section, `README.md` feature entry,
+      `LEARNINGS.md` GitHub Packages entry, `RELEASE_NOTES.md` entry
 
 ### ✅ v1.18.0 — Multi-Track Foundation: Custom Roles, Analytics, Database Optimization (Completed 2025-12-21T21:30:00.000Z)
 - ✅ Track A: Custom role foundation with organizationRoles collection

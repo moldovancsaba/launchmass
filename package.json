@@ -1,6 +1,6 @@
 {
   "name": "launchmass",
-  "version": "1.18.0",
+  "version": "1.19.0",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -26,7 +26,14 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mantine/core": "^8.3.18",
+    "@mantine/hooks": "^8.3.18",
+    "@mantine/modals": "^8.3.18",
+    "@mantine/notifications": "^8.3.18",
     "@mui/material": "^7.3.1",
+    "@sovereignsquad/gds-core": "^3.9.0",
+    "@sovereignsquad/gds-theme": "^3.9.0",
+    "@tabler/icons-react": "^3.44.0",
     "dotenv": "^17.2.3",
     "mongodb": "^6.18.0",
     "next": "^15.5.9",
