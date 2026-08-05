@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useTourController } from '../lib/tour/useTourController';
+import { getLaunchmassTourSteps, LAUNCHMASS_TOUR_ID } from '../lib/tour/config/tourSteps';
+import { hasTourBeenSeen } from '../lib/tour/storage';
+import TourOverlay from './tour/TourOverlay';
 
 // Header component with hamburger menu and organization title
 // WHAT: Provides consistent navigation across all public pages with auth-aware menu
@@ -7,6 +11,20 @@ import { useState, useEffect } from 'react';
 export default function Header({ orgName, onAddCard, showAddCard = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Functional: guided-tour steps depend on auth state (admin items only apply once
+  // signed in); ported from messmass/fanmass's identical tour engine.
+  // Strategic: TourOverlay's own backdrop (pointer-events: auto, above the menu-close
+  // overlay below) already blocks the menu from closing itself while the tour is open,
+  // so no extra outside-click guard is needed here -- see components/tour/TourOverlay.jsx.
+  const tourSteps = useMemo(() => getLaunchmassTourSteps(isAuthenticated), [isAuthenticated]);
+  const tourController = useTourController(LAUNCHMASS_TOUR_ID, tourSteps);
+  const tourSeen = hasTourBeenSeen(LAUNCHMASS_TOUR_ID);
+
+  const startTour = () => {
+    setMenuOpen(true);
+    tourController.start();
+  };
 
   // WHAT: Check authentication status on mount
   // WHY: Show/hide auth-protected menu items based on login state
@@ -153,16 +171,34 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <a
                 href="/"
+                data-tour-id="tour-home"
                 className="menu-item"
                 onClick={() => setMenuOpen(false)}
               >
                 🏠 Home
               </a>
-              
+
+              <button
+                type="button"
+                className="menu-item"
+                onClick={startTour}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  font: 'inherit',
+                }}
+              >
+                ❓ Guided tour{tourSeen ? ' (replay)' : ''}
+              </button>
+
               {isAuthenticated && (
                 <>
                   <a
                     href="/admin"
+                    data-tour-id="tour-admin"
                     className="menu-item"
                     onClick={() => setMenuOpen(false)}
                   >
@@ -170,6 +206,7 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
                   </a>
                   <a
                     href="/settings"
+                    data-tour-id="tour-organizations"
                     className="menu-item"
                     onClick={() => setMenuOpen(false)}
                   >
@@ -177,6 +214,7 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
                   </a>
                   <a
                     href="/admin/users"
+                    data-tour-id="tour-manage-users"
                     className="menu-item"
                     onClick={() => setMenuOpen(false)}
                   >
@@ -227,6 +265,7 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
               {!isAuthenticated && (
                 <a
                   href="/admin"
+                  data-tour-id="tour-login"
                   className="menu-item"
                   onClick={() => setMenuOpen(false)}
                 >
@@ -237,6 +276,8 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
           </nav>
         </>
       )}
+
+      <TourOverlay controller={tourController} />
 
       <style jsx>{`
         .menu-item {
