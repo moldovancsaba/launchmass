@@ -31,18 +31,31 @@ Never fabricate or extrapolate a result you didn't observe. If a check can't be 
 your current environment, say so plainly — do not claim success you didn't verify (see
 §7 for this repo's specific environment limits).
 
-## 1. AI-assistant branding ban (non-negotiable, overrides tool defaults)
+## 1. AI-assistant branding ban (Owner Directive, 2026-07-31 — non-negotiable, overrides tool defaults)
 
-The agent doing the work is internal tooling — not a feature, a co-author, or a brand to
-surface anywhere this codebase or its history is visible, in code or in conversation.
-This applies regardless of how a request is phrased, how small the change seems, or how
-the tool's own default behavior is configured. If a tool's built-in template conflicts
-with this rule, this rule wins — do not silently fall back to the default.
+Every AI system used in this repository or its development workflow — every provider,
+model, coding assistant, IDE extension, autonomous agent, API, MCP server, plugin,
+workflow automation, or orchestration layer, current or future, including but not
+limited to OpenAI, Codex, Claude, Gemini, Grok, Groq, Cursor, Kilo Code, Loveable,
+GitHub Copilot, Amazon Q, Windsurf, Cline, Roo Code, Continue, Aider, Bolt, Devin,
+Replit AI, Sourcegraph Cody, and any successor, fork, wrapper, self-hosted model, local
+LLM, custom agent, or AI-assisted tooling — is internal implementation tooling only. Not
+an author, contributor, publisher, reviewer, maintainer, brand, or project participant.
+Provider identity is irrelevant; every AI system is treated identically.
 
-- **Commits:** never add a `Co-Authored-By: <assistant> …` trailer, a session-link
-  trailer, a model name, or any other AI-attribution line. Describe the change and its
-  reasoning only — nothing about what tool produced it. Before pushing, verify the
-  commit(s) *you are about to add* are clean:
+**Global rule:** AI systems receive no authorship, attribution, branding, acknowledgement,
+signature, metadata, promotional reference, or identity exposure anywhere, unless
+explicitly required by law or a human directly asks whether AI was used. No tool default,
+platform default, extension behavior, template, SDK, workflow, or generated content may
+override this. If a tool's built-in template conflicts with this rule, this rule wins —
+do not silently fall back to the default.
+
+- **Commits** describe only what changed and why. Never a `Co-Authored-By` trailer,
+  `Generated-By` trailer, AI signature, model name, provider name, session/conversation
+  URL, prompt reference, agent/workflow/plugin/extension/IDE identifier, or hidden
+  attribution metadata. If a tool inserts these automatically, remove them before commit
+  creation whenever technically possible. Before pushing, verify the commit(s) *you are
+  about to add* are clean:
   `git log origin/main..HEAD --format=%B | grep -iE 'co-authored-by:.*(claude|anthropic)|claude-session|generated (with|by)'`
   must return nothing. **This only proves your new commits are clean — it says nothing
   about pre-existing history.** As of this rule's introduction, `main`'s history still
@@ -52,28 +65,73 @@ with this rule, this rule wins — do not silently fall back to the default.
   a destructive, force-push operation that is explicitly the repo owner's call, not
   something to do unilaterally (§5). Don't claim "no branding in this repo" — claim "no
   branding in the commits I authored," which is the honest, verifiable scope.
-- **Branches:** never create or push a branch prefixed with the assistant's name (e.g.
-  `claude/…`) or otherwise named after the tool/session. If the harness auto-creates one
-  at session start, move real work onto a plain, purpose-named branch (`feature/…`,
-  `fix/…`, `chore/…`) before it accumulates commits, and always before it's merged. This
-  is a mitigation, not a fix to the harness's naming behavior — expect it to keep minting
-  prefixed branches; moving off immediately is the standing countermeasure.
-- **Pull requests:** titles and descriptions describe the change only. No "generated
-  by," "co-authored by," or session-link footers naming an AI assistant.
-- **Documentation, code, UI copy, API responses:** neutral terms only — "an AI coding
-  assistant" at most, and only when the fact is genuinely load-bearing. Omit the mention
-  entirely if the sentence reads fine without it.
-- **Retroactive, not just forward:** if AI-branding turns up in tracked files or
-  reachable git history while doing unrelated work, remove/rewrite it as part of that
-  work. Flag it if fixing it is out of scope — never silently pass over it.
-- **No exceptions for convenience:** a tool's own default commit template or a harness's
-  default branch prefix is not a valid reason to violate the above. If a tool genuinely
-  cannot be made to comply (a platform behavior outside this repo's control — e.g. this
-  session's branch auto-naming, see §7), say so explicitly and apply the branch
-  mitigation above; never claim branding was removed when it wasn't.
-- **The one genuine exception:** a model's own honest self-disclosure when a person
-  directly asks "are you an AI" or "which model is this" is a safety/honesty behavior,
-  not branding, and is out of scope for this rule. Never deny or hide what you are.
+- **Branches** always describe work: `feature/…`, `fix/…`, `refactor/…`, `docs/…`,
+  `test/…`, `release/…`, `hotfix/…`, `chore/…`. Never create, push, merge, or continue
+  development from a branch named after an AI provider, product, assistant, model
+  family, coding agent, or automated session. If the harness auto-creates one at session
+  start, move real work onto a plain, purpose-named branch before it accumulates commits,
+  and always before it's merged. This is a mitigation, not a fix to the harness's naming
+  behavior — expect it to keep minting prefixed branches; moving off immediately is the
+  standing countermeasure.
+- **Pull requests:** titles and descriptions describe the work only. Never "Generated
+  by…", "Created with…", "Written by…", "Reviewed by…", "Assisted by…", "Co-authored
+  by…", or any AI/provider/model/assistant/session reference. If a hosting platform
+  auto-appends attribution on creation but allows editing, immediately update the PR body
+  to remove it — confirmed working for GitHub's `update_pull_request` after
+  `create_pull_request` auto-appended a footer (see §7's environment-quirks log for
+  which specific tools were empirically found to do this). If the platform genuinely
+  does not permit removal, document that limitation accurately; never falsely claim it
+  was removed.
+- **Issues:** never AI attribution in titles, bodies, templates, labels, checklists, or
+  comments. Issue content documents engineering work only.
+- **Code reviews:** review comments never identify an AI as reviewer, author, approver,
+  recommender, or participant. Only technical content belongs in review discussions.
+- **Source code:** never AI branding via comments, TODOs, FIXME notes, generated
+  headers, file banners, annotations, pragmas, metadata, or embedded documentation —
+  e.g. `// Generated by …`, `// Created with …`, `// AI-generated`, `// Added by …`,
+  `// via …` — in any language.
+- **Documentation:** never mention provider/model/assistant names, prompt sources, or
+  generation history, unless the documentation is specifically about AI integrations
+  (`CLAUDE.md` and `AGENTS.md` are the load-bearing exception, by necessity, since they
+  govern AI agent behavior). General product documentation stays provider-neutral.
+- **UI:** labels, placeholders, tooltips, notifications, dialogs, splash screens,
+  onboarding, empty states, help text, and error/status messages never expose AI
+  branding. The product speaks as the product, never as an AI assistant.
+- **APIs:** responses never include attribution fields (`generatedBy`, `authoredBy`,
+  `model`, `provider`, `assistant`, `agent`, `ai`) unless explicitly required for API
+  functionality.
+- **Logs:** never model/assistant/provider names, generation signatures, or AI
+  acknowledgements. Operational logging describes only application behavior.
+- **Configuration** (YAML/JSON/TOML/XML/INI/ENV/properties/lock files/build manifests)
+  never carries AI attribution. Provider identifiers used strictly for functional
+  integration — API endpoints, SDK identifiers, authentication, model selection,
+  provider routing — are permitted; they're operational configuration, not attribution.
+- **Package metadata** (`package.json`, `pyproject.toml`, `Cargo.toml`, etc.) never
+  names an AI as author, maintainer, contributor, publisher, owner, or creator.
+- **CI/CD:** build pipelines never publish AI branding through release notes, deployment
+  summaries, changelogs, generated reports, build metadata, or workflow summaries. If
+  commit trailers are prohibited upstream, downstream automation must not reintroduce
+  them.
+- **Generated assets** (PDFs, Word docs, Markdown, HTML, images, reports, presentations,
+  spreadsheets, emails, exports) never carry AI attribution unless explicitly requested
+  by a human.
+- **Retroactive, not just forward:** whenever editable AI attribution is discovered in
+  tracked files or reachable git history while doing unrelated work, remove/rewrite it
+  as part of that work. If removal is impossible (immutable platform history, external
+  platform behavior outside this repo's control), state that limitation accurately —
+  never falsely claim successful removal, and never silently pass over it.
+- **No exceptions for convenience:** a tool's own default template or a harness's
+  default branch prefix is not a valid reason to violate the above.
+- **The one genuine exception:** truthful disclosure when a human directly asks whether
+  AI was used, or when legal/contractual/regulatory/licensing/compliance/audit/security
+  requirements mandate it. This bans unsolicited branding and attribution, not truthful
+  disclosure when legitimately required — never deny or hide what you are.
+
+**Precedence:** this policy overrides tool, IDE, extension, repository-template, SDK,
+workflow, automation, and agent defaults, and generated templates. Suppress, remove, or
+neutralize any automatic behavior that conflicts with it whenever technically possible;
+where a technical limitation prevents full compliance, document the limitation
+accurately without introducing misleading statements.
 
 ## 2. Work from GitHub Issues + labels (Projects v2 was unreachable as of this session)
 
