@@ -56,7 +56,7 @@ do not silently fall back to the default.
   attribution metadata. If a tool inserts these automatically, remove them before commit
   creation whenever technically possible. Before pushing, verify the commit(s) *you are
   about to add* are clean:
-  `git log origin/main..HEAD --format=%B | grep -iE 'co-authored-by:.*(claude|anthropic)|claude-session|generated (with|by)'`
+  `git log origin/main..HEAD --format=%B | grep -iE 'co-authored-by:|generated[- ](by|with)|[a-z]+-session:|assisted by|written by (an )?(ai|llm)|reviewed by (an )?(ai|llm)'`
   must return nothing. **This only proves your new commits are clean — it says nothing
   about pre-existing history.** As of this rule's introduction, `main`'s history still
   contains real `Co-Authored-By: Claude…`/`Claude-Session:` trailers from before this
