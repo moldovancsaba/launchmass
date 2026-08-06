@@ -318,7 +318,10 @@ jobs:
 ### Immediate (Next Commit)
 1. Review and approve documentation changes
 2. Commit with message: "docs: comprehensive remediation v1.13.0"
-3. Add co-author line: `Co-Authored-By: Warp <agent@warp.dev>`
+3. ~~Add co-author line: `Co-Authored-By: Warp <agent@warp.dev>`~~ — superseded by the
+   AI-attribution ban (`CLAUDE.md`/`AGENTS.md` §1); left struck through rather than
+   deleted so this remains an accurate historical record of what this document
+   recommended at the time, not a live instruction to follow today.
 4. Push to main
 5. Verify on production
 
