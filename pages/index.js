@@ -1,3 +1,4 @@
+import { ChoiceChip } from '@sovereignsquad/gds-core';
 import OversizedLink from '../components/OversizedLink';
 import Header from '../components/Header';
 import clientPromise from '../lib/db';
@@ -24,10 +25,10 @@ export default function Home({ cards, activeTag, orgName, orgBackground }) {
         </section>
       )}
       {activeTag ? (
-        <div className="filter-bar" style={{ padding: '8px 16px', marginTop: 64, display: 'flex', alignItems: 'center' }}>
+        <div className="filter-bar" style={{ padding: '8px 16px', marginTop: 64, display: 'flex', alignItems: 'center', gap: 8 }}>
           <span>Filtering by</span>
-          <a className="tag-chip" href={`/?tag=${encodeURIComponent(activeTag)}`} style={{ marginLeft: 8 }}>#{activeTag}</a>
-          <a className="tag-chip" href="/" style={{ marginLeft: 8 }}>Clear</a>
+          <ChoiceChip active label={`#${activeTag}`} href={`/?tag=${encodeURIComponent(activeTag)}`} />
+          <ChoiceChip label="Clear" href="/" />
         </div>
       ) : null}
       <main className="grid">
