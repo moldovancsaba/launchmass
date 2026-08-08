@@ -9,6 +9,7 @@
 import { withSsoAuth } from '../../../../../lib/auth-oauth';
 import clientPromise from '../../../../../lib/db';
 import { revokePermissionInSSO } from '../../../../../lib/ssoPermissions.mjs';
+import { isSuperAdmin } from '../../../../../lib/permissions';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -26,7 +27,15 @@ async function handler(req, res) {
       });
     }
 
-    // TODO: Check if req.user is superadmin
+    // WHAT: Verify caller is an admin, checking both appRole and the canonical
+    // isSuperAdmin flag (see grant-access.js for why appRole alone isn't enough)
+    // WHY: Revoking access (including another admin's) must not be reachable by ordinary users
+    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin' && !isSuperAdmin(req.user)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only admins can revoke access',
+      });
+    }
 
     // WHAT: Revoke permission in SSO first (Phase 4D integration)
     // WHY: SSO is the source of truth for permissions

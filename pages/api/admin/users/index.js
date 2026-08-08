@@ -8,6 +8,7 @@
 
 import { withSsoAuth } from '../../../../lib/auth-oauth';
 import clientPromise from '../../../../lib/db';
+import { isSuperAdmin } from '../../../../lib/permissions';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -15,6 +16,17 @@ async function handler(req, res) {
   }
 
   try {
+    // WHAT: Verify caller is an admin, checking both appRole and the canonical
+    // isSuperAdmin flag (see grant-access.js for why appRole alone isn't enough)
+    // WHY: This list includes every user's email, name, role, and status — not
+    // something an ordinary authenticated user should be able to read
+    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin' && !isSuperAdmin(req.user)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only admins can list users',
+      });
+    }
+
     const { filter = 'all' } = req.query;
 
     // WHAT: Get users collection
@@ -67,6 +79,6 @@ async function handler(req, res) {
 }
 
 // WHAT: Wrap with SSO authentication
-// WHY: Only authenticated users can access this endpoint
-// TODO: Add superadmin check
+// WHY: Only authenticated users can access this endpoint; the admin-role check itself
+// lives inside the handler (needs req.user, which withSsoAuth attaches)
 export default withSsoAuth(handler);

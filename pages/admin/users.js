@@ -9,6 +9,7 @@
 import { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import { validateSsoSession } from '../../lib/auth-oauth';
+import { isSuperAdmin } from '../../lib/permissions';
 
 export default function AdminUsers({ currentUser }) {
   const [users, setUsers] = useState([]);
@@ -489,6 +490,20 @@ export async function getServerSideProps({ req }) {
     return {
       redirect: {
         destination: '/?error=unauthorized',
+        permanent: false,
+      },
+    };
+  }
+
+  // WHAT: Reject non-admin sessions -- checking both appRole and the canonical
+  // isSuperAdmin flag (see pages/api/admin/users/[ssoUserId]/grant-access.js for why
+  // appRole alone isn't enough)
+  // WHY: validateSsoSession only proves authentication, not authorization -- this page
+  // (and the admin/users/* API routes it calls) manages every user's access and role
+  if (user?.appRole !== 'admin' && user?.appRole !== 'superadmin' && !isSuperAdmin(user)) {
+    return {
+      redirect: {
+        destination: '/?error=forbidden',
         permanent: false,
       },
     };
