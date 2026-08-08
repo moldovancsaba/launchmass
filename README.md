@@ -98,10 +98,10 @@ npm run start
 
 ### Essential Guides
 - [AUTH_CURRENT.md](AUTH_CURRENT.md) - **OAuth 2.0 authentication guide** (authoritative)
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and components (v1.18.0)
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and components (v1.20.0)
 - [TASKLIST.md](TASKLIST.md) - Active tasks and completed work
 - [ROADMAP.md](ROADMAP.md) - 2026 development plans
-- [RELEASE_NOTES.md](RELEASE_NOTES.md) - Version history v1.0.1-v1.18.0
+- [RELEASE_NOTES.md](RELEASE_NOTES.md) - Version history v1.0.1-v1.20.0
 - [LEARNINGS.md](LEARNINGS.md) - Development insights and patterns
 - [PERMISSIONS_DESIGN.md](PERMISSIONS_DESIGN.md) - Custom role system design (Q2 2026)
 

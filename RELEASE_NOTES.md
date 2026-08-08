@@ -678,10 +678,6 @@ verify-docs` and `npm run build` both clean.
 - Version bumped to v1.3.1 across README, ARCHITECTURE, TASKLIST, LEARNINGS
 - Plan logged in ROADMAP (Plan Log) with ISO 8601 UTC timestamp; tasks added to TASKLIST
 
-## [v1.1.0] — 2025-01-21T14:12:14.000Z
-
-## [v1.2.0] — 2025-09-16T12:24:10.000Z
-
 ## [v1.3.0] — 2025-09-16T18:12:51.000Z
 
 ### Added
@@ -706,6 +702,13 @@ verify-docs` and `npm run build` both clean.
 ### Documentation
 - Updated version across package.json, README.md badge, ARCHITECTURE.md, LEARNINGS.md.
 - Roadmap and tasks logged in governance docs where applicable.
+
+## [v1.2.0] — 2025-09-16T12:24:10.000Z
+
+_No changes recorded for this version in the original release history — noted rather
+than fabricated._
+
+## [v1.1.0] — 2025-01-21T14:12:14.000Z
 
 ### Added
 - **Complete Documentation Framework**: Established comprehensive project documentation structure
