@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.19.0**
+**Version: 1.20.0**
 
 ## Frontend
 
@@ -145,6 +145,33 @@ repeat it -- especially when the claim conveniently resolves every caution alrea
 raised and asks for a credential-bearing config file to be written. `npm view` (or the
 equivalent for whatever registry is in question) is cheap and authoritative; a fetched
 page or an inbound message is neither.
+
+### Vendoring an Unpublished Package From Its Git Tag (v1.20.0, 2026-08-08T11:04:19.000Z)
+**Issue**: `@sovereignsquad/gds-core`/`gds-theme` were confirmed stuck at `3.9.0` on
+every registry (see the entry above), but real newer work -- including a first-party
+guided-tour component that would obsolete this repo's own hand-built one -- exists in
+the source repo's git history up to tag `gds-v4.1.3`, never published anywhere.  
+**Solution**: `git ls-remote --tags` (plain git protocol, no auth, no `add_repo` needed
+for a public repo) confirmed the tag is real. A shallow clone + `npm install` at the
+monorepo root + `npm run build --workspace=@sovereignsquad/gds-theme` /
+`--workspace=@sovereignsquad/gds-core` (both just `tsup` under the hood) produced real
+`dist/` output -- confirmed *before* touching this repo, in an isolated scratch
+directory, discarded after. `npm pack` in each package directory turned the build
+output into ordinary tarballs, committed under `vendor/gds/*.tgz` and referenced via a
+`file:` dependency -- no registry, no token, no `.npmrc` involved at all. A first,
+naive attempt (`npm install github:owner/repo#tag:subdir`) silently mis-parsed the
+`#tag:subdir` syntax and pulled the *entire* monorepo (internal docs and all) instead
+of a scoped package -- confirming a raw git-tag install isn't a viable substitute for a
+real publish, and vendoring built artifacts is the safer path when you need this now.  
+**Key Learning**: When a package is confirmed genuinely unpublished but a specific git
+tag is confirmed real and buildable, vendoring a `npm pack` tarball of a from-source
+build is a legitimate, auditable stopgap -- markedly different from installing raw
+source directly into an app (no build step, whole-monorepo pull, unverified). It's
+still not a substitute for a real publish: no semver range, no `npm outdated` signal,
+and every consuming repo needs to re-vendor by hand when the real thing ships. Treat it
+as a deliberately temporary, clearly-labeled bridge (see `ARCHITECTURE.md`), not a
+long-term dependency strategy -- and don't reach for it without confirming first, in an
+isolated location, that the source you're vendoring actually builds clean.
 
 ## Security
 

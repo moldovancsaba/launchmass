@@ -1,5 +1,42 @@
 # Release Notes - launchmass
 
+## [v1.20.0] — 2026-08-08T11:04:19.000Z
+
+### 🏷️ Tag Chips (GDS 4.1.3 pilot)
+
+**Added:**
+- `vendor/gds/sovereignsquad-gds-core-4.1.3.tgz`, `vendor/gds/sovereignsquad-gds-theme-4.1.3.tgz`
+  — self-built tarballs of GDS's `gds-v4.1.3` git tag (built via `tsup`, packaged via
+  `npm pack`), since neither package was ever published past `3.9.0` on any registry
+  (npmjs or GitHub Packages, both verified directly)
+
+**Changed:**
+- `components/OversizedLink.jsx` — card tag pills now render via `ChoiceChip`
+  (`@sovereignsquad/gds-core`) in `onClick` mode, replacing the legacy `.tag-chip`
+  `<span role="link">` (real `<button>` now, dropping the manual Enter/Space keydown
+  handling — buttons get that natively)
+- `pages/index.js` — the active-filter bar's `#tag`/`Clear` chips now render via
+  `ChoiceChip` in `href` + `active` mode
+- `pages/_app.js` — added `@sovereignsquad/gds-theme/styles.css` import (previously
+  only `@mantine/core/styles.css` was imported)
+- `package.json` — `@sovereignsquad/gds-core`/`gds-theme` repointed from the npmjs
+  `^3.9.0` install to the vendored `file:vendor/gds/...` tarballs; added
+  `@mantine/dates`, `dayjs` (new peer/direct deps of GDS 4.1.3)
+
+**Known tradeoffs (explicit, see `LEARNINGS.md` and `ARCHITECTURE.md`):**
+- Unofficial `file:` dependency, not a real registry install — no semver range, needs
+  manual re-vendoring once GDS actually publishes
+- `ChoiceChip` renders GDS's own default styling (filled, uppercase), a visible
+  departure from the legacy `.tag-chip` look (white pill, dark text) — left as-is per
+  `CLAUDE.md` §6's stance on new GDS component work
+- Scoped to two tag-pill surfaces only, not a full `.tag-chip` migration
+
+**Verification:** `npm run build` and `npm run verify-docs` both clean. Visual
+verification via headless Chromium on a temporary scratch route (deleted before
+commit) — this sandbox has no MongoDB access, so the real DB-backed pages couldn't be
+exercised end-to-end; confirmed correct `<button>`/`<a>` element choice per mode and
+`active`-state rendering.
+
 ## [v1.19.0] — 2026-08-05T13:01:09.000Z
 
 ### 🧭 Guided Tour

@@ -1,8 +1,31 @@
 # Task List - launchmass
 
-**Version: 1.19.0**
+**Version: 1.20.0**
 
 ## Completed Tasks
+
+### ✅ v1.20.0 — GDS 4.1.3 vendoring pilot: ChoiceChip tag pills (Completed 2026-08-08T11:04:19.000Z, closes #39)
+- ✅ Verified `@sovereignsquad/gds-core`/`gds-theme` have never been published beyond
+      `3.9.0` on npmjs or GitHub Packages (both checked directly); confirmed real newer
+      work exists at git tag `gds-v4.1.3` via `git ls-remote`
+- ✅ Cloned the tag, built `gds-core`/`gds-theme` from source (`tsup`, clean, real
+      `dist/` output), packaged via `npm pack`, committed under `vendor/gds/*.tgz`
+- ✅ Repointed `package.json` at `file:vendor/gds/...` (peer deps -- Mantine 8.x, React
+      19 -- compatible with what this repo already runs, no forced major bump)
+- ✅ Adopted `ChoiceChip` for `components/OversizedLink.jsx`'s card tag pills
+      (`onClick` mode) and `pages/index.js`'s active-filter bar (`href` + `active` mode)
+- ✅ Added `@sovereignsquad/gds-theme/styles.css` import to `pages/_app.js`
+- ✅ `npm run build` and `npm run verify-docs` both clean
+- ✅ Visual verification via headless Chromium on a temporary scratch route (deleted
+      before commit) -- this sandbox has no MongoDB access, so the real DB-backed pages
+      couldn't be exercised end-to-end; confirmed correct `<button>`/`<a>` element
+      choice and `active` state rendering
+- ✅ Docs: this entry, `ARCHITECTURE.md` section, `README.md` feature entry,
+      `LEARNINGS.md` entry, `RELEASE_NOTES.md` entry
+- Known tradeoff, explicit: unofficial `file:` dependency, not a real registry install
+      -- see `LEARNINGS.md`. A request to publish 4.1.3 properly has already gone to
+      whoever maintains the GDS repo; rolling this out to camera/messmass/fanmass is a
+      separate, later decision.
 
 ### ✅ v1.19.0 — Guided Tour (Completed 2026-08-05T13:01:09.000Z)
 - ✅ Installed `@sovereignsquad/gds-core@3.9.0` / `gds-theme@3.9.0` + Mantine 8.3.18 +
