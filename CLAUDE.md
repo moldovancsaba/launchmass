@@ -207,9 +207,12 @@ Every change that alters behavior updates the relevant docs in the *same* change
 enforced for version/doc consistency by `npm run verify-docs`
 (`scripts/verify-docs-consistency.js`), which currently requires `README.md`,
 `ARCHITECTURE.md`, `TASKLIST.md`, `LEARNINGS.md`, `ROADMAP.md`, `RELEASE_NOTES.md`,
-`AUTH_CURRENT.md`, `WARP.md`, `CLAUDE.md`, and `AGENTS.md` to exist, and version-syncs
-`README.md`, `ARCHITECTURE.md`, `TASKLIST.md`, `LEARNINGS.md`, `AUTH_CURRENT.md` against
-`package.json`. A behavior change with no doc update is incomplete even if it builds
+`AUTH_CURRENT.md`, `WARP.md`, `CLAUDE.md`, `AGENTS.md`, and `PERMISSIONS_DESIGN.md` to
+exist, and version-syncs `README.md`, `ARCHITECTURE.md`, `TASKLIST.md`, `LEARNINGS.md`,
+`AUTH_CURRENT.md`, `ROADMAP.md`, `PERMISSIONS_DESIGN.md` against `package.json` (and
+`scripts/bump-version.sh`'s `DOC_FILES` list must stay in sync with whichever files are
+version-synced here, or the very next version bump silently stops updating one of
+them). A behavior change with no doc update is incomplete even if it builds
 and `verify-docs` passes on version numbers alone — version-sync is a floor, not the
 whole obligation. If you find *stale* doc content while doing unrelated work (as
 happened with this file's own creation — WARP.md described the session cookie as
