@@ -467,6 +467,11 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **NEXT_PUBLIC_SSO_SERVER_URL**: Client-accessible SSO URL
 - **NEXT_PUBLIC_SSO_CLIENT_ID**: Public client ID for client-side OAuth redirects
 - **NEXT_PUBLIC_SSO_REDIRECT_URI**: Public OAuth callback URL
+- **AUTO_GRANT_ACCESS**: Controls first-login access for users with no prior SSO or local
+  record (default `true`: auto-grants `appRole: 'user'` + access; `false`: leaves the
+  user pending explicit admin approval). Never consulted when SSO already has a
+  permission record, or when a local `users` document already exists — see `WARP.md`'s
+  Authentication Pattern section for the full precedence order. Never grants admin.
 
 **Legacy (Deprecated in v1.7.0):**
 - ~~**SSO_COOKIE_DOMAIN**: Cookie domain for SSO~~ (v1.5.0 cookie-forwarding approach)

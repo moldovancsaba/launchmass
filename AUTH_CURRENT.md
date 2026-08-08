@@ -1,7 +1,7 @@
 # Authentication Guide - launchmass
 
 **Version: 1.21.0**
-**Last Updated:** 2025-12-22T08:53:36.000Z
+**Last Updated:** 2026-08-08T11:04:52.000Z
 **Auth System:** OAuth 2.0 / OpenID Connect (v1.7.0+)  
 **Primary Library:** `lib/auth-oauth.js`
 
@@ -39,7 +39,9 @@ Launchmass uses **OAuth 2.0 Authorization Code flow** with **OpenID Connect** fo
 
 2. **Session Check**: Server checks for `sso_session` HttpOnly cookie
    - Cookie contains: OAuth tokens (access_token, id_token, refresh_token) + user data
-   - Cookie format: Base64-encoded JSON
+   - Cookie format: HMAC-signed (`${base64Payload}.${hexSignature}`, see `lib/session.js`,
+     `SESSION_SECRET`) — the signature is verified before any content is trusted, so the
+     cookie is tamper-evident and cannot be forged into a different user or role client-side
    - Domain: `.doneisbetter.com`
    - Secure, HttpOnly, SameSite=Lax
 
@@ -443,6 +445,6 @@ For authentication issues:
 4. Verify environment variables are set correctly
 5. Ensure app running on `*.doneisbetter.com` subdomain
 
-**Last Updated:** 2025-12-21T13:33:53.000Z  
-**Current Version:** v1.13.0  
+**Last Updated:** 2026-08-08T11:04:52.000Z  
+**Current Version:** v1.21.0  
 **Auth Library:** lib/auth-oauth.js (v1.7.0+)
