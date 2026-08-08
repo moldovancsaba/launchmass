@@ -494,6 +494,18 @@ export async function getServerSideProps({ req }) {
     };
   }
 
+  // WHAT: Reject non-admin sessions
+  // WHY: validateSsoSession only proves authentication, not authorization -- this page
+  // (and the admin/users/* API routes it calls) manages every user's access and role
+  if (user?.appRole !== 'admin' && user?.appRole !== 'superadmin') {
+    return {
+      redirect: {
+        destination: '/?error=forbidden',
+        permanent: false,
+      },
+    };
+  }
+
   // WHAT: Pass current user info to component
   // WHY: Display who is logged in and their role
   return {
