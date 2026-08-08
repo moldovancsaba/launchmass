@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.19.0**
+**Version: 1.20.0**
 
 ## Overview
 
@@ -166,6 +166,35 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
   `@mantine/notifications@8.3.18`, `@tabler/icons-react@3.44.0` -- versions matched to
   what messmass already runs in production, from the public npm registry (no GitHub
   Packages token required; see `LEARNINGS.md` for why that mattered).
+
+### Tag Chips / GDS 4.1.3 vendoring (v1.20.0)
+- **What**: `components/OversizedLink.jsx`'s card tag pills and `pages/index.js`'s
+  active-filter bar render via `@sovereignsquad/gds-core`'s `ChoiceChip` instead of the
+  legacy `.tag-chip` CSS class (`styles/globals.css`). `OversizedLink.jsx` uses
+  `onClick` mode (it sits inside the card's own `<a>`, so `ChoiceChip`'s `href` mode
+  would render a nested anchor, which is invalid HTML); `pages/index.js` uses `href` +
+  `active` mode since it isn't nested.
+- **Why `ChoiceChip` and not `GdsBadge`**: `GdsBadge`'s own doc comment states it is
+  "never interactive -- removable tokens are `GdsRemovableTag`'s job, counts are
+  `GdsCountBadge`'s." These tag pills navigate on click, so `GdsBadge` would violate its
+  own contract. `ChoiceChip` is documented for exactly this: "a neutral, token-safe chip
+  for lightweight selection, mode toggles, and taxonomy links."
+- **Vendoring**: `@sovereignsquad/gds-core`/`gds-theme` have never been published beyond
+  `3.9.0` on any registry (npmjs or GitHub Packages, both verified directly). Real newer
+  work exists in the source repo up to git tag `gds-v4.1.3`, confirmed buildable
+  (`tsup`, clean build, real `dist/` output) but never published. `vendor/gds/*.tgz`
+  are `npm pack` output from a from-source build of that tag, referenced via a `file:`
+  dependency in `package.json` -- not a registry install. See `LEARNINGS.md` for the
+  full trail and the tradeoffs this carries.
+- **Visual departure, intentional**: `ChoiceChip` renders GDS's own default styling
+  (filled, uppercase), not the legacy `.tag-chip` look (white pill, dark text, magenta
+  hover). Left as-is per this file's own §6 stance that new GDS component work carries
+  the system's own visual language rather than being forced to match pre-existing SEYU
+  CSS. Other `.tag-chip` usages (the empty-state Organizations/Admin links) are
+  untouched -- this is scoped to the two tag-pill surfaces only, not a full migration.
+- **`@sovereignsquad/gds-theme/styles.css`** is now imported in `pages/_app.js`
+  (previously only `@mantine/core/styles.css` was, sufficient for the tour's plain
+  Mantine primitives but not for `ChoiceChip`'s `--gds-*` token references).
 
 ## Organizations
 
