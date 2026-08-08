@@ -1,5 +1,34 @@
 # Release Notes - launchmass
 
+## [v1.21.0] — 2026-08-08T11:28:22.000Z
+
+### 🔐 Security - Admin User-Management Authorization Gap
+
+**Fixed:**
+- `pages/api/admin/users/[ssoUserId]/grant-access.js`, `revoke-access.js`, `change-role.js`,
+  and `pages/api/admin/users/index.js` were gated only by `withSsoAuth` (any valid
+  session), not by admin role — any authenticated user with the ordinary `user` role
+  could grant themselves admin access, change or revoke anyone's role/access, and read
+  every user's email/name/role/status via the list endpoint
+- `pages/admin/users.js`'s `getServerSideProps` had the identical gap at the page level
+- All five now require `appRole === 'admin' || appRole === 'superadmin'`, or the
+  canonical `isSuperAdmin` flag (`lib/permissions.js`) that `scripts/migrate-user-rights.cjs`
+  seeds independently of `appRole` — matching the pattern already used correctly by the
+  sibling `batch-sync-sso.js` endpoint
+
+**Impact:**
+- Closes a live privilege-escalation path in production
+- No API contract change for legitimate admin callers — only non-admin callers now see
+  a 403 where they previously succeeded
+
+**Verification:**
+- `npm run verify-docs` and `npm run build` both clean
+- The exact boolean condition used at all five call sites checked against every
+  `appRole`/`isSuperAdmin` combination resolves to the intended allow/deny
+- Full live request verification against a running server was not possible in this
+  environment (no outbound MongoDB access to establish a real session) — noted rather
+  than claimed
+
 ## [v1.20.0] — 2026-08-08T11:04:19.000Z
 
 ### 🏷️ Tag Chips (GDS 4.1.3 pilot)
