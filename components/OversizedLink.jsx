@@ -12,41 +12,44 @@ export default function OversizedLink({ href, title, description, background, ta
   const safeTags = Array.isArray(tags) ? tags : [];
 
   return (
-    <a
+    <div
       className="card"
-      href={href || '#'}
-      target="_blank"
-      rel="noopener noreferrer"
       style={{
         ...style,
+        position: 'relative',
         color: '#fff',
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}
     >
-      <h3 style={{ textShadow: '0 1px 2px rgba(0,0,0,0.35)' }}>{title || 'Untitled'}</h3>
-      <p style={{ textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{description || ''}</p>
+      {/* Card-wide click target as an absolutely-positioned sibling, not an ancestor.
+          WHAT: a <button> (ChoiceChip's onClick mode, below) is interactive content,
+          and interactive content nested inside an <a href> is invalid HTML regardless
+          of preventDefault() -- that only changes click behavior, not the semantics
+          assistive tech and keyboard navigation see. This "link overlay" pattern keeps
+          the card's primary link and the tag buttons as siblings instead of nesting
+          one inside the other. */}
+      <a
+        href={href || '#'}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={title || 'Untitled'}
+        style={{ position: 'absolute', inset: 0, zIndex: 0, borderRadius: 'inherit' }}
+      />
+      <h3 style={{ textShadow: '0 1px 2px rgba(0,0,0,0.35)', pointerEvents: 'none' }}>{title || 'Untitled'}</h3>
+      <p style={{ textShadow: '0 1px 2px rgba(0,0,0,0.25)', pointerEvents: 'none' }}>{description || ''}</p>
       {safeTags.length ? (
-        <div className="tag-list" style={{ marginTop: 8 }}>
+        <div className="tag-list" style={{ marginTop: 8, position: 'relative', zIndex: 1 }}>
           {safeTags.map((t, i) => (
             <ChoiceChip
               key={i}
               label={`#${t}`}
-              // onClick (not href) -- this sits inside the card's own <a>, and
-              // ChoiceChip's href mode renders a nested anchor, which is invalid
-              // HTML. onClick mode renders a real <button>, which also drops the
-              // manual Enter/Space keydown handling the previous <span
-              // role="link"> version needed -- buttons get that natively.
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                window.location.href = `/?tag=${encodeURIComponent(t)}`;
-              }}
+              onClick={() => { window.location.href = `/?tag=${encodeURIComponent(t)}`; }}
             />
           ))}
         </div>
       ) : null}
-    </a>
+    </div>
   );
 }
