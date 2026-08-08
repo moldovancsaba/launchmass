@@ -1,4 +1,5 @@
 import '@mantine/core/styles.css';
+import '@sovereignsquad/gds-theme/styles.css';
 import '../styles/globals.css';
 import { useRouter } from 'next/router';
 import { MantineProvider } from '@mantine/core';

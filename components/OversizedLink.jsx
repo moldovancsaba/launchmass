@@ -1,3 +1,5 @@
+import { ChoiceChip } from '@sovereignsquad/gds-core';
+
 export default function OversizedLink({ href, title, description, background, tags }) {
   const raw = (background || "").trim();
   const isGradient = raw.startsWith("linear-gradient");
@@ -27,22 +29,22 @@ export default function OversizedLink({ href, title, description, background, ta
       <p style={{ textShadow: '0 1px 2px rgba(0,0,0,0.25)' }}>{description || ''}</p>
       {safeTags.length ? (
         <div className="tag-list" style={{ marginTop: 8 }}>
-          {safeTags.map((t, i) => {
-            // Tags navigate to the filtered view. Rendered as spans (not <a>) because this
-            // sits inside the card <a>, and nested anchors are invalid HTML.
-            const go = (e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/?tag=${encodeURIComponent(t)}`; };
-            return (
-              <span
-                key={i}
-                role="link"
-                tabIndex={0}
-                className="tag-chip"
-                style={{ cursor: 'pointer' }}
-                onClick={go}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') go(e); }}
-              >#{t}</span>
-            );
-          })}
+          {safeTags.map((t, i) => (
+            <ChoiceChip
+              key={i}
+              label={`#${t}`}
+              // onClick (not href) -- this sits inside the card's own <a>, and
+              // ChoiceChip's href mode renders a nested anchor, which is invalid
+              // HTML. onClick mode renders a real <button>, which also drops the
+              // manual Enter/Space keydown handling the previous <span
+              // role="link"> version needed -- buttons get that natively.
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = `/?tag=${encodeURIComponent(t)}`;
+              }}
+            />
+          ))}
         </div>
       ) : null}
     </a>
