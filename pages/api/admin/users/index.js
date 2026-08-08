@@ -15,6 +15,16 @@ async function handler(req, res) {
   }
 
   try {
+    // WHAT: Verify caller has admin/superadmin role
+    // WHY: This list includes every user's email, name, role, and status — not
+    // something an ordinary authenticated user should be able to read
+    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only admins can list users',
+      });
+    }
+
     const { filter = 'all' } = req.query;
 
     // WHAT: Get users collection
@@ -67,6 +77,6 @@ async function handler(req, res) {
 }
 
 // WHAT: Wrap with SSO authentication
-// WHY: Only authenticated users can access this endpoint
-// TODO: Add superadmin check
+// WHY: Only authenticated users can access this endpoint; the admin-role check itself
+// lives inside the handler (needs req.user, which withSsoAuth attaches)
 export default withSsoAuth(handler);

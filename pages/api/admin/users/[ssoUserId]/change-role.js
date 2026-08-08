@@ -34,7 +34,14 @@ async function handler(req, res) {
       });
     }
 
-    // TODO: Check if req.user is superadmin
+    // WHAT: Verify caller has admin/superadmin role
+    // WHY: Changing a user's role (including promotion to admin) must not be reachable by ordinary users
+    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only admins can change roles',
+      });
+    }
 
     // WHAT: Sync role change to SSO first (Phase 4D integration)
     // WHY: SSO is the source of truth for permissions

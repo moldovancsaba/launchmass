@@ -35,8 +35,14 @@ async function handler(req, res) {
       });
     }
 
-    // TODO: Check if req.user is superadmin
-    // For now, allow any authenticated user
+    // WHAT: Verify caller has admin/superadmin role
+    // WHY: Granting access (including admin role) must not be reachable by ordinary users
+    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin') {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Only admins can grant access',
+      });
+    }
 
     // WHAT: Update local user directly (simplified permission management)
     // WHY: Manage permissions locally without depending on SSO API calls
