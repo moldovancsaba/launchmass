@@ -6,10 +6,9 @@
  * HOW: Calls SSO API to update permission, then syncs local cache
  */
 
-import { withSsoAuth } from '../../../../../lib/auth-oauth';
+import { withSsoAuth, requireAdminRole } from '../../../../../lib/auth-oauth';
 import clientPromise from '../../../../../lib/db';
 import { syncPermissionToSSO } from '../../../../../lib/ssoPermissions.mjs';
-import { isSuperAdmin } from '../../../../../lib/permissions';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -33,20 +32,6 @@ async function handler(req, res) {
       return res.status(400).json({
         error: 'Invalid role',
         message: 'Role must be: user or admin',
-      });
-    }
-
-    // WHAT: Verify caller is an admin, checking both appRole and the canonical
-    // isSuperAdmin flag -- scripts/migrate-user-rights.cjs seeds isSuperAdmin: true
-    // independently of appRole (e.g. on an org's first user), and lib/permissions.js's
-    // isSuperAdmin() is what the rest of the permission system (hasOrgPermission)
-    // already treats as authoritative; checking appRole alone would lock a real
-    // superadmin out
-    // WHY: Granting access (including admin role) must not be reachable by ordinary users
-    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin' && !isSuperAdmin(req.user)) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Only admins can grant access',
       });
     }
 
@@ -112,6 +97,6 @@ async function handler(req, res) {
   }
 }
 
-// WHAT: Wrap with SSO authentication
-// WHY: Only authenticated admins can grant access
-export default withSsoAuth(handler);
+// WHAT: Wrap with SSO authentication, then the shared admin-role guard
+// WHY: Granting access (including admin role) must not be reachable by ordinary users
+export default withSsoAuth(requireAdminRole(handler, 'Only admins can grant access'));
