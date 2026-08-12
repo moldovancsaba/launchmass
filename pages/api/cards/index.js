@@ -38,23 +38,26 @@ export default async function handler(req, res) {
     const col = db.collection('cards');
 
     if (req.method === 'GET') {
-      // Functional: When an org context is provided, scope results to that organization.
-      // Strategic: Backward-compatible — if no org context, return legacy unscoped list but add a deprecation header.
+      // Functional: Require an org context to scope results to that organization.
+      // Strategic: Fail closed — absence of org context is a 400, not a cross-tenant
+      // fallback that returns every organization's cards (see issue #10).
       console.log('[cards API] Getting org context...');
       const ctx = await getOrgContext(req);
       console.log('[cards API] Org context:', JSON.stringify(ctx));
-      
-      const filter = ctx?.orgUuid ? { orgUuid: ctx.orgUuid } : {};
-      console.log('[cards API] Filter:', JSON.stringify(filter));
-      
+
       if (!ctx?.orgUuid) {
-        res.setHeader('X-Deprecation', 'org-context-required');
+        return res.status(400).json({
+          error: 'Organization context required (X-Organization-UUID or ?orgUuid=)'
+        });
       }
-      
+
+      const filter = { orgUuid: ctx.orgUuid };
+      console.log('[cards API] Filter:', JSON.stringify(filter));
+
       console.log('[cards API] Fetching cards from DB...');
       const docs = await col.find(filter).sort({ order: 1, _id: 1 }).toArray();
       console.log('[cards API] Found', docs.length, 'cards');
-      
+
       return res.status(200).json(docs.map(toClient));
     }
 
