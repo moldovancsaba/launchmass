@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.8**
+**Version: 1.23.9**
 
 ## Frontend
 
@@ -167,6 +167,86 @@ what the config file implies. And for flat config specifically, `sourceType` is 
 `languageOptions` key checked against a fixed enum (`module`/`script`/`unambiguous`),
 not a free-form string — get the exact accepted value from the parser error, don't
 guess from memory of older ESLint config formats.
+
+### `jsconfig.json` Is Not Auto-Discovered by the `tsc` CLI, Only `tsconfig.json` Is (2026-08-12T15:22:52.000Z)
+**Issue**: Issue #16 specified `jsconfig.json` (the conventional filename for a
+pure-JS project, and what editors like VS Code auto-recognize for IntelliSense) plus a
+`"typecheck": "tsc --noEmit"` script. A bare `tsc --noEmit` with only a `jsconfig.json`
+present in the working directory printed `tsc`'s full help text instead of type-checking
+anything — confirmed empirically, not assumed. `tsc -p jsconfig.json --noEmit` (or
+`tsc --project jsconfig.json`) works correctly; the CLI's zero-argument auto-discovery
+only looks for a file literally named `tsconfig.json`.  
+**Solution**: `"typecheck": "tsc -p jsconfig.json --noEmit"` in `package.json` — the
+`-p jsconfig.json` is load-bearing, not stylistic.  
+**Key Learning**: A `jsconfig.json` gets you editor IntelliSense for free; it does
+**not** get you a working zero-argument `tsc` CLI invocation for free. If a project
+needs both (editor support and a scriptable CLI command), keep the `jsconfig.json`
+filename for the editor's sake but always invoke `tsc` with an explicit `-p`/`--project`
+flag pointing at it — never assume `tsc --noEmit` alone will find it.
+
+### The Installed `typescript` Package Can Default `strict` to `true` Even Though Real-World `tsconfig.json`/`jsconfig.json` Templates Rarely Show It (2026-08-12T15:22:52.000Z)
+**Issue**: Issue #16's Non-Goals explicitly scoped this work to "default strictness,
+not full strict mode" — but the `typescript` devDependency actually installed for this
+issue defaults `strict` to `true` when it's omitted from `jsconfig.json`/`tsconfig.json`
+entirely, which surfaced as ~150 unrelated implicit-`any`/null-assignability errors
+across every file `checkJs` touched (`pages/**`, unrelated `lib/**` files) the moment
+`checkJs` was turned on — not just the six modules this issue scoped for deliberate
+annotation.  
+**Solution**: Set `"strict": false` explicitly in `jsconfig.json` rather than relying on
+omission-means-off, which is not this compiler's actual default.  
+**Key Learning**: Never assume a compiler/linter's "default" behavior from general
+tooling folklore or an older version's documented default — verify the *specific
+installed version's* actual default by running it with a minimal config and reading
+what errors show up, the same "read first, never guess" discipline this repo's
+`CLAUDE.md` §0 already requires for the codebase itself, applied here to a third-party
+tool's behavior instead.
+
+### Turning On `checkJs` Repo-Wide Surfaces Pre-Existing Type Looseness Far From the Files You're Actually Annotating (2026-08-12T15:22:52.000Z)
+**Issue**: Issue #16 scoped deliberate `@param`/`@returns` JSDoc authorship to six
+`lib/` modules, but `jsconfig.json`'s `include` glob (`lib/**/*.js`, `pages/**/*.js`,
+per the issue's own spec) checks *every* file in those trees, plus anything they
+transitively import (e.g. `components/Header.jsx`, pulled in by `pages/index.js`, even
+though `.jsx` doesn't match either glob). This surfaced real, pre-existing type
+inconsistencies with zero relation to the six annotated modules — `lib/analytics.js`'s
+`logEvent()` JSDoc contradicted its own real call sites; `pages/api/oauth/callback.js`
+assigned a `superadmin`-mapped/plain-`string` role into what is now a narrow union;
+styled-jsx's `<style jsx>` tags had no type augmentation available without a
+`next-env.d.ts` this repo has never generated. None of these were regressions
+introduced by this issue's own annotations — they were latent, just never checked
+before.  
+**Solution**: Fixed each at the source with the narrowest correct change (a loosened
+parameter type where the real usage was always free-form; an added enum value where a
+real code path genuinely produces it — `'superadmin'`/`'error'` were both found by
+grepping actual assignments, not invented) rather than suppressing errors or excluding
+files from the check.  
+**Key Learning**: Scoping *deliberate annotation effort* to a handful of files does not
+scope *what the type checker actually inspects* once `checkJs`/`include` is turned on
+for a whole directory tree — budget time for a first `include`-widening PR to trip over
+and need to fix unrelated pre-existing looseness, and treat each one as a genuine "read
+the actual current shape" correction (per `CLAUDE.md` §0) rather than a nuisance to
+silence.
+
+### `git checkout -- <file>` Reverts *All* Uncommitted Changes to That File, Not Just the Last Edit — Use a Manual Backup When Simulating-Then-Reverting a Bug in a File You've Already Modified (2026-08-12T15:22:52.000Z)
+**Issue**: Issue #16's acceptance criteria call for temporarily reintroducing the
+historical #12 bug (`sed -i "s/appStatus/status/" lib/ssoPermissions.mjs`) to prove
+`npm run typecheck` catches it, then reverting. `lib/ssoPermissions.mjs` already had
+this issue's own uncommitted JSDoc annotations applied before that `sed` ran (working
+tree only, nothing committed yet). Running `git checkout -- lib/ssoPermissions.mjs` to
+"revert the sed" reverted the entire file to its last-committed state on `origin/main`
+— silently discarding this issue's annotations along with the simulated bug, since git
+has no concept of "just undo the last edit" for an unstaged working-tree file.  
+**Solution**: `cp lib/ssoPermissions.mjs /tmp/backup.mjs` immediately before running the
+`sed`, then `cp /tmp/backup.mjs lib/ssoPermissions.mjs` to restore, instead of
+`git checkout`. Re-ran the full reproduction afterward with the backup approach to
+re-confirm the same failure, then confirmed the restored file still carried this
+issue's annotations and `npm run typecheck` was clean again.  
+**Key Learning**: `git checkout -- <path>` (and `git restore <path>`) discard *all*
+uncommitted changes to that path, not just changes made since some implicit
+checkpoint — there is no "undo my last edit" semantics for unstaged content. Before
+using either to revert a deliberate temporary change (a bug-reproduction `sed`, a
+scratch edit) on a file that already has *other* uncommitted work you want to keep,
+either commit the other work first or take a manual backup copy — don't reach for
+`git checkout` reflexively as "undo the thing I just did."
 
 ### Verify Package-Registry Claims Directly, Especially When They Arrive Mid-Conversation (2026-08-05T13:01:09.000Z)
 **Issue**: While installing `@sovereignsquad/gds-core` for this repo's guided tour

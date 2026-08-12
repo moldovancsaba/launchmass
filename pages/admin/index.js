@@ -190,8 +190,13 @@ export async function getServerSideProps(context) {
         user: {
           email: user.email || '',
           name: user.name || user.email || '',
-          id: user.ssoUserId || user.id || '',
-          role: user.role || '',
+          // WHAT: user is typed as UserDoc (see lib/types.js) as of issue #16, which has
+          // no `.id`/`.role` fields (only `.ssoUserId`/`.ssoRole`) — the `|| user.id` /
+          // `user.role` fallbacks below predate that typing and are defensive against a
+          // differently-shaped object; kept as-is (behavior-preserving) via a type-only
+          // cast rather than removed, since that's a larger change than this issue scopes.
+          id: user.ssoUserId || /** @type {any} */ (user).id || '',
+          role: /** @type {any} */ (user).role || '',
         },
       },
     };
@@ -260,7 +265,7 @@ function AdminPageInner({ forcedOrgUuid = '' }) {
   // Strategic: Public endpoint; org scoping via header
   async function fetchItems(orgUuid) {
     try {
-      const headers = {};
+      const headers = /** @type {Record<string, string>} */ ({});
       if (orgUuid) headers['X-Organization-UUID'] = orgUuid;
       const res = await fetch('/api/cards', { headers, cache: 'no-store' });
       const data = await res.json();
@@ -273,7 +278,7 @@ function AdminPageInner({ forcedOrgUuid = '' }) {
   // Helper: Fetch tag suggestions scoped to selected org
   async function fetchTags(orgUuid) {
     try {
-      const headers = {};
+      const headers = /** @type {Record<string, string>} */ ({});
       if (orgUuid) headers['X-Organization-UUID'] = orgUuid;
       const res = await fetch('/api/tags', { headers, cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -356,7 +361,7 @@ function AdminPageInner({ forcedOrgUuid = '' }) {
 
   async function deleteItem(id) {
     try {
-      const headers = {};
+      const headers = /** @type {Record<string, string>} */ ({});
       if (selectedOrgUuid) headers['X-Organization-UUID'] = selectedOrgUuid;
       const res = await fetch('/api/cards/' + encodeURIComponent(id), { method: 'DELETE', headers, credentials: 'include' });
       if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + (await res.text()));

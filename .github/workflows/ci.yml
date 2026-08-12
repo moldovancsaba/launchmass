@@ -27,6 +27,8 @@ jobs:
         run: npm run verify-docs
       - name: Lint
         run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
       - name: Scan staged-equivalent diff for secrets
         run: npm run scan-secrets
       - name: Build
