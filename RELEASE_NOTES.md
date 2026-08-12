@@ -1,5 +1,48 @@
 # Release Notes - launchmass
 
+## [v1.23.1] — 2026-08-12T12:51:18.000Z
+
+### Security: Enforce organization-scoped authorization on card mutation endpoints (Closes #8)
+
+`pages/api/cards/index.js` (POST), `pages/api/cards/[id].js` (PATCH, DELETE), and
+`pages/api/cards/reorder.js` (POST) authenticated the caller (`withSsoAuth` — proves *a*
+valid session exists) but never authorized the caller against the *target organization*
+named by the client-supplied `X-Organization-UUID` header/`?orgUuid=` query param.
+Combined with the public `organization/[slug].js` UUID-disclosure endpoint (intentionally
+public, unchanged), any authenticated user of any organization could discover another
+organization's UUID and write to its card collection — create, update, delete, or reorder
+cards it doesn't belong to.
+
+**Changed:**
+- All four routes now use `withOrgPermission` (already implemented in `lib/auth-oauth.js`
+  and already used correctly by `pages/api/organizations/[uuid]/**`) in place of
+  `withSsoAuth` + a manual `getOrgContext` call: POST requires `cards.create`, PATCH
+  requires `cards.update`, DELETE requires `cards.delete`, reorder requires
+  `cards.reorder` — all checked against the target org, not merely "a session exists".
+  The permission matrix itself (`lib/permissions.js`) is unchanged: `cards.reorder`
+  remains admin-only, `cards.create`/`update`/`delete` remain available to both `admin`
+  and `user` roles.
+- Each route's now-redundant manual `getOrgContext` call was removed — `withOrgPermission`
+  resolves org context internally and attaches it as `req.orgContext`, which the handlers
+  now read directly. No change to the Mongo query/data-scoping logic itself.
+- `ARCHITECTURE.md`'s API-routes section updated to note the new per-route permission
+  requirement.
+
+**Verification:**
+- `npm run verify-docs` and `npm run build` both clean.
+- Static/code-path verification: confirmed each route's permission string matches the
+  matrix (`cards.create`/`cards.update`/`cards.delete`/`cards.reorder`), confirmed no
+  route retains a duplicate `getOrgContext` call alongside `withOrgPermission`, confirmed
+  the 403 response shape is `withOrgPermission`'s existing, unmodified shape.
+- No live SSO/DB access in this environment — the issue's curl-based manual verification
+  against a live deployment was not executed; see the PR description for the exact
+  commands a human (or a session with live credentials) should run to confirm the 403/
+  201/403-on-reorder behavior end-to-end.
+- Admin UI (`pages/admin/index.js`) requires no code change: its existing catch blocks
+  already build the status message from `'HTTP ' + res.status + ' — ' + (await
+  res.text())`, which embeds the 403 JSON body's raw text (including the `message`
+  field) — confirmed by reading the code, not merely assumed.
+
 ## [v1.23.0] — 2026-08-12T12:28:37.000Z
 
 ### Session cookie domain made env-driven (Phase 4 prep, no behavior change)
