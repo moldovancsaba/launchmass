@@ -40,6 +40,8 @@ const VERSION_REQUIRED_DOCS = [
   'TASKLIST.md',
   'LEARNINGS.md',
   'AUTH_CURRENT.md',
+  'ROADMAP.md',
+  'PERMISSIONS_DESIGN.md',
   'DOCUMENTATION_REMEDIATION_SUMMARY.md',
 ];
 
@@ -55,6 +57,7 @@ const REQUIRED_DOCS = [
   'WARP.md',
   'CLAUDE.md',
   'AGENTS.md',
+  'PERMISSIONS_DESIGN.md',
 ];
 
 // ISO 8601 timestamp pattern with milliseconds: YYYY-MM-DDTHH:MM:SS.sssZ
