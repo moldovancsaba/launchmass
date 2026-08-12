@@ -1,8 +1,23 @@
 # Task List - launchmass
 
-**Version: 1.23.3**
+**Version: 1.23.4**
 
 ## Completed Tasks
+
+### ✅ v1.23.4 — SEC: Eliminate session-cookie exposure in card API request logging (Completed 2026-08-12T13:55:36.000Z, closes #11)
+- ✅ `pages/api/cards/index.js` no longer logs `req.headers` (or any other cookie-bearing
+      structure) anywhere, unconditionally or gated — the line that serialized and logged
+      the full request headers (including the HMAC-signed `sso_session` cookie value on
+      every request) is deleted entirely, not merely flag-gated.
+- ✅ Added a module-level `dlog(...)` gated by `process.env.CARDS_DEBUG === 'true'`,
+      matching the existing `OAUTH_DEBUG` (`pages/api/oauth/callback.js`) /
+      `ORG_CACHE_DEBUG` (`lib/org.js`) convention.
+- ✅ Consolidated the ~6 remaining unconditional diagnostic `console.log` calls in the
+      GET request path into a single `dlog('[cards API]', req.method, 'org=', ctx.orgUuid,
+      'count=', docs.length)` call — non-sensitive fields only (method, resolved org
+      UUID, result count), no raw header/filter object dumps.
+- ✅ Documented `CARDS_DEBUG` in `.env.example` alongside `OAUTH_DEBUG`/`ORG_CACHE_DEBUG`.
+- ✅ Verified `git grep -n "req.headers" pages/api/cards/index.js` returns zero matches.
 
 ### ✅ v1.23.3 — SEC: Require organization context on card listing endpoint (Completed 2026-08-12T13:47:10.000Z, closes #10)
 - ✅ `pages/api/cards/index.js` GET branch now returns `400 { error: 'Organization

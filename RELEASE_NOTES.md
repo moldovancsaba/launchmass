@@ -1,5 +1,33 @@
 # Release Notes - launchmass
 
+## [v1.23.4] — 2026-08-12T13:55:36.000Z
+
+### SEC: Eliminate session-cookie exposure in card API request logging (Closes #11)
+
+`pages/api/cards/index.js` unconditionally logged `console.log('[cards API] Headers:',
+JSON.stringify(req.headers))` on every request, writing the full `Cookie` header —
+including the HMAC-signed `sso_session` value — to stdout/Vercel log retention on every
+single card-list/create call, with no debug-flag gate. This release removes that
+exposure and applies the `OAUTH_DEBUG`/`ORG_CACHE_DEBUG`-style gating convention already
+used elsewhere in the codebase.
+
+**Changed:**
+- `pages/api/cards/index.js` — added a module-level `dlog(...)` gated by
+  `process.env.CARDS_DEBUG === 'true'`. Deleted the `req.headers`-logging line entirely
+  (not gated — cookies must never be logged, flag on or off). Consolidated the remaining
+  ~6 unconditional diagnostic `console.log` calls in the GET path into one
+  `dlog('[cards API]', req.method, 'org=', ctx.orgUuid, 'count=', docs.length)` call —
+  non-sensitive fields only (method, resolved org UUID, result count), no raw
+  header/filter object dumps.
+- `.env.example` — documents the new `CARDS_DEBUG` flag alongside the existing
+  `OAUTH_DEBUG`/`ORG_CACHE_DEBUG` entries.
+
+**Verification:**
+- `git grep -n "req.headers" pages/api/cards/index.js` returns zero matches.
+- Static read-through confirms `CARDS_DEBUG` unset produces no `[cards API]` output, and
+  `CARDS_DEBUG=true` produces exactly one line per request containing only method, org
+  UUID, and card count — no cookie/header content under any flag state.
+
 ## [v1.23.3] — 2026-08-12T13:47:10.000Z
 
 ### SEC: Require organization context on card listing endpoint (Closes #10)

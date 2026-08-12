@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.3**
+**Version: 1.23.4**
 
 ## Frontend
 
@@ -192,6 +192,32 @@ source for the documented breaking surfaces before deciding an upgrade is risky;
 let the version number alone set the risk assessment.
 
 ## Security
+
+### Debug-Logging Remediations Don't Automatically Cover Sibling Files (2026-08-12T13:55:36.000Z)
+**Issue**: `pages/api/cards/index.js` unconditionally logged `JSON.stringify(req.headers)`
+on every request — writing the full `Cookie` header, including the HMAC-signed
+`sso_session` value, to stdout/Vercel log retention — even though the same class of
+problem had already been fixed elsewhere in the codebase (`OAUTH_DEBUG` in
+`pages/api/oauth/callback.js`, `ORG_CACHE_DEBUG` in `lib/org.js`). This file was simply
+missed by that earlier pass; it wasn't touched by the same PR.
+**Solution**: Added a `CARDS_DEBUG`-gated `dlog(...)` following the exact existing
+pattern, deleted the header-dumping line entirely (not gated — cookies must never be
+logged, flag on or off, since debug flags get left on in shared/staging environments),
+and consolidated the remaining ~6 unconditional diagnostic lines into one `dlog(...)`
+call per request path logging only non-sensitive fields (method, resolved `orgUuid`,
+result count).
+**Key Learning**:
+- A logging-hygiene fix applied to one file does not imply the pattern was swept
+  repo-wide — grep for the anti-pattern (`console.log` of `req.headers`/full objects
+  containing tokens) across the whole `pages/api/` tree rather than assuming a prior
+  remediation covered every call site.
+- "Gate it behind a debug flag" is the right fix for genuinely diagnostic content, but
+  is the wrong fix for secrets specifically — a flag left on in a shared environment
+  must still be safe, so the header/cookie-dump line needed deletion, not gating, to make
+  the debug-on case safe by construction rather than merely rare.
+- Consolidating N unconditional log lines into one gated line per request path is both
+  the security fix and a minor performance win (fewer synchronous `JSON.stringify` calls
+  on a hot-path endpoint per request).
 
 ### A "Deprecation" Header Is Not Enforcement (2026-08-12T13:47:10.000Z)
 **Issue**: `GET /api/cards` fell back to an unscoped `{}` filter — every card, every
