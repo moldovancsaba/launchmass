@@ -1,8 +1,52 @@
 # Task List - launchmass
 
-**Version: 1.23.10**
+**Version: 1.23.11**
 
 ## Completed Tasks
+
+### ✅ v1.23.11 — UX: Loading, error, and retry states for the public card grid (Completed 2026-08-12T16:01:48.000Z, closes #19)
+- ✅ `pages/index.js`'s `getServerSideProps` no longer swallows fetch failures with a
+      bare `catch {}`. The catch block now captures the real error, logs it via
+      `console.error('[index] getServerSideProps failed:', err.message)` (server-side
+      only), and returns an explicit `fetchError: true` prop distinct from a
+      legitimately-empty organization's `fetchError: false`.
+- ✅ `Home` renders three mutually-exclusive states: `fetchError === true` -> GDS
+      `GdsErrorPageTemplate` with a fixed, generic message and a `onRetry`-wired retry
+      button (`window.location.reload()` — a full navigation, matching this page's
+      SSR-per-request model with no client-side data-fetching layer to re-run in
+      place); `fetchError === false && cards.length === 0` -> GDS
+      `GdsEmptyStateTemplate` (the pre-existing "Welcome to SEYU / No content found
+      yet" copy, restyled onto GDS, same Organizations/Admin quick-access actions);
+      `cards.length > 0` -> the existing `<main className="grid">` grid, unchanged.
+- ✅ **GDS component choice — `GdsEmptyStateTemplate` + `GdsErrorPageTemplate`,
+      matching the issue's suggestion, verified rather than assumed:** checked the
+      actually-installed `@sovereignsquad/gds-core@6.0.0` dist
+      (`node_modules/@sovereignsquad/gds-core/dist/AISearchCard-DlLxEGV9.d.ts`) —
+      both exist exactly as named, as governed page templates (`empty-state-page` /
+      `error-page`) with documented accessibility contracts ("single h1, specific
+      empty reason, keyboard reachable recovery, no color-only meaning" /
+      "main landmark, semantic heading, recovery action label, status text").
+      `GdsErrorPageTemplate`'s `onRetry`+`retryLabel` props render GDS's own retry
+      `<button>` with no hand-rolled markup, satisfying the issue's "GDS button
+      primitives, not a hand-rolled `<button>`" constraint. Both templates render
+      their own `<main>` landmark internally, so the populated-grid `<main>` is only
+      rendered when `cards.length > 0`, avoiding duplicate `<main>` landmarks.
+- ✅ Edge cases verified: a tag filter with zero matching cards renders the GDS empty
+      state (not error) with the filter bar still shown, matching the issue's Edge
+      Cases section; a missing/unconfigured `defaultOrg` continues to render as
+      "empty" (pre-existing behavior, out of scope to change).
+- ✅ **Manual verification actually performed** (local MongoDB, Playwright +
+      `/opt/pw-browsers/chromium`): seeded an org with zero cards — GDS empty state
+      rendered with expected copy and functional Organizations/Admin buttons; seeded
+      an org with two cards — grid rendered unchanged (exactly one `<main
+      class="grid">`, identical `OversizedLink`/`ChoiceChip` markup); pointed
+      `MONGODB_URI` at an unreachable port to force a real connection failure — the
+      server terminal logged `[index] getServerSideProps failed: connect ECONNREFUSED
+      127.0.0.1:27199`, the GDS error state rendered (not the empty state), and the
+      client-facing HTML was grepped for `27199`/`ECONNREFUSED`/`mongodb://`/
+      `MongoServerError`/the DB name/the IP — zero occurrences of all five; clicked
+      the "Try again" retry button and confirmed via network-request counting that it
+      triggered a second, real full-page request (not a no-op).
 
 ### ✅ v1.23.10 — UX: Consent-gated Google Analytics loading (Completed 2026-08-12T15:37:36.000Z, closes #18)
 - ✅ `pages/_document.js` no longer unconditionally injects `gtag.js` (the tracking ID
