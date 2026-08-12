@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.13**
+**Version: 1.23.14**
 
 ## Overview
 
@@ -218,6 +218,36 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
     (previously a deprecated fallback with an `X-Deprecation` header; now removed — v1.23.3+).
     The route otherwise remains intentionally public-when-scoped (no session required once org
     context is present, matching the public per-org card grid use case).
+    **Optional pagination contract (v1.23.14+, issue #22):** GET accepts optional
+    `?limit=N&offset=M` query params, sorted by the existing `{order: 1, _id: 1}`. The
+    response shape is gated strictly on whether `limit` was supplied — this dual shape is
+    deliberate, not an inconsistency:
+    - `limit` **absent** (default, current behavior): response is unchanged — a bare
+      `CardDoc[]` array, byte-identical to pre-#22 behavior. No existing caller (admin UI,
+      public homepage `getServerSideProps`) passes `limit`, so both continue to receive the
+      full unbounded result set in the same shape as before. `countDocuments` is never run
+      on this path, so it adds zero query cost to the default case.
+      `GET /api/cards` -> `[ ...CardDoc[] ]`
+    - `limit` **present** and a valid positive number: response becomes
+      `{ cards: CardDoc[], total: number, hasMore: boolean }`, where `total` is the full
+      matching-document count for the org (via `countDocuments`, run only in this branch)
+      and `hasMore` is `total > offset + cards.length`.
+      `GET /api/cards?limit=20` -> `{ cards: [...first 20], total, hasMore }`
+      `GET /api/cards?limit=20&offset=20` -> `{ cards: [...next 20], total, hasMore }`
+    - `offset` defaults to `0` when absent or invalid.
+    - `limit` is capped server-side at 500 regardless of what a caller requests (silently
+      capped, not rejected).
+    - Invalid `limit`/`offset` (non-numeric, negative, or `limit <= 0`) is treated as "not
+      supplied" and falls back to the default unbounded/bare-array behavior — this is an
+      optional enhancement parameter, not a validated/required one, so it never produces a
+      400.
+    - Offset-based, not cursor-based (deliberately simple at this scope); subject to result
+      drift under concurrent writes across sequential paginated requests — a documented,
+      accepted limitation, not addressed by this contract.
+    - No UI in this codebase currently sends `limit`/`offset` (admin UI and the public grid
+      both continue calling the endpoint unparameterized) — this ships an available-but-
+      unused, fully backward-compatible capability; a "load more"/infinite-scroll UI is a
+      deliberately separate, not-yet-created follow-up issue.
   - `/api/cards/[id]` - Individual card operations (PATCH requires `cards.update`, DELETE
     requires `cards.delete`, both in the target org via `withOrgPermission` — v1.23.1+)
   - `/api/cards/reorder` - Bulk reordering functionality (requires `cards.reorder` in the
