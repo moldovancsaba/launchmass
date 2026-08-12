@@ -1,8 +1,54 @@
 # Task List - launchmass
 
-**Version: 1.23.9**
+**Version: 1.23.10**
 
 ## Completed Tasks
+
+### ✅ v1.23.10 — UX: Consent-gated Google Analytics loading (Completed 2026-08-12T15:37:36.000Z, closes #18)
+- ✅ `pages/_document.js` no longer unconditionally injects `gtag.js` (the tracking ID
+      `G-HQ5QPLMJC1` script tag + inline `dataLayer`/`gtag('config', ...)` call). Loading
+      moved to `lib/consent.js`'s `loadGoogleAnalytics()`, called only client-side and
+      only once consent is granted.
+- ✅ Added `lib/consent.js` — `localStorage` key `seyu-analytics-consent`
+      (`'accepted'`/`'declined'`/absent = undecided), `readConsent()`/`writeConsent()`
+      wrapped in try/catch (private-mode/quota-exceeded storage failures are treated as
+      "undecided every visit," matching the issue's Edge Cases, not surfaced as errors),
+      and the `gtag.js` loader itself (module-level guard prevents double-injection on
+      re-render).
+- ✅ Added `components/ConsentBanner.jsx`, mounted from `pages/_app.js` alongside the
+      existing `MantineProvider`/`OverlayManagerProvider`. Renders nothing until after a
+      client-side mount effect confirms the stored decision (SSR-safe — no
+      consent-related content is ever server-rendered, avoiding a hydration mismatch).
+      Shows a GDS `BannerNotice` with Accept/Decline actions while undecided; once
+      decided, shows a small persistent "Cookie preferences" `Button` that reopens the
+      same banner (GDPR requires withdrawing consent to be as easy as giving it).
+- ✅ **GDS component choice — `BannerNotice`, not the issue's suggested
+      `GdsSheet`/`GdsDrawer`:** verified against the actually-installed
+      `@sovereignsquad/gds-core@6.0.0` dist (`node_modules/@sovereignsquad/gds-core/dist/client.d.ts`),
+      not the issue's guess. `GdsSheet` is `GdsDrawer` with `mobileFullscreen` defaulted —
+      an overlay-manager-governed surface that traps focus and carries a backdrop, i.e.
+      modal behavior, which the issue explicitly rules out ("must not block interaction
+      with the page underneath ... non-modal"). `BannerNotice` is GDS's in-flow,
+      non-overlay alert primitive (`role="status"`/`"alert"` with a matching ARIA live
+      region, built on Mantine's `Alert`) — never registers with the overlay stack, never
+      traps focus, no backdrop. Wrapped in a fixed-position container (plain inline style
+      for positioning only — no GDS primitive governs "pin to viewport edge"; the
+      banner's typography/color/spacing/radius/interaction states remain fully
+      GDS-token-driven).
+- ✅ No new GDS installation path added — reused the repo's already-vendored
+      `@sovereignsquad/gds-core`/`gds-theme` v6.0.0 (`file:vendor/gds/...tgz`) and the
+      already-mounted `MantineProvider` in `pages/_app.js`. Ignored the issue's stale
+      `npm install @sovereignsquad/gds ...` / `.npmrc` GitHub Packages instructions —
+      superseded by the repo's actual vendoring since the issue was filed.
+- ✅ Real-browser verification performed via Playwright + Chromium (`/opt/pw-browsers/chromium`):
+      clean localStorage load shows the banner with zero `googletagmanager.com` network
+      requests before interaction; Accept fires the `gtag.js` request and persists
+      `'accepted'`; reload with `'accepted'` stored loads `gtag.js` automatically with no
+      banner; Decline persists `'declined'` and `gtag.js` never loads, across reloads;
+      zero hydration-mismatch console warnings on first load. See the PR body for the
+      full verification transcript.
+- ✅ README.md updated with a short note on the consent-gated analytics behavior — the
+      broader README rewrite tracked separately in issue #21 is out of scope here.
 
 ### ✅ v1.23.9 — TOOLING: Introduce static type checking via JSDoc annotations + tsc --checkJs (Completed 2026-08-12T15:22:52.000Z, closes #16)
 - ✅ Added `jsconfig.json` (`checkJs: true`, `allowJs: true`, `noEmit: true`, `target:

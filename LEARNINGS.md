@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.9**
+**Version: 1.23.10**
 
 ## Frontend
 
@@ -10,6 +10,14 @@
 **Key Learning**: Next.js _document.js is the proper approach for global script injection, ensuring consistent loading across all pages without performance impact from individual page modifications
 
 ### Google Analytics Integration Pattern
+
+**Superseded (2026-08-12T15:37:36.000Z, issue #18):** the unconditional
+`_document.js` injection described directly below predates GDPR consent-gating.
+`gtag.js` no longer loads via `_document.js` at all — see the entry below
+("Consent-Gated Analytics Loading vs. Unconditional `_document.js` Injection")
+for the replacement pattern and why it changed. Left in place rather than
+deleted per this file's historical-context convention (see "Legacy Code
+Removal Strategy" below: "Archive old docs rather than updating them").
 
 ### Conditional UI Rendering on Route
 **Issue**: The global bottom info bar should not appear on admin pages  
@@ -27,6 +35,48 @@
 - dataLayer initialization must occur before gtag function definition
 - Document-level injection ensures analytics coverage across all application routes
 - Configuration object approach enables clean tracking ID management
+
+### Consent-Gated Analytics Loading vs. Unconditional `_document.js` Injection (2026-08-12T15:37:36.000Z, issue #18)
+**Issue**: `_document.js`'s unconditional `gtag.js` injection (see the superseded entry
+above) loaded third-party tracking before any user consent could be collected — a
+GDPR/ePrivacy Directive compliance gap for SEYU's EU-based sports-org clients.
+**Solution**: Moved `gtag.js` loading to `lib/consent.js`'s `loadGoogleAnalytics()`,
+invoked only client-side, only after an explicit Accept (fresh or previously stored in
+`localStorage`). `_document.js` now contains no analytics code at all.
+**Key Learning**:
+- `_document.js` genuinely is the right place for content that must be identical and
+  unconditional on every request (the "Next.js Document Customization" entry above
+  still holds for that case) — but a third-party script whose loading is a legal/consent
+  decision is exactly the wrong fit for it, since `_document.js` renders server-side with
+  no access to client-only state like `localStorage`. `pages/_app.js` (or a component it
+  mounts) is the correct layer for anything gated on client-side state.
+- SSR-safe consent UI means rendering `null` until a `useEffect` (client-only) has read
+  the stored decision — returning anything decision-dependent during the render that
+  also runs server-side risks a hydration mismatch, since the server has no
+  `localStorage` to read.
+
+### GDS Component Selection: Verify Against the Installed Package, Not the Issue's Guess (2026-08-12T15:37:36.000Z, issue #18)
+**Issue**: Issue #18 suggested `GdsNotificationProvider`/`GdsSheet`/`GdsDrawer` as
+candidates for the consent banner, explicitly caveated as unverified ("this issue does
+not have direct access to full per-component API signatures").
+**Solution**: Inspected the actually-vendored `@sovereignsquad/gds-core@6.0.0`'s
+`.d.ts` files directly (`node_modules/@sovereignsquad/gds-core/dist/client.d.ts` /
+`AISearchCard-*.d.ts`) instead of trusting the issue's guess or attempting to reach
+external GDS docs (not reliably reachable from this sandbox anyway). Found `GdsSheet`
+is literally `GdsDrawer` with `mobileFullscreen` defaulted — an
+`OverlayManagerProvider`-governed surface that traps focus and carries a backdrop
+(confirmed by its own doc comment: "registers with the overlay manager, traps focus,
+and honors its close policy"). That is modal behavior, disqualifying it for a banner the
+issue explicitly requires to be non-modal. `BannerNotice` (also exported from
+`gds-core`, undocumented in the issue) turned out to be the correct fit: an in-flow,
+non-overlay alert built on Mantine's `Alert`, with its own ARIA live-region/role
+handling and no focus trap or backdrop.
+**Key Learning**: When an issue's suggested API surface is explicitly caveated as
+unverified, grep the installed package's own `.d.ts` output (`declare function
+ComponentName(...)`, its prop `interface`, and its doc comment) before writing code
+against it — a component name matching the issue's suggestion is not evidence it has
+the right runtime behavior; the doc comment two lines above its declaration ("traps
+focus," "registers with the overlay manager") is often the actual disqualifying detail.
 
 ## Process
 
