@@ -4,6 +4,9 @@
  */
 
 import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
 
 const SSO_MONGODB_URI = process.env.SSO_MONGODB_URI;
 if (!SSO_MONGODB_URI) {
