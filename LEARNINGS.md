@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.20.0**
+**Version: 1.21.0**
 
 ## Frontend
 
@@ -174,6 +174,27 @@ long-term dependency strategy -- and don't reach for it without confirming first
 isolated location, that the source you're vendoring actually builds clean.
 
 ## Security
+
+### A TODO Comment Can Be a Vulnerability Report Nobody Read (2026-08-08T11:00:34.000Z)
+**Issue**: A documentation audit's code-comment sweep found five `TODO: Check if req.user
+is superadmin` / `// For now, allow any authenticated user` comments clustered in
+`pages/api/admin/users/*`. Reading the code beneath them confirmed the comments weren't
+aspirational — those four endpoints, plus the page that fronts them, genuinely checked
+authentication only, letting any signed-in `user`-role account grant itself admin.
+**Solution**: Added the admin-role check already used correctly by the sibling
+`batch-sync-sso.js` endpoint in the same directory to all five gaps.
+**Key Learning**:
+- A `TODO` left in security-sensitive code is not a stylistic loose end — it's worth
+  reading as a self-reported gap and checking whether the surrounding code actually
+  closed it before assuming it did
+- The fix pattern was already correct and already in production three files away
+  (`batch-sync-sso.js`) — a quick sibling-file comparison inside the same directory found
+  it faster than designing a new check from scratch
+- The TODOs themselves pointed at the wrong role name (`superadmin`, removed in v1.13.0)
+  rather than the field the codebase actually uses (`appRole === 'admin'`) — a stale TODO
+  can misdirect a future fix attempt as easily as a stale doc can
+- This was found via a documentation audit, not a security-focused review — comment
+  quality and authorization correctness are not separate concerns in practice
 
 ### Critical Dependency Vulnerability Response (2025-12-21T18:45:01.000Z)
 **Issue**: Vercel detected critical vulnerabilities in Next.js 15.5.4 (RCE, source code exposure, DoS)  
