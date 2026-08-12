@@ -15,6 +15,13 @@ npm run lint || {
   exit 1
 }
 
+npm run typecheck || {
+  echo "" >&2
+  echo "✗ pre-commit: typecheck failed. Fix tsc --checkJs errors before committing." >&2
+  echo "  (run 'npm run typecheck' to see details)" >&2
+  exit 1
+}
+
 npm run scan-secrets || {
   echo "" >&2
   echo "✗ pre-commit: scan-secrets found a possible credential in staged files. Commit blocked." >&2

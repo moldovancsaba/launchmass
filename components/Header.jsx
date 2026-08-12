@@ -9,7 +9,7 @@ import TourOverlay from './tour/TourOverlay';
 // WHAT: Provides consistent navigation across all public pages with auth-aware menu
 // WHY: Centralized menu reduces UI clutter and provides mobile-friendly navigation
 
-export default function Header({ orgName, onAddCard, showAddCard = false }) {
+export default function Header({ orgName, onAddCard = undefined, showAddCard = false }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 

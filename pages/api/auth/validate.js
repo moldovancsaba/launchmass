@@ -14,7 +14,7 @@ import { validateSsoSession } from '../../../lib/auth-oauth.js';
  * 
  * @param {Object} req - Next.js API request with sso_session cookie
  * @param {Object} res - Next.js API response
- * @returns {Object} { isValid: boolean, user?: Object }
+ * @returns {Promise<void>}
  */
 export default async function handler(req, res) {
   // Functional: Only support GET method for session validation
