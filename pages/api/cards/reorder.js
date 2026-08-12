@@ -1,19 +1,22 @@
 import clientPromise from '../../../lib/db';
 import { ObjectId } from 'mongodb';
-import { getOrgContext } from '../../../lib/org.js';
-import { withSsoAuth } from '../../../lib/auth-oauth.js';
+import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
 
-// Functional: Protect reorder operation with SSO authentication
-// Strategic: Drag-and-drop reordering is an admin-only operation requiring authentication
+// Functional: Protect reorder operation with org-scoped authorization
+// Strategic: Drag-and-drop reordering is an admin-only operation (permission matrix
+// grants 'cards.reorder' to the admin role only). withSsoAuth authenticates and
+// populates req.user; withOrgPermission then checks the caller holds 'cards.reorder' in
+// the target org before running the handler. withOrgPermission alone does not validate
+// the session -- it resolves org context internally and attaches it as req.orgContext
+// (see issue #8).
 export default async function handler(req, res) {
   if (req.method !== 'POST') { res.setHeader('Allow',['POST']); return res.status(405).end('Method Not Allowed'); }
 
-  return withSsoAuth(async (req, res) => {
+  return withSsoAuth(withOrgPermission('cards.reorder', async (req, res) => {
     const { ids } = req.body || {};
     if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids array required' });
 
-    const ctx = await getOrgContext(req);
-    if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
+    const ctx = req.orgContext;
 
     const client = await clientPromise;
     const db = client.db(process.env.DB_NAME || 'launchmass');
@@ -28,5 +31,5 @@ export default async function handler(req, res) {
     if (ops.length) await col.bulkWrite(ops);
 
     return res.status(200).json({ ok: true, count: ops.length });
-  })(req, res);
+  }))(req, res);
 }

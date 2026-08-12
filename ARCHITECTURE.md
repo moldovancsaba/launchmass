@@ -105,9 +105,12 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Status**: Active - Data management interface
 - **Authentication**: All write operations protected by `withSsoAuth` middleware (v1.5.0+)
 - **Endpoints**:
-  - `/api/cards/` - CRUD operations for card management (POST protected)
-  - `/api/cards/[id]` - Individual card operations (PATCH/DELETE protected)
-  - `/api/cards/reorder` - Bulk reordering functionality (protected)
+  - `/api/cards/` - CRUD operations for card management (POST requires `cards.create` in the
+    target org via `withOrgPermission`, not merely a valid session — v1.23.1+)
+  - `/api/cards/[id]` - Individual card operations (PATCH requires `cards.update`, DELETE
+    requires `cards.delete`, both in the target org via `withOrgPermission` — v1.23.1+)
+  - `/api/cards/reorder` - Bulk reordering functionality (requires `cards.reorder` in the
+    target org via `withOrgPermission`; admin-only per the permission matrix — v1.23.1+)
   - `/api/organizations/` - Organization management (GET/POST protected)
   - `/api/organizations/[uuid]` - Individual org operations (PUT/DELETE protected)
   - `/api/organizations/[uuid]/members/` - Organization membership management (v1.7.0+)
@@ -469,6 +472,11 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 **Database:**
 - **MONGODB_URI**: Database connection string
 - **DB_NAME**: Database name (default: 'launchmass')
+- **SSO_MONGODB_URI**: Connection string for the SSO service's own database (separate
+  cluster from `MONGODB_URI`). Required only by the operator scripts under `scripts/`
+  that read/update SSO's `oauthClients` collection directly
+  (`enable-client-credentials.mjs`, `find-oauth-client.mjs`, `get-client-secret.mjs`) —
+  not used by the running application itself. See issue #7.
 
 **OAuth 2.0 Authentication (v1.7.0+):**
 - **SSO_SERVER_URL**: SSO service URL (https://sso.doneisbetter.com)

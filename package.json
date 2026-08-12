@@ -13,6 +13,7 @@
     "start": "next start",
     "bump-version": "bash scripts/bump-version.sh",
     "verify-docs": "node scripts/verify-docs-consistency.js",
+    "scan-secrets": "node scripts/scan-secrets.mjs",
     "install-hooks": "sh scripts/install-hooks.sh",
     "prepare": "sh scripts/install-hooks.sh || true"
   },
