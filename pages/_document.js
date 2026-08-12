@@ -2,14 +2,15 @@ import { Html, Head, Main, NextScript } from 'next/document';
 
 /**
  * Custom Document component for Next.js application
- * 
- * This file extends the default HTML document structure to:
- * 1. Inject Google Analytics tracking script into the document head
- * 2. Ensure proper gtag configuration for analytics data collection
- * 
- * Why _document.js: This approach ensures the analytics script loads
- * on every page without requiring individual page modifications,
- * providing consistent tracking across the entire application.
+ *
+ * WHAT: Extends the default HTML document structure (font preconnects only).
+ *
+ * Google Analytics: previously this file unconditionally injected gtag.js
+ * into every server-rendered page, before any user consent could be
+ * collected -- a GDPR/ePrivacy Directive compliance gap for SEYU's EU-based
+ * sports-org clients. That injection has been removed. gtag.js now loads
+ * client-side and consent-gated instead -- see components/ConsentBanner.jsx
+ * and lib/consent.js, mounted from pages/_app.js. See GitHub issue #18.
  */
 export default function Document() {
   return (
@@ -18,33 +19,6 @@ export default function Document() {
         {/* SEYU brand fonts — preconnect for faster loading (stylesheet imported in globals.css) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Google Analytics gtag.js implementation */}
-        {/* 
-          Google Analytics script injection for tracking ID G-HQ5QPLMJC1
-          
-          This implementation follows Google's recommended gtag.js approach:
-          1. Async script tag loads the gtag library from Google's CDN
-          2. dataLayer initialization ensures proper event queuing
-          3. gtag function setup enables analytics event tracking
-          4. Configuration connects to the specific Google Analytics property
-          
-          Why in _document.js: Ensures analytics loads on every page render
-          and captures all user interactions across the application
-        */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-HQ5QPLMJC1"
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-HQ5QPLMJC1');
-            `,
-          }}
-        />
       </Head>
       <body>
         {/* Navigation removed - now handled by Header component with hamburger menu */}

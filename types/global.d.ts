@@ -20,3 +20,12 @@
 // ambient type surface, which is unrelated to this issue's actual goal (typing the
 // six lib/ modules).
 declare module '*.css';
+
+// Functional: `window.dataLayer` is Google Analytics' gtag.js queue array,
+// pushed to by lib/consent.js's loadGoogleAnalytics() (issue #18). It isn't
+// a standard DOM property, so the default DOM lib types don't know about it;
+// this augmentation is scoped to exactly that one property, matching the
+// declare-only-what's-needed approach used above for CSS side-effect imports.
+interface Window {
+  dataLayer?: unknown[];
+}

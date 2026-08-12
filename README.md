@@ -1,10 +1,10 @@
 # launchmass
 
-**Version: 1.23.9**
+**Version: 1.23.10**
 
-![Version](https://img.shields.io/badge/version-1.23.9-blue)
+![Version](https://img.shields.io/badge/version-1.23.10-blue)
 
-Mobile-first grid of oversized buttons with a simple JSON-driven admin page. Features Google Analytics tracking and centralized SSO authentication.
+Mobile-first grid of oversized buttons with a simple JSON-driven admin page. Features consent-gated Google Analytics tracking and centralized SSO authentication.
 
 Note: The global bottom info bar is automatically suppressed on admin routes (/admin) to keep the admin UI uncluttered.
 
@@ -93,6 +93,12 @@ npm run start
 ### Tag Chips (v1.20.0, GDS pilot; bumped to 6.0.0 in v1.22.0)
 - Card tag pills (`components/OversizedLink.jsx`) and the active-filter bar (`pages/index.js`) now render via `@sovereignsquad/gds-core`'s `ChoiceChip`, replacing the legacy `.tag-chip` CSS class on those two surfaces
 - `@sovereignsquad/gds-core`/`gds-theme` are vendored at `6.0.0` (`vendor/gds/*.tgz`, `file:` dependency) — the only version ever published anywhere is `3.9.0`, so this is a self-built pilot, not a registry install; see `LEARNINGS.md`
+
+### Consent-Gated Analytics (v1.23.10)
+- Google Analytics (`gtag.js`) no longer loads unconditionally. On first visit a GDS `BannerNotice` banner (`components/ConsentBanner.jsx`) asks for Accept/Decline; `gtag.js` only loads after Accept, and the decision is remembered (`localStorage`, key `seyu-analytics-consent`) so the banner does not reappear on later visits
+- A small persistent "Cookie preferences" control stays visible once a decision has been made, reopening the same banner to change it at any time
+- No content related to the decision is ever server-rendered (avoids a hydration mismatch); a storage read/write failure (private browsing, quota exceeded) is treated as "undecided," not a crash
+- See `RELEASE_NOTES.md`'s `v1.23.10` entry for the full design/verification notes and the GDS component choice rationale
 
 ## Documentation
 
