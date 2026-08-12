@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.12**
+**Version: 1.23.13**
 
 ## Overview
 
@@ -76,6 +76,61 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Authentication**: Server-side rendering with OAuth session validation via `getServerSideProps`
 - **Session Monitoring**: Client-side 5-minute interval checks with auto-redirect on expiration
 - **Features**: Drag-and-drop card reordering, inline editing, organization selector
+
+#### Structured Background Editor (`components/admin/BackgroundEditor.jsx`) - v1.23.13+ (issue #20)
+- **Role**: Replaces the card-edit form's raw-CSS `background` textarea with a structured
+  editor, mounted inside `pages/admin/index.js`'s `Card` component. The storage contract is
+  unchanged — the card's `background` field is still saved as a plain CSS `background`
+  value string (`#hex` or `linear-gradient(...)`), parseable by `lib/shared.js`'s
+  `normalizeBg`, itself unchanged by this issue.
+- **Three modes**, switched via a GDS `GdsSegmentedControl` (proper `radiogroup`
+  semantics — keyboard/screen-reader navigable per its own accessibility guarantees):
+  - **Solid** — a single GDS `FormField`-wrapped, pattern-validated hex text field
+    (`/^#[0-9a-fA-F]{3,8}$/`), with an inline error message (not a silent save-time
+    fallback) when invalid.
+  - **Gradient** — a GDS `GdsSlider` for the angle (0–360°) plus one row per color stop
+    (a GDS `FormField`-wrapped color text field, a GDS `NumberStepper` for the 0–100%
+    position, and a `ChoiceChip`-based Remove action), with a `ChoiceChip` "+ Add stop"
+    action. Not capped at 3 stops. A minimum of 2 stops is enforced (Remove disabled at
+    2) per the issue's acceptance criteria. New cards default to `DEFAULT_BG` and open
+    with its real three stops pre-populated, not blank.
+  - **Advanced** — the original raw-CSS `<textarea>`, functionally unchanged, for values
+    that don't fit the structured shapes (or for operators who want the original
+    free-paste behavior).
+  - `detectMode(cssValue)` (exported from `BackgroundEditor.jsx`) picks the mode an
+    existing card opens into: a clean `#hex` → Solid, a clean single-line
+    `linear-gradient(<N>deg, <color> <N>%, ...)` (≥2 stops) → Gradient, anything else
+    (multi-layer shorthand, keyword-direction gradients, rgba-without-explicit-`%`
+    stops, etc.) → Advanced, so an unusual-but-valid existing value is never corrupted.
+  - **Mode-switch data-loss guard**: if the current Advanced-mode value doesn't cleanly
+    parse (`detectMode` still says `'advanced'`), the Solid and Gradient radio options
+    are disabled (not just hidden) and a GDS `InlineAlert` explains why, with an explicit
+    "Reset to default gradient" action — switching away from an unparseable raw value
+    is never silent.
+  - A live preview swatch (a plain `background`-styled `<div aria-hidden>`, since its
+    information is already conveyed by the structured field values) updates
+    synchronously with every field edit, regardless of mode.
+  - The card form's Save button is disabled while the Solid or Gradient mode's fields
+    are invalid (`onValidityChange` callback), so a malformed value can't be saved
+    silently; Advanced mode carries no added validation gate (unchanged behavior —
+    `normalizeBg`'s own existing fallback is the safety net there, as before this issue).
+- **GDS component-fit finding (see the issue #20 PR body for the full investigation)**:
+  the vendored `@sovereignsquad/gds-core` v6.0.0 has **no dedicated color-picker /
+  color-input / color-swatch-selection component**, and `GdsSchemaForm`'s field-type
+  union (`GdsSchemaFieldType`) has no `'color'` variant — confirmed by enumerating the
+  package's full compiled export surface. GDS also does not re-export or wrap Mantine's
+  `ColorInput`/`ColorPicker` anywhere; its compiled bundles import only a specific,
+  curated allowlist of Mantine primitives (`Button`, `Modal`, `Group`, `Text`, `Center`,
+  `Paper`, `UnstyledButton`, `AppShell`, `Box`, `Burger`, `ScrollArea`, `NativeSelect`,
+  `Stack`, `Transition`, `Divider`, `Container`), never Mantine's color components. This
+  is a genuine, narrow gap in GDS (a true visual color-picking widget), not a gap in
+  general structured-form primitives — `FormField`, `GdsSegmentedControl`, `GdsSlider`,
+  `NumberStepper`, `InlineAlert`, and `ChoiceChip` (already adopted in this repo, issues
+  #18/#19) are all genuine fits for everything except color selection itself. Per this
+  gap, colors are entered as a validated text field rather than a picker — which is
+  also the *correct* shape independent of the gap, since `DEFAULT_BG`'s own gradient
+  stops are `rgba(...)` values, not hex, so a hex-only picker (GDS-native or a native
+  `<input type="color">`) could not represent this app's own default background.
 
 #### User Management Interface (`pages/admin/users.js`) - v1.7.0+
 - **Role**: Admin panel for managing user access and permissions

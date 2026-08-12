@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.12**
+**Version: 1.23.13**
 
 ## Frontend
 
@@ -130,6 +130,54 @@ page, check what DOM landmark elements it renders internally (grep the vendored
 `<main>`/`<nav>`/`<header>` landmarks, which is a real accessibility regression
 (screen reader users navigating by landmark get multiple "main" stops with no way to
 tell which one matters).
+
+### GDS Has No Color-Picker Primitive — Confirming a Real Gap vs. "Didn't Look Hard Enough" (2026-08-12T18:00:00.000Z, issue #20)
+**Issue**: Issue #20 required a "GDS-exclusive" structured color/gradient editor and
+explicitly flagged, as an open question to investigate rather than assume, whether GDS
+has any color-picker/color-input primitive — with an explicit Final Rule that finding
+none is a legitimate blocking finding, not license to reach for a non-GDS picker
+library (a native `<input type="color">` or a direct `@mantine/core` `ColorInput`
+import).
+**Solution**: Rather than stopping at "the export list doesn't have anything named
+Color*", ran three independent checks against the real vendored
+`@sovereignsquad/gds-core@6.0.0`: (1) grepped every `.d.ts` export name across
+`dist/index.d.ts`/`dist/client.d.ts`/`dist/AISearchCard-*.d.ts` for
+`Color`/`Picker`/`Swatch` — zero matches; (2) inspected `GdsSchemaForm`'s
+`GdsSchemaFieldType` union directly (`'text' | 'email' | 'url' | 'password' | 'number'
+| 'boolean' | 'select' | 'checkbox-group' | 'repeatable' | 'textarea' | 'date' |
+'hidden' | 'conditional' | 'file-upload' | 'unsupported'`) — no `'color'` variant, so
+even the schema-driven form engine has no native color field type; (3) grepped the
+*compiled* `.mjs` bundles (not just the `.d.ts` files) for every `@mantine/core` import
+statement GDS itself makes — a specific, curated allowlist (`Button`, `Modal`, `Group`,
+`Text`, `Center`, `Paper`, `UnstyledButton`, `useMantineTheme`, `AppShell`, `Box`,
+`Burger`, `ScrollArea`, `NativeSelect`, `Stack`, `Transition`, `Divider`, `Container`)
+that never includes Mantine's own `ColorInput`/`ColorPicker`, despite GDS depending on
+and freely re-exporting other Mantine primitives — meaning it isn't reachable through
+GDS's public API surface even indirectly. That third check is the one that turns "I
+didn't find it" into "it provably isn't there": a missing export could mean "not
+documented but reachable another way"; a curated, deliberate import allowlist that
+stops just short of the one component you need is much stronger evidence of a genuine
+gap, not an incomplete search.
+**Key Learning**:
+- "No suitable primitive" is a claim about the *compiled artifact*, not the `.d.ts`
+  export list alone — grep the `.mjs`/`.js` bundles for a competing library's imports
+  too when the question is "does this wrapper package expose X from its own dependency,"
+  the same way `.d.ts`-only checks previously missed `GdsSheet`'s modal-focus-trap
+  behavior (see the entry above) until the compiled output was actually read.
+- A narrow, well-evidenced gap ("no color-selection widget") does not mean "GDS has
+  nothing usable here" — GDS's general structured-form primitives (`FormField`,
+  `GdsSegmentedControl`, `GdsSlider`, `NumberStepper`, `InlineAlert`, `ChoiceChip`) were
+  all genuine fits for the surrounding editor (mode switch, angle, stop position,
+  add/remove, blocked-switch messaging). Confirming a real gap in one specific
+  component type is compatible with, and doesn't excuse skipping, a real search for
+  every other primitive the feature needs.
+- The workaround chosen (a GDS `FormField`-wrapped, pattern-validated color text field
+  instead of a picker widget) also turned out to be the *more correct* data shape
+  independent of the GDS gap: this app's own `DEFAULT_BG` gradient stops are
+  `rgba(...)` values, not hex, which a hex-only picker (GDS-native or the browser's
+  native `<input type="color">`) could never have represented in the first place.
+  Worth checking whether a "missing" picker-style primitive is even the right shape for
+  the actual data before treating its absence as a loss.
 
 ## Process
 
