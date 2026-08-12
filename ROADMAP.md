@@ -1,7 +1,7 @@
 # Development Roadmap - launchmass
 
-**Current Version:** v1.18.0  
-**Last Updated:** 2025-12-22T08:53:36.000Z
+**Version: 1.21.0**  
+**Last Updated:** 2026-08-08T11:04:52.000Z
 
 ---
 
