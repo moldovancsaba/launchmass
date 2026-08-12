@@ -4,8 +4,15 @@
  */
 
 import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
 
-const SSO_MONGODB_URI = 'REDACTED_ROTATED_2026-08-14';
+dotenv.config({ path: '.env.local' });
+
+const SSO_MONGODB_URI = process.env.SSO_MONGODB_URI;
+if (!SSO_MONGODB_URI) {
+  console.error('SSO_MONGODB_URI environment variable is not set. See .env.example.');
+  process.exit(1);
+}
 
 async function findClient() {
   const client = new MongoClient(SSO_MONGODB_URI);
