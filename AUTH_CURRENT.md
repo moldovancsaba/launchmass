@@ -1,7 +1,7 @@
 # Authentication Guide - launchmass
 
-**Version: 1.23.4**
-**Last Updated:** 2026-08-08T11:04:52.000Z
+**Version: 1.23.5**
+**Last Updated:** 2026-08-12T14:06:03.000Z
 **Auth System:** OAuth 2.0 / OpenID Connect (v1.7.0+)  
 **Primary Library:** `lib/auth-oauth.js`
 
@@ -461,6 +461,6 @@ For authentication issues:
 4. Verify environment variables are set correctly
 5. Ensure app running on `*.doneisbetter.com` subdomain
 
-**Last Updated:** 2026-08-08T11:04:52.000Z  
+**Last Updated:** 2026-08-12T14:06:03.000Z  
 **Current Version:** v1.21.0  
 **Auth Library:** lib/auth-oauth.js (v1.7.0+)
