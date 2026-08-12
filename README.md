@@ -1,8 +1,8 @@
 # launchmass
 
-**Version: 1.23.13**
+**Version: 1.23.14**
 
-![Version](https://img.shields.io/badge/version-1.23.13-blue)
+![Version](https://img.shields.io/badge/version-1.23.14-blue)
 
 launchmass is a multi-tenant, mobile-first card-grid platform: each organization gets
 its own public grid of oversized launcher cards (with tags, backgrounds, and custom

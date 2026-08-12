@@ -1,8 +1,52 @@
 # Task List - launchmass
 
-**Version: 1.23.13**
+**Version: 1.23.14**
 
 ## Completed Tasks
+
+### ✅ v1.23.14 — API: Optional limit/offset pagination on GET /api/cards (Completed 2026-08-12T16:54:31.000Z, closes #22)
+- ✅ `pages/api/cards/index.js` GET branch: added optional `limit`/`offset` query
+      params, parsed after the existing org-context 400 guard. `limit` must be a
+      finite number `> 0` (capped at `MAX_LIMIT = 500`) or it — along with any
+      non-numeric/negative `limit` — is treated as "not supplied," falling back to
+      the default unbounded behavior rather than a 400 (optional-enhancement
+      semantics, not a validated/required param, per the issue). `offset` defaults
+      to `0` when absent or invalid (non-numeric or negative). Sort order
+      (`{order: 1, _id: 1}`) unchanged in both branches.
+- ✅ Response shape strictly gated on presence of a valid `limit`: absent -> the
+      exact pre-existing bare `CardDoc[]` array (`countDocuments` never runs on this
+      path, so zero added query cost for every existing caller); present ->
+      `{ cards: CardDoc[], total: number, hasMore: boolean }`, `total` via
+      `countDocuments(filter)`, `hasMore = total > offset + cards.length`.
+- ✅ `ARCHITECTURE.md`'s API Routes section documents both shapes and the exact
+      condition (presence of `limit`) selecting between them, explicit that the
+      dual shape is deliberate, not an inconsistency.
+- ✅ Out of scope per the issue's Non-Goals, confirmed untouched: no "load
+      more"/infinite-scroll UI in the admin card list or public grid (neither
+      `pages/admin/index.js`'s `fetchItems` nor `pages/index.js`'s
+      `getServerSideProps` passes `limit`/`offset` — both continue receiving the
+      full bare array, unchanged call sites); no pagination added to
+      `/api/organizations` or `/api/admin/users`; offset/limit only, no cursor-based
+      pagination.
+- ✅ **Manual verification actually performed** (local `mongod` on port 27199, a
+      seeded test organization + up to 520 seeded cards, `npm run dev` against that
+      local DB): `GET /api/cards` with no params returned a bare JSON array
+      (`isinstance(d, list)` true) at the seeded count, matching pre-change shape;
+      `GET /api/cards?limit=5` returned `{cards: [...5], total, hasMore}` with the
+      correct 5 items and `total`/`hasMore` matching the seeded count;
+      `GET /api/cards?limit=5&offset=5` returned the next 5 items with zero `_id`
+      overlap against the first page (checked via set intersection); seeded 520
+      total cards and confirmed `GET /api/cards?limit=9999` returned exactly 500
+      cards (not 520) with `total: 520, hasMore: true` — the 500 cap verified
+      against a real over-cap dataset, not just reasoned through — while the
+      unpaginated `GET /api/cards` on the same 520-card dataset still returned all
+      520 as a bare array, confirming the default path is unaffected; `offset=100`
+      (beyond the 15-card baseline total) returned `cards: []`, `hasMore: false`,
+      and the correct `total`; `limit=-5`, `limit=abc`, `limit=0`, and
+      `offset=-1` each returned `HTTP 200` with the default bare-array/whole-dataset
+      behavior (`offset=-1` combined with `limit=5` fell back to `offset=0`), not a
+      400, per the issue's "ignore invalid values" requirement. Test data (org +
+      cards) removed from the local DB after verification.
 
 ### ✅ v1.23.13 — UX: Structured background/gradient editor replacing raw-CSS textarea (Completed 2026-08-12T18:00:00.000Z, closes #20)
 - ✅ `components/admin/BackgroundEditor.jsx` (new): three-mode editor — Solid (validated
