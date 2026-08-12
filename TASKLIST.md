@@ -1,8 +1,19 @@
 # Task List - launchmass
 
-**Version: 1.22.0**
+**Version: 1.23.0**
 
 ## Completed Tasks
+
+### ✅ v1.23.0 — Session cookie domain made env-driven (Completed 2026-08-12T12:28:37.000Z, prep for #46)
+- ✅ `sso_session` cookie `Domain=` and post-logout redirect target were hardcoded to
+      `.doneisbetter.com` / `https://launchmass.doneisbetter.com` in `lib/auth-oauth.js`
+      and `pages/api/oauth/callback.js` — now read `SESSION_COOKIE_DOMAIN`/`APP_BASE_URL`
+      env vars, defaulting to the exact prior hardcoded values (no production behavior
+      change until deliberately configured)
+- ✅ Documented both new env vars in `AUTH_CURRENT.md` and `.env.example`
+- ✅ Opened #46 tracking the actual migration this unblocks (new host, DNS, SSO OAuth
+      client redirect-URI update, Vercel domain config — all outside this repo)
+- ✅ `npm run verify-docs` and `npm run build` both clean
 
 ### ✅ v1.22.0 — Bump vendored GDS 4.1.3 → 6.0.0 (Completed 2026-08-12T11:35:34.000Z, closes #44)
 - ✅ Checked upstream `CHANGELOG.md`/`DEPRECATIONS_AND_MIGRATIONS.md` between `4.1.3`

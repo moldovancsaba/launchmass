@@ -5,6 +5,8 @@
  * Strategic: Exchanges authorization code for tokens, validates them, creates session cookie
  */
 
+import { sessionCookieDomain } from '../../../lib/auth-oauth.js';
+
 // Functional: Debug logger gated behind OAUTH_DEBUG.
 // Strategic: The OAuth callback previously logged auth codes, emails, and token
 // presence on every login. Gate that behind a flag so production logs don't leak PII.
@@ -302,7 +304,7 @@ export default async function handler(req, res) {
     res.setHeader('Set-Cookie', [
       `sso_session=${signedSession}; ` +
       `HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=86400; ` +
-      `Domain=.doneisbetter.com`,
+      `Domain=${sessionCookieDomain()}`,
     ]);
 
     dlog('🔄 Syncing user to local database...');

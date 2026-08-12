@@ -260,6 +260,10 @@ NEXT_PUBLIC_SSO_SERVER_URL=https://sso.doneisbetter.com
 # MongoDB
 MONGODB_URI=mongodb+srv://...
 DB_NAME=launchmass
+
+# Optional (v1.23.0+) — session cookie domain migration prep, see AUTH_CURRENT.md
+# SESSION_COOKIE_DOMAIN=.doneisbetter.com
+# APP_BASE_URL=https://launchmass.doneisbetter.com
 ```
 
 **For detailed implementation:** See `AUTH_CURRENT.md` (authoritative auth guide) and `ARCHITECTURE.md`

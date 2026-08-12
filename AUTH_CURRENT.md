@@ -1,6 +1,6 @@
 # Authentication Guide - launchmass
 
-**Version: 1.22.0**
+**Version: 1.23.0**
 **Last Updated:** 2026-08-08T11:04:52.000Z
 **Auth System:** OAuth 2.0 / OpenID Connect (v1.7.0+)  
 **Primary Library:** `lib/auth-oauth.js`
@@ -120,6 +120,22 @@ SSO_REDIRECT_URI=https://launchmass.doneisbetter.com/api/oauth/callback
 # Database
 MONGODB_URI=mongodb+srv://...
 DB_NAME=launchmass
+```
+
+### Optional (Session cookie domain / base URL override)
+
+```bash
+# Domain= scope for the sso_session cookie. Defaults to .doneisbetter.com if unset —
+# matching production today. Only set this to migrate to a different apex domain
+# (see #46: moving launchmass onto a messmass.com subdomain to share a session with
+# camera/messmass). Must start with a leading dot to cover subdomains, e.g. .messmass.com.
+SESSION_COOKIE_DOMAIN=.doneisbetter.com
+
+# Base origin used for the post-logout SSO redirect target. Defaults to
+# https://launchmass.doneisbetter.com if unset. Update alongside SESSION_COOKIE_DOMAIN
+# and SSO_REDIRECT_URI when migrating to a new host — all three must point at the same
+# domain or logout/login will redirect to the wrong place.
+APP_BASE_URL=https://launchmass.doneisbetter.com
 ```
 
 ### Required (Client-Side - NEXT_PUBLIC_ prefix)
