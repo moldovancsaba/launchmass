@@ -3,12 +3,12 @@
  * 
  * WHAT: Batch sync all Launchmass users to SSO
  * WHY: Manual reconciliation when automatic sync fails or for initial migration
- * HOW: Uses batchSyncToSSO function from lib/ssoPermissions.mjs
+ * HOW: Uses batchSyncToSSO function from lib/ssoPermissions.js
  */
 
 import { withSsoAuth, requireAdminRole } from '../../../lib/auth-oauth';
 import clientPromise from '../../../lib/db';
-import { batchSyncToSSO } from '../../../lib/ssoPermissions.mjs';
+import { batchSyncToSSO } from '../../../lib/ssoPermissions.js';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {

@@ -1,5 +1,50 @@
 # Release Notes - launchmass
 
+## [v1.23.12] — 2026-08-12T00:00:00.000Z
+
+### CLEANUP: Normalize ssoPermissions module extension and logging conventions (Closes #17)
+
+`lib/ssoPermissions.mjs` was the only `.mjs` file in `lib/` in a project already
+configured as `"type": "module"` in `package.json` — the extension was redundant, not
+functionally necessary. The module also defined its own local `logger` object
+(`{ debug: console.log, info: console.log, warn: console.warn, error: console.error }`)
+whose `debug`/`info` calls printed unconditionally, unlike the gated `dlog` convention
+used elsewhere (`pages/api/oauth/callback.js`, `lib/org.js`). Pure rename + logging-
+convention alignment; no logic change.
+
+**Changed:**
+- `lib/ssoPermissions.mjs` renamed to `lib/ssoPermissions.js` via `git mv` (history
+  preserved — `git log --follow lib/ssoPermissions.js` shows continuous history through
+  the rename). All five import sites updated to the new filename:
+  `pages/api/oauth/callback.js`, `pages/api/admin/batch-sync-sso.js`,
+  `pages/api/admin/users/[ssoUserId]/change-role.js`,
+  `pages/api/admin/users/[ssoUserId]/grant-access.js`,
+  `pages/api/admin/users/[ssoUserId]/revoke-access.js`.
+- Local `logger` object removed. `logger.debug`/`logger.info` calls became `dlog(...)`,
+  a function gated on `process.env.OAUTH_DEBUG === 'true'` (the existing flag reused —
+  this module's calls are exclusively invoked from OAuth-adjacent flows). `logger.warn`/
+  `logger.error` calls became direct, unconditional `console.warn`/`console.error`
+  calls — same severity and always-log behavior, just without the removed indirection.
+- `ARCHITECTURE.md`, `WARP.md`, and `lib/types.js`'s header comment updated from
+  `lib/ssoPermissions.mjs` to `lib/ssoPermissions.js` wherever they describe current
+  module structure. Historical changelog entries and debugging-session narratives in
+  `RELEASE_NOTES.md`, `TASKLIST.md`, and `LEARNINGS.md` that reproduce literal commands
+  or describe past behavior at the `.mjs` filename are left as an accurate record of
+  what actually happened at the time, unchanged.
+
+**Verified:**
+- `git grep -n "ssoPermissions"` before and after the rename confirms zero remaining
+  `.mjs` references in any import site or current-state doc; only historical
+  changelog/debugging-narrative text still says `.mjs`, deliberately.
+- `git log --follow lib/ssoPermissions.js` shows continuous history through the rename
+  (not a delete+recreate).
+- `npm run verify-docs`, `npm run lint`, `npm run typecheck`, `npm run scan-secrets`,
+  and `npm run build` all clean.
+- No live-SSO smoke test was run (no SSO credentials available in this environment);
+  instead, the renamed module's exported functions were imported and exercised with
+  mocked `fetch`/`db` inputs in a local scratch script to confirm they still import and
+  execute correctly post-rename, and that `dlog` only prints with `OAUTH_DEBUG=true`.
+
 ## [v1.23.11] — 2026-08-12T16:01:48.000Z
 
 ### UX: Loading, error, and retry states for the public card grid (Closes #19)
