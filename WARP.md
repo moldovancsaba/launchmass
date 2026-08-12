@@ -57,7 +57,7 @@ npm run build
 `jsconfig.json` enables `checkJs` (with `strict: false` — default strictness, not full
 strict mode) against `lib/**/*.js` and `pages/**/*.js`. Shared shapes live in
 `lib/types.js` as JSDoc `@typedef`s — `UserDoc`, `OrgDoc`, `CardDoc`, `SessionPayload`
-— reused across `lib/users.js`, `lib/permissions.js`, `lib/ssoPermissions.mjs`,
+— reused across `lib/users.js`, `lib/permissions.js`, `lib/ssoPermissions.js`,
 `lib/session.js`, `lib/org.js`, and `lib/db.js`, the six modules with full
 `@param`/`@returns` coverage on every exported function as of issue #16.
 

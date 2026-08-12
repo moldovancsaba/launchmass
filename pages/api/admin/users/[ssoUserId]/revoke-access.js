@@ -8,7 +8,7 @@
 
 import { withSsoAuth, requireAdminRole } from '../../../../../lib/auth-oauth';
 import clientPromise from '../../../../../lib/db';
-import { revokePermissionInSSO } from '../../../../../lib/ssoPermissions.mjs';
+import { revokePermissionInSSO } from '../../../../../lib/ssoPermissions.js';
 import { logAdminAction } from '../../../../../lib/analytics.js';
 
 async function handler(req, res) {

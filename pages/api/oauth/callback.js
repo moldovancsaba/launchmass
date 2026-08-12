@@ -111,7 +111,7 @@ export default async function handler(req, res) {
     dlog('🔐 Fetching permissions from SSO...');
     
     const { upsertUserFromSso, recordAuthEvent } = await import('../../../lib/users.js');
-    const { getPermissionFromSSO } = await import('../../../lib/ssoPermissions.mjs');
+    const { getPermissionFromSSO } = await import('../../../lib/ssoPermissions.js');
     
     let hasAccess = false;
     /** @type {'none'|'user'|'admin'} */
