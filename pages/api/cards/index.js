@@ -4,6 +4,12 @@ import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
 
 const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
 
+// Functional: Debug logger gated behind CARDS_DEBUG.
+// Strategic: Matches the OAUTH_DEBUG (pages/api/oauth/callback.js) / ORG_CACHE_DEBUG
+// (lib/org.js) convention — verbose per-request diagnostics must be opt-in, and must
+// never include cookie/header content even when the flag is on (see issue #11).
+const dlog = (...args) => { if (process.env.CARDS_DEBUG === 'true') console.log(...args); };
+
 function toClient(doc) {
   if (!doc) return doc;
   const { _id, createdAt, updatedAt, ...rest } = doc;
@@ -30,9 +36,6 @@ function toClient(doc) {
 
 export default async function handler(req, res) {
   try {
-    console.log('[cards API] Request method:', req.method);
-    console.log('[cards API] Headers:', JSON.stringify(req.headers));
-    
     const client = await clientPromise;
     const db = client.db(process.env.DB_NAME || 'launchmass');
     const col = db.collection('cards');
@@ -41,9 +44,7 @@ export default async function handler(req, res) {
       // Functional: Require an org context to scope results to that organization.
       // Strategic: Fail closed — absence of org context is a 400, not a cross-tenant
       // fallback that returns every organization's cards (see issue #10).
-      console.log('[cards API] Getting org context...');
       const ctx = await getOrgContext(req);
-      console.log('[cards API] Org context:', JSON.stringify(ctx));
 
       if (!ctx?.orgUuid) {
         return res.status(400).json({
@@ -52,11 +53,9 @@ export default async function handler(req, res) {
       }
 
       const filter = { orgUuid: ctx.orgUuid };
-      console.log('[cards API] Filter:', JSON.stringify(filter));
 
-      console.log('[cards API] Fetching cards from DB...');
       const docs = await col.find(filter).sort({ order: 1, _id: 1 }).toArray();
-      console.log('[cards API] Found', docs.length, 'cards');
+      dlog('[cards API]', req.method, 'org=', ctx.orgUuid, 'count=', docs.length);
 
       return res.status(200).json(docs.map(toClient));
     }
