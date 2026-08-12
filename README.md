@@ -1,6 +1,6 @@
 # launchmass
 
-**Version: 1.23.2**
+**Version: 1.23.3**
 
 ![Version](https://img.shields.io/badge/version-1.23.2-blue)
 

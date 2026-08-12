@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.2**
+**Version: 1.23.3**
 
 ## Frontend
 
@@ -192,6 +192,33 @@ source for the documented breaking surfaces before deciding an upgrade is risky;
 let the version number alone set the risk assessment.
 
 ## Security
+
+### A "Deprecation" Header Is Not Enforcement (2026-08-12T13:47:10.000Z)
+**Issue**: `GET /api/cards` fell back to an unscoped `{}` filter — every card, every
+organization, in one anonymous response — whenever no org context was supplied,
+signaling the problem only via an `X-Deprecation: org-context-required` response
+header no caller was required to check.
+**Solution**: Changed the no-context path to fail closed (`400`) instead of degrading
+to "serve everything" (issue #10). A caller audit before merging confirmed the one
+production caller (`pages/admin/index.js`'s `fetchItems`) already sends the org
+header whenever an org is known, and its existing `Array.isArray(data) ?
+setItems(data) : setItems([])` response handling already treats a 400's `{ error }`
+body as "no cards yet" rather than a visible crash — so the transient initial-mount
+race (fetching before an org is selected) degrades gracefully with no code change
+needed there.
+**Key Learning**:
+- A response header that signals a problem without an enforcement path behind it
+  (no caller is forced to read or act on it) is not a mitigation — it is a TODO in
+  header form, same category as the TODO-comment finding below.
+- "Fail closed on missing required context" is a stronger default than "fail open
+  with a warning signal" even when the fallback was original/intentional behavior —
+  the migration path (warn first, enforce later) can quietly become permanent if
+  nothing forces the second step.
+- Before tightening a fallback like this, grep every call site rather than assuming
+  the UI "probably" always sends the header — in this case it genuinely did, but a
+  second, unrelated caller (`scripts/seed-cards.cjs`) turned out to already be dead
+  tooling from before the org model existed, which was only confirmed by checking
+  when its own POST calls had already stopped working (issue #8, a prior release).
 
 ### A TODO Comment Can Be a Vulnerability Report Nobody Read (2026-08-08T11:00:34.000Z)
 **Issue**: A documentation audit's code-comment sweep found five `TODO: Check if req.user

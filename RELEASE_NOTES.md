@@ -1,5 +1,55 @@
 # Release Notes - launchmass
 
+## [v1.23.3] — 2026-08-12T13:47:10.000Z
+
+### SEC: Require organization context on card listing endpoint (Closes #10)
+
+`GET /api/cards` previously fell back to an unscoped `{}` filter — returning every
+card from every organization in a single response — whenever no org context was
+supplied, with only a weak `X-Deprecation` response header as a signal. This release
+closes that cross-tenant read by failing closed instead.
+
+**Changed:**
+- `pages/api/cards/index.js` (GET branch) — a request with no resolvable org context
+  (`getOrgContext(req)` returns no `orgUuid`) now returns `400 { error: 'Organization
+  context required (X-Organization-UUID or ?orgUuid=)' }` instead of querying with an
+  empty filter. A request with a valid org context is unchanged (still scoped, still
+  200). Removed the now-obsolete `X-Deprecation` header and its dead branch. The
+  `console.log` debug lines in this same handler are unchanged (tracked separately by
+  issue #11, which coordinates around this same file to avoid a merge conflict).
+- `ARCHITECTURE.md` — documents that `GET /api/cards` requires org context and returns
+  400 without it, replacing the previous "optional, deprecated fallback" description.
+
+**Caller audit (required by #10):**
+- `pages/admin/index.js`'s `fetchItems` is the only production UI caller of
+  `GET /api/cards`; it already sends `X-Organization-UUID` whenever an org is known.
+- On initial mount it can call `fetchItems('')` before an org is selected/loaded (a
+  transient race). This now surfaces the new 400 instead of the old all-orgs
+  fallback, but `fetchItems`'s existing response handling
+  (`if (Array.isArray(data)) setItems(data); else setItems([])`) already treats any
+  non-array JSON body — including a 400's `{ error }` object — as "no cards yet" and
+  degrades gracefully with no visible crash. The grid repopulates once the org-select
+  effect re-fires `fetchItems` with a real `orgUuid`.
+- `scripts/seed-cards.cjs` also calls `GET /api/cards` with no org header, but it was
+  already broken by issue #8 (v1.23.1, org-scoped `withOrgPermission` on POST) — it
+  sends no org header on its POST calls either and predates the multi-tenant org
+  model. It is stale/dead tooling, not a live caller; this change does not newly
+  break a previously-working path.
+- `pages/index.js`'s `getServerSideProps` (the public homepage) queries MongoDB
+  directly and does not call this API route — unaffected, out of scope per the issue.
+
+**Verification:**
+- `npm run verify-docs`, `npm run scan-secrets`, and `npm run build` all clean (see
+  PR for actual output).
+- Manual: code-level trace of the new GET branch confirms the 400 short-circuit
+  happens before any DB query when `ctx?.orgUuid` is falsy, and the existing
+  `{ orgUuid: ctx.orgUuid }` filter path is otherwise untouched. Live `curl` against
+  a running instance with real SSO/DB credentials was not performed in this sandbox
+  (no live deployment/credentials available here) — see PR notes for what was and
+  was not actually executed.
+
+---
+
 ## [v1.23.2] — 2026-08-12T12:54:05.000Z
 
 ### Consolidated admin-role authorization into a shared guard (Closes #9)
