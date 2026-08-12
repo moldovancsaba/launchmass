@@ -1,10 +1,10 @@
 # Task List - launchmass
 
-**Version: 1.23.1**
+**Version: 1.23.2**
 
 ## Completed Tasks
 
-### ✅ v1.23.1 — Consolidated admin-role authorization into a shared guard (Completed 2026-08-12T12:54:05.000Z, closes #9)
+### ✅ v1.23.2 — Consolidated admin-role authorization into a shared guard (Completed 2026-08-12T12:54:05.000Z, closes #9)
 - ✅ Extracted `isAppAdmin(user)` (predicate) and `requireAdminRole(handler, message)`
       (API-route HOF) into `lib/auth-oauth.js`, reproducing the exact `appRole`/
       `isSuperAdmin`-flag check and per-route 403 message text that was previously

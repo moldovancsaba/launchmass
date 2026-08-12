@@ -1,6 +1,6 @@
 # Release Notes - launchmass
 
-## [v1.23.1] — 2026-08-12T12:54:05.000Z
+## [v1.23.2] — 2026-08-12T12:54:05.000Z
 
 ### Consolidated admin-role authorization into a shared guard (Closes #9)
 

@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.1**
+**Version: 1.23.2**
 
 ## Frontend
 
