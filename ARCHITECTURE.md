@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.2**
+**Version: 1.23.3**
 
 ## Overview
 
@@ -106,7 +106,13 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Authentication**: All write operations protected by `withSsoAuth` middleware (v1.5.0+)
 - **Endpoints**:
   - `/api/cards/` - CRUD operations for card management (POST requires `cards.create` in the
-    target org via `withOrgPermission`, not merely a valid session — v1.23.1+)
+    target org via `withOrgPermission`, not merely a valid session — v1.23.1+). GET requires
+    an organization context (`X-Organization-UUID` header or `?orgUuid=`) — a request with no
+    resolvable org context returns `400 { error: 'Organization context required (X-Organization-UUID
+    or ?orgUuid=)' }` rather than falling back to an unscoped all-organizations listing
+    (previously a deprecated fallback with an `X-Deprecation` header; now removed — v1.23.3+).
+    The route otherwise remains intentionally public-when-scoped (no session required once org
+    context is present, matching the public per-org card grid use case).
   - `/api/cards/[id]` - Individual card operations (PATCH requires `cards.update`, DELETE
     requires `cards.delete`, both in the target org via `withOrgPermission` — v1.23.1+)
   - `/api/cards/reorder` - Bulk reordering functionality (requires `cards.reorder` in the
@@ -233,7 +239,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
   - `/api/organizations` (GET/POST)
   - `/api/organizations/[uuid]` (PUT/DELETE)
   - `/api/organization/[slug]` (GET)
-  - `/api/cards` and related endpoints — org-aware
+  - `/api/cards` and related endpoints — org-aware (GET requires org context, 400 without it — v1.23.3+)
   - `/api/tags` — distinct tags for current org
 
 ### Admin Flow (v1.13.0)
