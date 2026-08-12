@@ -1,6 +1,6 @@
 # Permission System Enhancement Design
 
-**Version: 1.23.11**  
+**Version: 1.23.12**  
 **Status: Phase 1 Complete (Foundation)**  
 **Phase 2 Target: Q2 2026 (API/UI)**
 
