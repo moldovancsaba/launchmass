@@ -1,6 +1,7 @@
 import clientPromise from '../../../lib/db';
 import { getOrgContext } from '../../../lib/org.js';
 import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
+import { logEvent, EVENT_TYPES } from '../../../lib/analytics.js';
 
 const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
 
@@ -83,6 +84,7 @@ export default async function handler(req, res) {
       const doc = { href: String(href), title: String(title), description: String(description), background: bg, order: nextOrder, createdAt: now, updatedAt: now, tags: safeTags, orgUuid: ctx.orgUuid, orgSlug: ctx.orgSlug || '' };
       const r = await col.insertOne(doc);
       const created = { _id: r.insertedId.toString(), ...doc };
+      logEvent(EVENT_TYPES.CARD_CREATE, { orgUuid: ctx.orgUuid, userId: req.user.ssoUserId, cardId: created._id });
       return res.status(201).json(toClient(created));
     }))(req, res);
   }
