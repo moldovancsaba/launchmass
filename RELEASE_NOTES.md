@@ -1,5 +1,30 @@
 # Release Notes - launchmass
 
+## [v1.22.0] — 2026-08-12T11:35:34.000Z
+
+### Bump vendored GDS 4.1.3 → 6.0.0
+
+`3.9.0` remains the only version ever published to any registry, but the source repo's
+tags have moved well past `4.1.3` (`4.1.5`…`4.1.11`, then major bumps `5.0.0` and
+`6.0.0`). Checked the upstream `CHANGELOG.md`/`DEPRECATIONS_AND_MIGRATIONS.md` before
+upgrading, not just the version delta: exactly two documented breaking changes across
+both major bumps — `ReferenceThemeExplorer` relocated to a dedicated import subpath
+(5.0.0), and a `class-usa` brand-theme token rename (6.0.0). Grepped this repo's actual
+source for both — zero references to either surface.
+
+**Changed:**
+- `vendor/gds/sovereignsquad-gds-core-6.0.0.tgz`, `vendor/gds/sovereignsquad-gds-theme-6.0.0.tgz`
+  — replace the `4.1.3` tarballs, rebuilt from git tag `gds-v6.0.0` (`tsup` build,
+  `npm pack`), same approach as the prior vendoring.
+- `package.json` — the two `@sovereignsquad/gds-*` deps repointed to the new tarballs.
+
+**Verification:**
+- `npm run verify-docs` and `npm run build` both clean.
+- Live-verified via a temporary scratch route (`components/OversizedLink` rendered
+  directly with mock tag data, bypassing the DB — deleted before commit): the
+  `ChoiceChip`-based tag pills render identically to the `4.1.3` version, no console
+  errors beyond expected sandbox-only network noise.
+
 ## [v1.21.0] — 2026-08-08T11:28:22.000Z
 
 ### 🔐 Security - Admin User-Management Authorization Gap

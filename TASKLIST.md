@@ -1,8 +1,18 @@
 # Task List - launchmass
 
-**Version: 1.21.0**
+**Version: 1.22.0**
 
 ## Completed Tasks
+
+### ✅ v1.22.0 — Bump vendored GDS 4.1.3 → 6.0.0 (Completed 2026-08-12T11:35:34.000Z, closes #44)
+- ✅ Checked upstream `CHANGELOG.md`/`DEPRECATIONS_AND_MIGRATIONS.md` between `4.1.3`
+      and `6.0.0` -- exactly two breaking changes across both major bumps
+      (`ReferenceThemeExplorer` relocated, `class-usa` brand-theme token rename), neither
+      referenced anywhere in this repo (grepped, not assumed)
+- ✅ Rebuilt `vendor/gds/*.tgz` from git tag `gds-v6.0.0`, repointed `package.json`
+- ✅ `npm run verify-docs` and `npm run build` both clean
+- ✅ Live-verified `ChoiceChip` tag-pill rendering via a temporary scratch route
+      (deleted before commit) -- identical to the `4.1.3` render
 
 ### ✅ v1.21.0 — Security: Admin User-Management Authorization Gap (Completed 2026-08-08T11:28:22.000Z)
 - ✅ Found via a full documentation/code-comment audit: 4 of 5 `pages/api/admin/users/*`
