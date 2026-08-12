@@ -1,6 +1,6 @@
 import clientPromise from '../../../lib/db';
 import { getOrgContext } from '../../../lib/org.js';
-import { withSsoAuth } from '../../../lib/auth-oauth.js';
+import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
 
 const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
 
@@ -58,13 +58,15 @@ export default async function handler(req, res) {
       return res.status(200).json(docs.map(toClient));
     }
 
-  // Functional: Protect POST (create) operation with SSO authentication
-  // Strategic: withSsoAuth middleware validates session, upserts user, and attaches req.user
+  // Functional: Protect POST (create) operation with org-scoped authorization
+  // Strategic: withSsoAuth authenticates and populates req.user; withOrgPermission then
+  // checks the caller holds 'cards.create' in the target org (X-Organization-UUID/?orgUuid=)
+  // before running the handler. withOrgPermission alone does not validate the session --
+  // it resolves org context internally and attaches it as req.orgContext, so no separate
+  // getOrgContext call is needed here (see issue #8).
   if (req.method === 'POST') {
-    return withSsoAuth(async (req, res) => {
-      // Require org context for writes to prevent cross-tenant leakage
-      const ctx = await getOrgContext(req);
-      if (!ctx?.orgUuid) return res.status(400).json({ error: 'Organization context required (X-Organization-UUID or ?orgUuid=)' });
+    return withSsoAuth(withOrgPermission('cards.create', async (req, res) => {
+      const ctx = req.orgContext;
 
       const { href = '', title = '', description = '', order, background, tags } = req.body || {};
       const last = await col.find({ orgUuid: ctx.orgUuid }).sort({ order: -1 }).limit(1).toArray();
@@ -80,7 +82,7 @@ export default async function handler(req, res) {
       const r = await col.insertOne(doc);
       const created = { _id: r.insertedId.toString(), ...doc };
       return res.status(201).json(toClient(created));
-    })(req, res);
+    }))(req, res);
   }
 
     res.setHeader('Allow', ['GET', 'POST']);
