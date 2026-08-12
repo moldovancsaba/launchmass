@@ -1,5 +1,56 @@
 # Release Notes - launchmass
 
+## [v1.23.11] — 2026-08-12T16:01:48.000Z
+
+### UX: Loading, error, and retry states for the public card grid (Closes #19)
+
+`pages/index.js`'s `getServerSideProps` previously wrapped its DB-read logic in a
+bare `catch { return { props: { cards: [], activeTag: null } } }` — any failure
+(connection timeout, query error, malformed org document) discarded the real error
+entirely and rendered identically to a legitimately-empty organization. A visitor
+saw the same blank grid whether the org had no content or the database was down,
+with no distinction, no retry affordance, and no operator-visible signal. Adds an
+explicit `fetchError` prop and three distinct, GDS-built rendering states.
+
+**Changed:**
+- `pages/index.js`'s `getServerSideProps` catch block now captures the real error
+  and logs it via `console.error('[index] getServerSideProps failed:', err.message)`
+  (server-side only — never sent to the client), and returns `fetchError: true`.
+  The success path (including a genuinely-empty result) returns `fetchError: false`.
+- `Home` renders exactly one of three mutually-exclusive states: `fetchError`
+  → GDS `GdsErrorPageTemplate` with fixed, generic copy and a retry button wired to
+  `window.location.reload()`; `!hasCards` (and no fetch error) → GDS
+  `GdsEmptyStateTemplate` with the pre-existing "Welcome to SEYU / No content found
+  yet" copy and its Organizations/Admin quick-access actions, restyled onto GDS;
+  `hasCards` → the existing `<main className="grid">` grid, byte-for-byte unchanged.
+- A tag filter with zero matching cards renders the empty state (not error), and the
+  "Filtering by" bar continues to render alongside it — a legitimate zero-result
+  query, not a failure.
+
+**GDS component choice:** `GdsEmptyStateTemplate` + `GdsErrorPageTemplate`, matching
+the issue's own suggested candidate — verified against the actually-installed
+`@sovereignsquad/gds-core@6.0.0` dist rather than assumed. Both exist exactly as
+named, as governed page templates (`empty-state-page` / `error-page`) with documented
+accessibility contracts. `GdsErrorPageTemplate`'s `onRetry`/`retryLabel` props render
+GDS's own retry button — no hand-rolled `<button>` markup. Both templates render
+their own `<main>` landmark internally, so the populated-grid `<main>` only renders
+when there are cards, avoiding duplicate `<main>` landmarks on one page.
+
+**Manual verification performed** (local MongoDB + Playwright against
+`/opt/pw-browsers/chromium`, not just reasoned through): seeded an empty org and
+confirmed the GDS empty state with working action buttons; seeded a populated org
+and confirmed the grid renders unchanged (one `<main class="grid">`, identical
+markup); pointed `MONGODB_URI` at an unreachable port to force a real connection
+failure and confirmed the server logged the actual error
+(`connect ECONNREFUSED 127.0.0.1:27199`), the GDS error state rendered (not the
+empty state), the client HTML contained zero occurrences of the port/host/DB
+name/driver error text, and clicking "Try again" triggered a genuine second
+full-page request.
+
+**Known Limitations:** retry is a full page reload, not an in-place client-side
+refetch — this page has no client-side data-fetching layer, and introducing one is
+explicitly out of scope per the issue's Non-Goals.
+
 ## [v1.23.10] — 2026-08-12T15:37:36.000Z
 
 ### UX: Consent-gated Google Analytics loading (Closes #18)
