@@ -1,8 +1,38 @@
 # Task List - launchmass
 
-**Version: 1.23.4**
+**Version: 1.23.5**
 
 ## Completed Tasks
+
+### ✅ v1.23.5 — FIX: Correct field-name mismatch in SSO batch permission sync (Completed 2026-08-12T14:06:03.000Z, closes #12)
+- ✅ `lib/ssoPermissions.mjs`'s `batchSyncToSSO()` now queries `appStatus` (not the
+      non-existent `status`) and projects/reads `appRole`/`appStatus` (not `role`/
+      `status`), matching the real `users` collection schema established by
+      `lib/users.js`'s `upsertUserFromSso`. The function previously matched zero
+      users on every invocation and silently reported false-success
+      (`{synced:0, errors:0}`).
+- ✅ Added an `appStatus: 'suspended'` → SSO `status: 'revoked'` mapping branch, since
+      `appStatus`'s real value space includes `'suspended'`. Documented in code that
+      this branch is currently unreachable in practice — the query itself still only
+      matches `'active'`/`'pending'`, unchanged in scope — so a future reader doesn't
+      assume suspended users are actively synced.
+- ✅ Preserved the existing `appRole`-default-to-`'user'` intent
+      (`user.appRole && user.appRole !== 'none' ? user.appRole : 'user'`).
+- ✅ Added a code comment at the top of `batchSyncToSSO` documenting the field-name
+      correction and an explicit **operator caution**: this function has never
+      actually called the live SSO API in production (it always no-op'd), so its
+      first real post-fix invocation will trigger a live burst of
+      `syncPermissionToSSO` calls against the real SSO service for every current
+      active/pending user — flagged prominently in the PR description as well.
+- ✅ Verified `git grep -n "user\.status\|user\.role" lib/ssoPermissions.mjs` returns
+      zero matches.
+- ✅ Verified query/mapping logic against a disposable local MongoDB instance with
+      `syncPermissionToSSO`'s underlying `fetch` calls stubbed (no real network
+      call reached SSO) — confirmed `'suspended'` users are excluded by the query,
+      legacy documents using the old `status`/`role` fields are not matched, active
+      users map to `'approved'`, pending users map to `'pending'`, `appRole: 'none'`
+      defaults to `'user'` in the payload sent, and a user missing `ssoUserId` is
+      recorded as a per-user error without aborting the batch.
 
 ### ✅ v1.23.4 — SEC: Eliminate session-cookie exposure in card API request logging (Completed 2026-08-12T13:55:36.000Z, closes #11)
 - ✅ `pages/api/cards/index.js` no longer logs `req.headers` (or any other cookie-bearing
