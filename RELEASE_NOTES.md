@@ -1,5 +1,49 @@
 # Release Notes - launchmass
 
+## [v1.23.14] — 2026-08-12T16:54:31.000Z
+
+### API: Optional pagination contract on the card listing endpoint (Closes #22)
+
+`GET /api/cards` previously fetched every card in an organization unbounded, with
+no mechanism to fetch a subset. Added optional, strictly backward-compatible
+`limit`/`offset` query params.
+
+**Added:**
+- `GET /api/cards?limit=N&offset=M` (both optional): returns at most `N` cards
+  starting at offset `M`, sorted by the existing `{order: 1, _id: 1}`. Response
+  becomes `{ cards: [...], total, hasMore }` only when a valid `limit` is
+  supplied — `total` is the full matching-document count (`countDocuments`, run
+  only on this branch), `hasMore` is `total > offset + cards.length`.
+- `limit` capped server-side at 500 regardless of what a caller requests
+  (silently capped, not rejected).
+
+**Unchanged (by design):**
+- `GET /api/cards` with no params: byte-identical bare `CardDoc[]` array, exactly
+  as before this change — zero cost added to the default/unpaginated path, and
+  zero behavior change for any existing caller (admin UI, public homepage).
+- Invalid `limit`/`offset` (non-numeric, negative, or `limit <= 0`) is treated as
+  "not supplied" and falls back to the default unbounded behavior, not a 400 —
+  an optional enhancement parameter, not a validated/required one.
+- No UI change: no "load more"/infinite-scroll UI added anywhere; the admin UI
+  and public grid continue calling the endpoint unparameterized. No pagination
+  added to `/api/organizations` or `/api/admin/users`. Offset-based only, no
+  cursor-based pagination — deliberately simple at this scope.
+
+**Documentation:**
+- `ARCHITECTURE.md`'s API Routes section documents both response shapes and the
+  exact condition (presence of `limit`) that selects between them.
+
+**Manual verification:** local `mongod`, a seeded test organization with up to
+520 cards, `npm run dev` against that local DB. Confirmed: unpaginated response
+is a bare array at full count; `limit=5` returns `{cards, total, hasMore}` with
+the correct first 5; `limit=5&offset=5` returns the next 5 with zero `_id`
+overlap against the first page; `limit=9999` against a 520-card dataset returns
+exactly 500 cards with `total: 520, hasMore: true` (the cap verified against a
+real over-cap dataset); `offset` beyond total returns an empty `cards` array
+with the correct `total`/`hasMore: false`; invalid `limit`/`offset` values
+(`-5`, `abc`, `0`, negative offset) all return `HTTP 200` with default fallback
+behavior, never a 400.
+
 ## [v1.23.13] — 2026-08-12T18:00:00.000Z
 
 ### UX: Structured background/gradient editor replacing raw-CSS textarea (Closes #20)
