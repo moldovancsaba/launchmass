@@ -1,5 +1,61 @@
 # Release Notes - launchmass
 
+## [v1.23.5] — 2026-08-12T14:06:03.000Z
+
+### FIX: Correct field-name mismatch in SSO batch permission sync (Closes #12)
+
+`lib/ssoPermissions.mjs`'s `batchSyncToSSO()` queried
+`db.collection('users').find({ status: { $in: ['active','pending'] } })` and read
+`user.role`/`user.status` when building the SSO sync payload. The real `users`
+collection schema (`lib/users.js`'s `upsertUserFromSso`) stores these fields as
+`appStatus`/`appRole` — `status`/`role` never existed on any document. As a result
+`batchSyncToSSO` matched zero users on every call and silently no-op'd, reporting
+false success (`{synced: 0, errors: 0}`) instead of any indication that nothing had
+happened. This release corrects the field names to match the real schema.
+
+**Changed:**
+- `lib/ssoPermissions.mjs` — `batchSyncToSSO()` now queries `appStatus: { $in:
+  ['active', 'pending'] }` and projects/reads `appRole`/`appStatus` instead of
+  `role`/`status`.
+- Added an `appStatus: 'suspended'` → SSO `status: 'revoked'` mapping branch,
+  covering the full `appStatus` value space (`'pending'`/`'active'`/`'suspended'`
+  per `lib/users.js`). This branch is documented in code as currently unreachable
+  in practice, since the query itself is unchanged in scope and still only matches
+  `'active'`/`'pending'` — suspended users are still excluded from the sync.
+- Preserved the existing `appRole`-default-to-`'user'` behavior exactly
+  (`user.appRole && user.appRole !== 'none' ? user.appRole : 'user'`).
+- Added a code comment documenting the field-name correction and history.
+
+**⚠️ OPERATOR CAUTION — read before invoking in production:** because this function
+has always silently matched zero users, it has **never actually called the live SSO
+API in production**. Now that the query and field names are corrected, **the very
+next real invocation of `batchSyncToSSO`** (e.g. via `POST
+/api/admin/batch-sync-sso`) **will match every real active/pending user and fire a
+live burst of `syncPermissionToSSO` calls against the actual SSO service** — a burst
+of outbound API calls that has never happened before. Whoever triggers this
+endpoint after this release deploys should expect that burst, not be surprised by
+it. Consider running first against a staging/test SSO environment rather than
+production, per the issue's own guidance.
+
+**Verification:**
+- `git grep -n "user\.status\|user\.role" lib/ssoPermissions.mjs` returns zero
+  matches — confirmed no remaining references to the wrong field names.
+- Logic verified against a disposable local MongoDB instance (not production/staging
+  data) seeded with documents covering every `appStatus` value
+  (`active`/`pending`/`suspended`), every `appRole` value
+  (`admin`/`user`/`none`/missing), a document missing `ssoUserId`, and a legacy
+  document using the old `status`/`role` field names. `syncPermissionToSSO`'s
+  underlying `fetch` call was stubbed so no real network request reached the SSO
+  service at any point — the stub only returned synthetic success responses so the
+  real query/loop/mapping code path could run to completion. Confirmed: `active`/
+  `pending` users are matched and `suspended`/legacy-schema users are not; status
+  maps to `approved`/`pending` correctly; `appRole: 'none'` (and missing) default to
+  `'user'` in the payload actually sent; a user missing `ssoUserId` is recorded as a
+  per-user error without aborting the batch; final counts were `synced: 3, errors:
+  1` against the seeded fixture, matching expectations exactly.
+- `npm run verify-docs`, `npm run scan-secrets`, and `npm run build` all run clean
+  (see PR for exact output).
+
 ## [v1.23.4] — 2026-08-12T13:55:36.000Z
 
 ### SEC: Eliminate session-cookie exposure in card API request logging (Closes #11)
