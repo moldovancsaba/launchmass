@@ -278,11 +278,11 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - `withSsoAuth(handler)` - Middleware wrapper for API route protection
 - `withOrgPermission(permission, handler)` - Combined auth + org permission middleware
 - `isAppAdmin(user)` - Shared predicate: true if `user.appRole` is `admin`/`superadmin`
-  or the canonical `isSuperAdmin` flag (`lib/permissions.js`) is set (v1.24.0+)
+  or the canonical `isSuperAdmin` flag (`lib/permissions.js`) is set (v1.23.1+)
 - `requireAdminRole(handler, message?)` - Middleware wrapper enforcing `isAppAdmin`;
   used by all `admin/users/**` and `admin/batch-sync-sso` API routes — a caller whose
   `appRole` is not `admin`/`superadmin` and lacks the `isSuperAdmin` flag gets a 403
-  (v1.24.0+)
+  (v1.23.1+)
 - `logoutOAuth(res)` - Clears session cookie and returns SSO logout URL
 - Returns 401 for invalid sessions, attaches `req.user` for valid sessions
 
