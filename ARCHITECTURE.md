@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.7**
+**Version: 1.23.8**
 
 ## Overview
 
@@ -541,3 +541,30 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 
 **Other:**
 - **BASE_URL**: Application base URL for seeding operations
+
+## Static Analysis as the Test Substitute (ESLint, v1.23.8+)
+
+`WARP.md` states a deliberate, standing project rule: **automated tests are
+prohibited in this repository** ("this is an MVP factory, no testing allowed"). That
+rule removes the usual safety net that would normally catch an unused import, a
+dead/unreachable code branch, or a stray `console.log` left in a production path
+before it merges. ESLint (`eslint.config.mjs`, wired into `npm run lint`,
+`.githooks/pre-commit`, and `.github/workflows/ci.yml`) exists specifically to fill
+that gap — it is a load-bearing quality gate in this repo, not a nice-to-have
+formatting tool. Concretely, several defects fixed in this codebase's own history
+(a field-name mismatch across #6/#12, a dead unwired module in #13) were exactly the
+class of bug `no-unused-vars`/`no-undef` catch automatically, at commit time, without
+running a single test.
+
+The chosen baseline (`eslint-config-next`'s `next/core-web-vitals`, plus
+`no-unused-vars: error`, `no-console: [warn, {allow: ['error','warn']}]`, `no-undef:
+error`, `eqeqeq: [error, smart]`) is intentionally narrow: it targets defect classes
+(dead code, undefined-reference typos, loose equality footguns, accidental debug
+logging), not code style — Prettier/formatting enforcement is explicitly out of scope
+(see issue #15's Non-Goals) to keep the barrier to adopting the gate low. `no-console`
+is `warn` rather than `error` on purpose: this codebase has extensive legitimate
+`console.error`/`console.warn` usage for server-side diagnostics (OAuth flows,
+migration scripts under `scripts/`), and promoting it to `error` before a full audit
+of the remaining call sites would make the gate too blunt to be trustworthy. See
+`LEARNINGS.md` for the flat-config specifics (why `scripts/` needs an explicit `--dir`
+flag, why `.cjs` files need `sourceType: 'script'`) discovered while wiring this up.

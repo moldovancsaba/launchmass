@@ -164,33 +164,34 @@ aspirational one — is:**
 
 ```bash
 npm run verify-docs   # version/doc consistency (scripts/verify-docs-consistency.js)
+npm run lint          # ESLint — static-analysis test substitute (scripts: eslint.config.mjs; landed in issue #15)
 npm run scan-secrets  # credential-pattern guard over staged/tracked files (scripts/scan-secrets.mjs)
 npm run build         # next build
 ```
 
-Both must exit 0. `npm run lint` and `npm run typecheck` are **not present yet** — they
-are tracked as their own issues (ESLint baseline, JSDoc+`tsc --checkJs`) precisely
-because this repo has no automated-test safety net (see below) and static analysis is
-the intended substitute. **The moment either lands, add it to this chain and to this
-file in the same change set** — do not let this document say "not present yet" once it
-is.
+All four must exit 0. `npm run typecheck` is **not present yet** — it is tracked as
+its own issue (JSDoc+`tsc --checkJs`), precisely because this repo has no
+automated-test safety net (see below) and static analysis is the intended substitute.
+**The moment it lands, add it to this chain and to this file in the same change
+set** — do not let this document say "not present yet" once it is.
 
 **Automated tests are prohibited in this repository** (`WARP.md`: "Tests are forbidden
 — this is an MVP factory, no testing allowed"). This is a deliberate, standing project
 rule, not an oversight — do not add a test framework, do not write `*.test.js` files,
 and do not treat "add tests" as an acceptable response to a bug found in this codebase.
 Where the GDS example this document is adapted from relies on `npm run test:run`,
-this repo's substitute is: (a) the verify-docs + scan-secrets + build chain above, (b) static analysis
-once §3's pending issues land, (c) an explicit **Manual Verification** section in every
-engineering issue (curl commands, click-paths, expected output) that a human or agent
-runs and records before calling the work done. "It builds" is not "it works" — always
-carry out the manual verification steps and report their actual result, not their
-absence.
+this repo's substitute is: (a) the verify-docs + lint + scan-secrets + build chain
+above, (b) `npm run typecheck` once §3's pending issue lands, (c) an explicit **Manual
+Verification** section in every engineering issue (curl commands, click-paths,
+expected output) that a human or agent runs and records before calling the work done.
+"It builds" is not "it works" — always carry out the manual verification steps and
+report their actual result, not their absence.
 
 **Definition of Done**, checked explicitly, not assumed:
 - Behavior implemented and demonstrably works (manual verification executed and its
   actual output recorded, not merely "should work").
-- `npm run verify-docs`, `npm run scan-secrets`, and `npm run build` all clean.
+- `npm run verify-docs`, `npm run lint`, `npm run scan-secrets`, and `npm run build`
+  all clean.
 - Relevant docs updated in the **same change set** (§4).
 - Traceable to an issue (§2).
 - Edge cases, failure states, and — for any UI change — accessibility considered and

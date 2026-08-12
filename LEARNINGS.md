@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.7**
+**Version: 1.23.8**
 
 ## Frontend
 
@@ -140,6 +140,33 @@ version: ..." is this known, Linux-specific `sed` incompatibility, not a sign th
 version bump itself failed. Fix the script properly (branch on `$OSTYPE` or use a
 portable `sed -i.bak && rm` pattern) as its own follow-up rather than re-discovering
 this per session.
+
+### ESLint 9 Flat Config: `next lint`'s Default Dirs Exclude `scripts/`, and `.cjs` Needs `sourceType: 'script'` Explicitly (2026-08-12T14:53:41.000Z)
+**Issue**: Issue #15 required `npm run lint` to cover `pages/`, `lib/`, `components/`,
+*and* `scripts/`. A bare `"lint": "next lint"` silently skipped `scripts/` entirely —
+confirmed empirically by diffing output with/without an explicit `--dir scripts` (the
+Next.js CLI's documented default directory set for `next lint` is `src`, `app`,
+`pages`, `components`, `lib` — `scripts` was never in it, flat-config `eslint.config.mjs`
+`files` globs notwithstanding, since directory selection happens before glob matching).
+Separately, giving `scripts/**/*.cjs` the plain `globals.node` set wasn't enough —
+ESLint 9's flat config parses every file as an ES module (`sourceType: 'module'`) by
+default, so `.cjs` files using `require`/`module.exports`/`__dirname` failed with
+`Parsing error: .sourceType must be "module", "script", "unambiguous", or undefined`
+(note: **not** `"commonjs"` — that value, valid in some older config formats, is
+rejected outright by ESLint 9's flat-config validator).  
+**Solution**: `"lint": "next lint --dir pages --dir lib --dir components --dir
+scripts"` in `package.json`, and a dedicated flat-config block scoped to
+`scripts/**/*.cjs` with `languageOptions: { sourceType: 'script', globals:
+{...globals.node} }` layered on top of the broader `scripts/**/*.{js,mjs,cjs}` block
+(which only needs `globals.node`, no `sourceType` override, since `.mjs`/plain `.js`
+there are genuinely ES modules).  
+**Key Learning**: Never assume `next lint`'s (or any zero-config CLI wrapper's)
+implicit directory/file scope matches what a `files` glob inside the ESLint config
+itself claims to cover — verify with an empty/diffed run before trusting the scope is
+what the config file implies. And for flat config specifically, `sourceType` is a
+`languageOptions` key checked against a fixed enum (`module`/`script`/`unambiguous`),
+not a free-form string — get the exact accepted value from the parser error, don't
+guess from memory of older ESLint config formats.
 
 ### Verify Package-Registry Claims Directly, Especially When They Arrive Mid-Conversation (2026-08-05T13:01:09.000Z)
 **Issue**: While installing `@sovereignsquad/gds-core` for this repo's guided tour

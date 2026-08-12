@@ -116,7 +116,6 @@ export default async function handler(req, res) {
     let hasAccess = false;
     let userRole = 'user'; // Default role for new users
     let permissionStatus = 'active';
-    let isFirstLogin = false;
     let ssoPermission = null;
     
     // WHAT: Try to fetch permissions from SSO
@@ -189,7 +188,6 @@ export default async function handler(req, res) {
             // WHAT: New user - check environment variable for auto-grant policy
             // WHY: Allow configuration of open vs approval-based access
             // DEFAULT: Auto-grant access (launchmass is internal tool)
-            isFirstLogin = true;
             const autoGrantAccess = process.env.AUTO_GRANT_ACCESS !== 'false'; // Default true
             
             if (autoGrantAccess) {

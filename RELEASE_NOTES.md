@@ -1,5 +1,53 @@
 # Release Notes - launchmass
 
+## [v1.23.8] — 2026-08-12T14:53:41.000Z
+
+### TOOLING: Introduce ESLint baseline configuration and CI integration (Closes #15)
+
+This repository had zero linter configuration. Given `WARP.md`'s standing prohibition
+on automated tests, static analysis is the highest-leverage remaining automated
+guardrail against unused variables, unreachable branches, and stray debug logging.
+This release adds ESLint with `eslint-config-next`'s recommended rules plus a small
+set of project-specific rules, wired into both the pre-commit hook and CI.
+
+**Added:**
+- `eslint.config.mjs` — flat config (matches `package.json`'s `"type": "module"`),
+  built on `eslint-config-next`'s `next/core-web-vitals` (via `FlatCompat`) plus
+  `no-unused-vars: error`, `no-console: [warn, {allow: ['error','warn']}]`,
+  `no-undef: error`, `eqeqeq: [error, smart]`. `scripts/**` gets Node-only globals
+  (no browser globals); `scripts/**/*.cjs` additionally gets `sourceType: 'script'`
+  so CommonJS globals (`require`, `module`, `__dirname`) resolve correctly.
+- `"lint": "next lint --dir pages --dir lib --dir components --dir scripts"` in
+  `package.json` (explicit `--dir` flags because `next lint`'s default directory set
+  does not include `scripts/`).
+- `npm run lint` wired into `.githooks/pre-commit` (after `verify-docs`, before
+  `scan-secrets`) and `.github/workflows/ci.yml` (same position, before `scan-secrets`
+  and `build`).
+
+**Fixed** (all 32 error-level violations surfaced by the first run against the
+post-#14 tree, triaged and fixed at the source — no `eslint-disable` suppressions):
+- 19 genuine unused imports/vars/functions, including two fully-dead features in
+  `pages/admin/index.js` (an org-creation form with no UI ever wired to it; a
+  `handleLogout` duplicating `components/Header.jsx`'s global logout) and unused
+  `ensureOrgContext`/`getOrgContext` imports in `pages/api/organizations/index.js`.
+- 10 `@next/next/no-html-link-for-pages` — plain `<a href="/...">` internal links in
+  `pages/index.js`, `pages/organization/[slug]/admin.js`, and `components/Header.jsx`
+  converted to `next/link`'s `<Link>`.
+- 2 destructure-to-omit-a-field patterns where the omitted field (`isActive`, `_id`)
+  was bound but never read — reworked to `delete rest.<field>`.
+- 1 `react/no-unescaped-entities` in `pages/access-pending.js`.
+
+**Known limitation** (matches the issue's own Non-Goal): `no-console` is `warn`, not
+`error` — 432 warnings remain, overwhelmingly legitimate server-side diagnostic
+logging in `scripts/*` and `lib/analytics.js`/`lib/org.js`/`lib/ssoPermissions.mjs`.
+Promoting it to `error` is deferred to a future issue pending a full audit.
+
+**Documentation:** `CLAUDE.md`/`AGENTS.md` §3's quality-gate chain and Definition of
+Done now include `npm run lint` (kept byte-identical per their own §8);
+`WARP.md`'s development-commands section documents the full four-command chain;
+`ARCHITECTURE.md` gained a "Static Analysis as the Test Substitute" rationale note;
+`LEARNINGS.md` gained the flat-config gotchas discovered while wiring this up.
+
 ## [v1.23.7] — 2026-08-12T14:30:56.000Z
 
 ### REFACTOR: Extract shared card/organization normalization helpers into a single module (Closes #14)
