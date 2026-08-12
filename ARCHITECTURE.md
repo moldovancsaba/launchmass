@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.5**
+**Version: 1.23.6**
 
 ## Overview
 
@@ -330,19 +330,30 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - Syncs launchmass permissions to central SSO system
 - Unified access control across all applications
 
-**Server-Side (`lib/analytics.js`) - v1.18.0+:**
+**Server-Side (`lib/analytics.js`) - v1.18.0+, wired in v1.23.6+:**
 - Event logging system with async batching (50 events / 5 seconds)
 - Prevents blocking API responses (fire-and-forget pattern)
 - Event types: card_click, card_create, card_update, card_delete, admin_action, user_login, org_create/update/delete, role events
 - Retry logic with exponential backoff (max 10 retries)
-- Graceful shutdown handling (SIGTERM/SIGINT)
+- Graceful shutdown handling (SIGTERM/SIGINT) — best-effort only: a partial in-memory
+  batch (under 50 events / 5 seconds since the last flush) can be lost on an abrupt
+  serverless cold shutdown; accepted trade-off of the batching design, not exactly-once
 - Helper functions:
   - `logEvent(type, data)` - Queue event for async batch write
-  - `logCardClick(cardId, orgUuid, userId, href)` - Convenience wrapper
+  - `logCardClick(cardId, orgUuid, userId, href)` - Convenience wrapper (not yet
+    called anywhere — requires a future client-side beacon endpoint, see below)
   - `logAdminAction(action, orgUuid, userId, details)` - Convenience wrapper
   - `getQueueStatus()` - Get current queue metrics
   - `flushAndShutdown()` - Flush events before process exit
 - Performance: Reduces DB load by 98% (100 writes/sec → 2 writes/sec)
+- **Call sites (v1.23.6+, issue #13):** `pages/api/cards/index.js` (POST →
+  `CARD_CREATE`), `pages/api/cards/[id].js` (PATCH/DELETE → `CARD_UPDATE`/
+  `CARD_DELETE`), `pages/api/cards/reorder.js` (→ `CARD_REORDER`), the three admin
+  user-management routes under `pages/api/admin/users/[ssoUserId]/` (→
+  `logAdminAction`), and `pages/api/oauth/callback.js` on successful login (→
+  `USER_LOGIN`, additive alongside the existing `recordAuthEvent` audit-trail write).
+  Not yet wired: `logCardClick` (needs a beacon endpoint) and
+  `ORG_CREATE/UPDATE/DELETE` in `pages/api/organizations/**` — both deferred.
 
 **Client-Side:**
 - Session monitoring every 5 minutes via `/api/auth/validate` proxy

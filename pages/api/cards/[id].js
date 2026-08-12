@@ -1,6 +1,7 @@
 import clientPromise from '../../../lib/db';
 import { ObjectId } from 'mongodb';
 import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
+import { logEvent, EVENT_TYPES } from '../../../lib/analytics.js';
 
 function toClient(doc) {
   if (!doc) return doc;
@@ -80,6 +81,7 @@ export default async function handler(req, res) {
       const r = await col.updateOne({ _id, orgUuid: ctx.orgUuid }, { $set: update });
       if (!r.matchedCount) return res.status(404).json({ error: 'Card not found in this organization' });
       const doc = await col.findOne({ _id, orgUuid: ctx.orgUuid });
+      logEvent(EVENT_TYPES.CARD_UPDATE, { orgUuid: ctx.orgUuid, userId: req.user.ssoUserId, cardId: _id.toString() });
       return res.status(200).json(toClient(doc));
     }))(req, res);
   }
@@ -94,6 +96,7 @@ export default async function handler(req, res) {
       const ctx = req.orgContext;
       const r = await col.deleteOne({ _id, orgUuid: ctx.orgUuid });
       if (!r.deletedCount) return res.status(404).json({ error: 'Card not found in this organization' });
+      logEvent(EVENT_TYPES.CARD_DELETE, { orgUuid: ctx.orgUuid, userId: req.user.ssoUserId, cardId: _id.toString() });
       return res.status(204).end();
     }))(req, res);
   }

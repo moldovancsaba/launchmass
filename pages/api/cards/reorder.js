@@ -1,6 +1,7 @@
 import clientPromise from '../../../lib/db';
 import { ObjectId } from 'mongodb';
 import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
+import { logEvent, EVENT_TYPES } from '../../../lib/analytics.js';
 
 // Functional: Protect reorder operation with org-scoped authorization
 // Strategic: Drag-and-drop reordering is an admin-only operation (permission matrix
@@ -29,6 +30,8 @@ export default async function handler(req, res) {
 
     const ops = ids.map((id, idx) => ({ updateOne: { filter: { _id: new ObjectId(id), orgUuid: ctx.orgUuid }, update: { $set: { order: idx, updatedAt: new Date() } } } }));
     if (ops.length) await col.bulkWrite(ops);
+
+    logEvent(EVENT_TYPES.CARD_REORDER, { orgUuid: ctx.orgUuid, userId: req.user.ssoUserId, cardIds: ids });
 
     return res.status(200).json({ ok: true, count: ops.length });
   }))(req, res);
