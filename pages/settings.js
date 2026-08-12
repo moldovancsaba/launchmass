@@ -1,23 +1,11 @@
 import { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import { validateSsoSession, getOAuthLoginUrl } from '../lib/auth-oauth.js';
+import { DEFAULT_BG, normalizeBg } from '../lib/shared.js';
 
 // Settings page for Organizations management.
 // Functional: Single place to manage organizations (list/create/edit/delete).
 // Strategic: OAuth-based authentication - no admin tokens needed.
-
-const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
-
-// WHAT: Normalize background input (same as cards)
-// WHY: Handle multi-line CSS paste format
-function normalizeBg(input) {
-  if (!input) return DEFAULT_BG;
-  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
-  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
-  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
-  return pick || DEFAULT_BG;
-}
 
 export default function Settings() {
   // Organizations state
