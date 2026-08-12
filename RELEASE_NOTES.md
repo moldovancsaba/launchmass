@@ -1,6 +1,6 @@
 # Release Notes - launchmass
 
-## [v1.21.0] — 2026-08-12T11:35:34.000Z
+## [v1.22.0] — 2026-08-12T11:35:34.000Z
 
 ### Bump vendored GDS 4.1.3 → 6.0.0
 
