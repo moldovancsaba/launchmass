@@ -1,5 +1,36 @@
 # Release Notes - launchmass
 
+## [v1.23.0] — 2026-08-12T12:28:37.000Z
+
+### Session cookie domain made env-driven (Phase 4 prep, no behavior change)
+
+Prep step for a possible future migration to a shared session domain with camera/
+messmass. Production is documented (README.md/ARCHITECTURE.md/AUTH_CURRENT.md) as
+pinned to `launchmass.doneisbetter.com` — a different apex domain from camera/
+messmass's `.messmass.com`, so a single shared cookie across all four apps isn't
+possible without moving launchmass's production host, DNS, and SSO OAuth redirect
+URI to a `messmass.com` subdomain. That's a real infrastructure migration, not a code
+change, and is tracked separately.
+
+What *can* ship now, safely: the `sso_session` cookie's `Domain=` value and the
+post-logout redirect target were hardcoded to `.doneisbetter.com` /
+`https://launchmass.doneisbetter.com` in two places. Both now read from env vars
+(`SESSION_COOKIE_DOMAIN`, `APP_BASE_URL`) with a default that reproduces today's
+exact hardcoded behavior — so this ships with zero production behavior change until
+someone explicitly sets those env vars as part of an actual domain migration.
+
+**Changed:**
+- `lib/auth-oauth.js` — new `sessionCookieDomain()` helper (env-driven, defaults to
+  `.doneisbetter.com`); `logoutOAuth()`'s cookie-clear and post-logout redirect now
+  use it / `APP_BASE_URL` instead of hardcoded strings.
+- `pages/api/oauth/callback.js` — the session-creation `Set-Cookie` now uses the same
+  `sessionCookieDomain()` helper instead of a literal `Domain=.doneisbetter.com`.
+
+**Verification:**
+- `npm run verify-docs` and `npm run build` both clean.
+- No env vars set in this change — default values match the prior hardcoded strings
+  exactly, so this is a no-op in production until deliberately configured.
+
 ## [v1.22.0] — 2026-08-12T11:35:34.000Z
 
 ### Bump vendored GDS 4.1.3 → 6.0.0

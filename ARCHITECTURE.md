@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.22.0**
+**Version: 1.23.0**
 
 ## Overview
 
@@ -195,7 +195,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **`@sovereignsquad/gds-theme/styles.css`** is now imported in `pages/_app.js`
   (previously only `@mantine/core/styles.css` was, sufficient for the tour's plain
   Mantine primitives but not for `ChoiceChip`'s `--gds-*` token references).
-- **Bumped to `6.0.0` (v1.22.0)**: the source repo's tags moved past `4.1.3` --
+- **Bumped to `6.0.0` (v1.23.0)**: the source repo's tags moved past `4.1.3` --
   `4.1.5`...`4.1.11`, then major bumps `5.0.0` and `6.0.0` -- while the published
   registry version is still `3.9.0`. Checked the upstream `CHANGELOG.md`/
   `DEPRECATIONS_AND_MIGRATIONS.md` before upgrading: exactly two breaking changes

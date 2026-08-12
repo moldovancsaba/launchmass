@@ -1,10 +1,10 @@
 # Task List - launchmass
 
-**Version: 1.22.0**
+**Version: 1.23.0**
 
 ## Completed Tasks
 
-### ✅ v1.22.0 — Bump vendored GDS 4.1.3 → 6.0.0 (Completed 2026-08-12T11:35:34.000Z, closes #44)
+### ✅ v1.23.0 — Bump vendored GDS 4.1.3 → 6.0.0 (Completed 2026-08-12T11:35:34.000Z, closes #44)
 - ✅ Checked upstream `CHANGELOG.md`/`DEPRECATIONS_AND_MIGRATIONS.md` between `4.1.3`
       and `6.0.0` -- exactly two breaking changes across both major bumps
       (`ReferenceThemeExplorer` relocated, `class-usa` brand-theme token rename), neither
