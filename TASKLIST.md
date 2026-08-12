@@ -1,8 +1,29 @@
 # Task List - launchmass
 
-**Version: 1.23.2**
+**Version: 1.23.3**
 
 ## Completed Tasks
+
+### ✅ v1.23.3 — SEC: Require organization context on card listing endpoint (Completed 2026-08-12T13:47:10.000Z, closes #10)
+- ✅ `pages/api/cards/index.js` GET branch now returns `400 { error: 'Organization
+      context required (X-Organization-UUID or ?orgUuid=)' }` when `getOrgContext(req)`
+      resolves no `orgUuid`, instead of querying with an empty filter and returning
+      every organization's cards
+- ✅ Removed the obsolete `X-Deprecation: org-context-required` header and its dead
+      branch; GET with a valid org context is unchanged (still scoped, still 200)
+- ✅ Left the `console.log` debug lines in this handler untouched — that cleanup is
+      issue #11's scope, coordinated to land after this issue per its own notes
+- ✅ Caller audit: `pages/admin/index.js`'s `fetchItems` is the only production caller
+      and already sends the org header when known; a transient initial-mount race
+      (`fetchItems('')` before org selection) now gets a 400 instead of the old
+      all-orgs fallback, but the existing `Array.isArray(data) ? setItems(data) :
+      setItems([])` handling already degrades that to an empty grid, not a visible
+      crash. `scripts/seed-cards.cjs` also omits the org header but was already
+      broken by #8's org-scoped POST enforcement (v1.23.1) — stale tooling, not a
+      live caller
+- ✅ `ARCHITECTURE.md` documents `GET /api/cards` as requiring org context (400
+      without it), replacing the "optional, deprecated fallback" description
+- ✅ `npm run verify-docs`, `npm run scan-secrets`, and `npm run build` all clean
 
 ### ✅ v1.23.2 — Consolidated admin-role authorization into a shared guard (Completed 2026-08-12T12:54:05.000Z, closes #9)
 - ✅ Extracted `isAppAdmin(user)` (predicate) and `requireAdminRole(handler, message)`
