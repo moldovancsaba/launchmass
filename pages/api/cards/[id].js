@@ -1,6 +1,6 @@
 import clientPromise from '../../../lib/db';
 import { ObjectId } from 'mongodb';
-import { withOrgPermission } from '../../../lib/auth-oauth.js';
+import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
 
 function toClient(doc) {
   if (!doc) return doc;
@@ -58,12 +58,13 @@ export default async function handler(req, res) {
   try { _id = new ObjectId(id); } catch { return res.status(400).json({ error: 'Invalid id' }); }
 
   // Functional: Protect PATCH (update) operation with org-scoped authorization
-  // Strategic: withOrgPermission validates the session AND checks the caller holds
-  // 'cards.update' in the target org before running the handler; it resolves org context
+  // Strategic: withSsoAuth authenticates and populates req.user; withOrgPermission then
+  // checks the caller holds 'cards.update' in the target org before running the handler.
+  // withOrgPermission alone does not validate the session -- it resolves org context
   // internally and attaches it as req.orgContext, so no separate getOrgContext call is
   // needed here (see issue #8).
   if (req.method === 'PATCH') {
-    return withOrgPermission('cards.update', async (req, res) => {
+    return withSsoAuth(withOrgPermission('cards.update', async (req, res) => {
       const ctx = req.orgContext;
 
       const update = {};
@@ -80,20 +81,21 @@ export default async function handler(req, res) {
       if (!r.matchedCount) return res.status(404).json({ error: 'Card not found in this organization' });
       const doc = await col.findOne({ _id, orgUuid: ctx.orgUuid });
       return res.status(200).json(toClient(doc));
-    })(req, res);
+    }))(req, res);
   }
 
   // Functional: Protect DELETE operation with org-scoped authorization
-  // Strategic: withOrgPermission validates the session AND checks the caller holds
-  // 'cards.delete' in the target org before running the handler; org context ensures
-  // tenant isolation and is resolved internally, attached as req.orgContext (see issue #8).
+  // Strategic: withSsoAuth authenticates and populates req.user; withOrgPermission then
+  // checks the caller holds 'cards.delete' in the target org before running the handler.
+  // Org context ensures tenant isolation and is resolved internally, attached as
+  // req.orgContext (see issue #8).
   if (req.method === 'DELETE') {
-    return withOrgPermission('cards.delete', async (req, res) => {
+    return withSsoAuth(withOrgPermission('cards.delete', async (req, res) => {
       const ctx = req.orgContext;
       const r = await col.deleteOne({ _id, orgUuid: ctx.orgUuid });
       if (!r.deletedCount) return res.status(404).json({ error: 'Card not found in this organization' });
       return res.status(204).end();
-    })(req, res);
+    }))(req, res);
   }
 
   res.setHeader('Allow', ['PATCH', 'DELETE']);
