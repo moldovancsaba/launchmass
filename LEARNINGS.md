@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.10**
+**Version: 1.23.11**
 
 ## Frontend
 
@@ -77,6 +77,59 @@ ComponentName(...)`, its prop `interface`, and its doc comment) before writing c
 against it — a component name matching the issue's suggestion is not evidence it has
 the right runtime behavior; the doc comment two lines above its declaration ("traps
 focus," "registers with the overlay manager") is often the actual disqualifying detail.
+
+### Silent-Failure Catch Blocks Erase the Distinction Between "Empty" and "Broken" (2026-08-12T16:01:48.000Z, issue #19)
+**Issue**: `pages/index.js`'s `getServerSideProps` wrapped its whole DB-read in one
+try/catch, and the catch block was a bare `catch { return { props: { cards: [],
+activeTag: null } } }` — no error captured, no log line, and the exact same return
+shape as a legitimately-empty organization. A DB outage and "no content yet" were
+indistinguishable to both the visitor and anyone checking server logs.
+**Solution**: Named the exception (`catch (err)`), logged it server-side only
+(`console.error('[index] getServerSideProps failed:', err.message)`), and added an
+explicit `fetchError: boolean` prop threaded through to the page so the two cases
+render as visibly different states.
+**Key Learning**:
+- A bare `catch {}` (or `catch { return sameShapeAsSuccess }`) is a specific,
+  recognizable anti-pattern: it doesn't just lose the error, it makes failure
+  indistinguishable from a valid empty result at every layer above the catch. Grep
+  for `catch {` / `catch (_)` / `catch (e) {}` in other `getServerSideProps`/API-route
+  handlers in this codebase as a matter of course — this is exactly the kind of bug
+  that survives because it never throws visibly.
+- Distinguishing states via an explicit boolean prop (`fetchError`) rather than
+  inferring from `cards.length === 0` matters because a zero-length result is
+  ambiguous on its own — it's both what a genuinely-empty org returns AND what a
+  crashed query returns if the catch block silently swallows the exception. The prop
+  makes the two paths structurally distinct at the type/data level, not just in code
+  comments.
+- The client-facing message and the server log message must diverge: `err.message`
+  (or worse, the full error/stack) must never reach the rendered page — a fixed,
+  generic string is the client's entire view of the failure, and the real detail
+  stays in `console.error` only. Verified this holds by actually forcing a connection
+  failure and grepping the rendered HTML for the DB host/port/driver error text,
+  rather than assuming the separation was correct from reading the code alone.
+
+### GDS Page Templates Render Their Own `<main>` Landmark — Design Around It, Don't Duplicate It (2026-08-12T16:01:48.000Z, issue #19)
+**Issue**: `GdsEmptyStateTemplate`/`GdsErrorPageTemplate` (via gds-core's internal
+`PageTemplateFrame`) each render a `<main data-gds-page-template="...">` wrapper
+around their content. `pages/index.js`'s pre-existing populated-grid markup already
+had its own always-rendered `<main className="grid">` (empty when there were no
+cards). Naively adding a GDS template above it without gating the grid's `<main>`
+would have produced two `<main>` landmarks on the same page whenever the empty/error
+state was showing.
+**Solution**: Gated the populated grid's `<main className="grid">` behind
+`hasCards`, so exactly one of the three states (GDS error template, GDS empty
+template, or the grid's own `<main>`) renders at a time — never two `<main>`
+landmarks simultaneously. This is a strict improvement over the prior behavior (an
+always-present, sometimes-empty `<main class="grid">`), not a change to the
+populated-path markup itself, which remains byte-for-byte identical when `hasCards`
+is true.
+**Key Learning**: Before composing a new page-level GDS template into an existing
+page, check what DOM landmark elements it renders internally (grep the vendored
+`.mjs` bundle for the component, not just its `.d.ts` — the `.d.ts` won't show you
+`component: "main"` on an internal `GdsBox`) so you don't end up with duplicate
+`<main>`/`<nav>`/`<header>` landmarks, which is a real accessibility regression
+(screen reader users navigating by landmark get multiple "main" stops with no way to
+tell which one matters).
 
 ## Process
 
