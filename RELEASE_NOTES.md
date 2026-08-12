@@ -25,6 +25,35 @@ source for both — zero references to either surface.
   `ChoiceChip`-based tag pills render identically to the `4.1.3` version, no console
   errors beyond expected sandbox-only network noise.
 
+## [v1.21.0] — 2026-08-08T11:28:22.000Z
+
+### 🔐 Security - Admin User-Management Authorization Gap
+
+**Fixed:**
+- `pages/api/admin/users/[ssoUserId]/grant-access.js`, `revoke-access.js`, `change-role.js`,
+  and `pages/api/admin/users/index.js` were gated only by `withSsoAuth` (any valid
+  session), not by admin role — any authenticated user with the ordinary `user` role
+  could grant themselves admin access, change or revoke anyone's role/access, and read
+  every user's email/name/role/status via the list endpoint
+- `pages/admin/users.js`'s `getServerSideProps` had the identical gap at the page level
+- All five now require `appRole === 'admin' || appRole === 'superadmin'`, or the
+  canonical `isSuperAdmin` flag (`lib/permissions.js`) that `scripts/migrate-user-rights.cjs`
+  seeds independently of `appRole` — matching the pattern already used correctly by the
+  sibling `batch-sync-sso.js` endpoint
+
+**Impact:**
+- Closes a live privilege-escalation path in production
+- No API contract change for legitimate admin callers — only non-admin callers now see
+  a 403 where they previously succeeded
+
+**Verification:**
+- `npm run verify-docs` and `npm run build` both clean
+- The exact boolean condition used at all five call sites checked against every
+  `appRole`/`isSuperAdmin` combination resolves to the intended allow/deny
+- Full live request verification against a running server was not possible in this
+  environment (no outbound MongoDB access to establish a real session) — noted rather
+  than claimed
+
 ## [v1.20.0] — 2026-08-08T11:04:19.000Z
 
 ### 🏷️ Tag Chips (GDS 4.1.3 pilot)
@@ -703,10 +732,6 @@ verify-docs` and `npm run build` both clean.
 - Version bumped to v1.3.1 across README, ARCHITECTURE, TASKLIST, LEARNINGS
 - Plan logged in ROADMAP (Plan Log) with ISO 8601 UTC timestamp; tasks added to TASKLIST
 
-## [v1.1.0] — 2025-01-21T14:12:14.000Z
-
-## [v1.2.0] — 2025-09-16T12:24:10.000Z
-
 ## [v1.3.0] — 2025-09-16T18:12:51.000Z
 
 ### Added
@@ -731,6 +756,13 @@ verify-docs` and `npm run build` both clean.
 ### Documentation
 - Updated version across package.json, README.md badge, ARCHITECTURE.md, LEARNINGS.md.
 - Roadmap and tasks logged in governance docs where applicable.
+
+## [v1.2.0] — 2025-09-16T12:24:10.000Z
+
+_No changes recorded for this version in the original release history — noted rather
+than fabricated._
+
+## [v1.1.0] — 2025-01-21T14:12:14.000Z
 
 ### Added
 - **Complete Documentation Framework**: Established comprehensive project documentation structure

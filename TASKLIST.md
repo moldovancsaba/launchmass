@@ -14,6 +14,22 @@
 - ✅ Live-verified `ChoiceChip` tag-pill rendering via a temporary scratch route
       (deleted before commit) -- identical to the `4.1.3` render
 
+### ✅ v1.21.0 — Security: Admin User-Management Authorization Gap (Completed 2026-08-08T11:28:22.000Z)
+- ✅ Found via a full documentation/code-comment audit: 4 of 5 `pages/api/admin/users/*`
+      endpoints, plus `pages/admin/users.js`'s `getServerSideProps`, checked authentication
+      only — any authenticated `user`-role account could grant itself admin, change or
+      revoke anyone's access, and read the full user list
+- ✅ Added the admin/superadmin role check (matching the sibling `batch-sync-sso.js`
+      endpoint's existing correct pattern) to `grant-access.js`, `revoke-access.js`,
+      `change-role.js`, `users/index.js`, and `pages/admin/users.js`
+- ✅ Extended the check to recognize the canonical `isSuperAdmin` flag
+      (`lib/permissions.js`), not just `appRole` -- `scripts/migrate-user-rights.cjs`
+      seeds it independently on an org's first user, and an `appRole`-only check would
+      have locked a real superadmin out
+- ✅ Verified: `npm run build` clean; the exact condition checked against every
+      `appRole`/`isSuperAdmin` combination; full live-server verification not possible
+      in this sandbox (no outbound MongoDB access) — noted rather than claimed
+
 ### ✅ v1.20.0 — GDS 4.1.3 vendoring pilot: ChoiceChip tag pills (Completed 2026-08-08T11:04:19.000Z, closes #39)
 - ✅ Verified `@sovereignsquad/gds-core`/`gds-theme` have never been published beyond
       `3.9.0` on npmjs or GitHub Packages (both checked directly); confirmed real newer
