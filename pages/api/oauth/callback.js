@@ -114,7 +114,9 @@ export default async function handler(req, res) {
     const { getPermissionFromSSO } = await import('../../../lib/ssoPermissions.mjs');
     
     let hasAccess = false;
+    /** @type {'none'|'user'|'admin'} */
     let userRole = 'user'; // Default role for new users
+    /** @type {'pending'|'active'|'suspended'|'error'} */
     let permissionStatus = 'active';
     let ssoPermission = null;
     
@@ -137,7 +139,13 @@ export default async function handler(req, res) {
         if (ssoRole === 'superadmin') {
           userRole = 'admin'; // Map superadmin to admin in launchmass
         } else {
-          userRole = ssoRole; // 'user' or 'admin' map directly
+          // WHAT: SSO's role claim is a free-form string; launchmass only persists
+          // 'none'|'user'|'admin'. This cast documents that narrowing rather than
+          // silently widening UserDoc.appRole back to `string` to make it compile —
+          // an SSO role outside that set (a real possibility, e.g. a future SSO-side
+          // role addition) still lands here as whatever ssoRole was, same as before
+          // this issue's annotations; the cast doesn't change runtime behavior.
+          userRole = /** @type {'none'|'user'|'admin'} */ (ssoRole); // 'user' or 'admin' map directly
         }
         
         // Map SSO status to launchmass status

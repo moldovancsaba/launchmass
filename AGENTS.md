@@ -165,33 +165,40 @@ aspirational one — is:**
 ```bash
 npm run verify-docs   # version/doc consistency (scripts/verify-docs-consistency.js)
 npm run lint          # ESLint — static-analysis test substitute (scripts: eslint.config.mjs; landed in issue #15)
+npm run typecheck     # tsc --checkJs against jsconfig.json — JSDoc-typed static analysis (landed in issue #16)
 npm run scan-secrets  # credential-pattern guard over staged/tracked files (scripts/scan-secrets.mjs)
 npm run build         # next build
 ```
 
-All four must exit 0. `npm run typecheck` is **not present yet** — it is tracked as
-its own issue (JSDoc+`tsc --checkJs`), precisely because this repo has no
-automated-test safety net (see below) and static analysis is the intended substitute.
-**The moment it lands, add it to this chain and to this file in the same change
-set** — do not let this document say "not present yet" once it is.
+All five must exit 0. `npm run typecheck` runs `tsc -p jsconfig.json --noEmit` — note the
+explicit `-p jsconfig.json`: the `tsc` CLI only auto-discovers a file literally named
+`tsconfig.json`; it does **not** auto-load `jsconfig.json` on a bare `tsc --noEmit`
+invocation (confirmed empirically — that prints tsc's help text instead of type-checking
+anything), so the flag is load-bearing, not decorative. `jsconfig.json` scopes checking to
+`lib/**/*.js` and `pages/**/*.js` (plus `types/global.d.ts`, an ambient-declarations file
+this repo needed for styled-jsx's `<style jsx>` tag and CSS side-effect imports, neither
+of which Next.js's own un-generated `next-env.d.ts` was there to cover) with `checkJs`
+on but `strict` explicitly forced to `false` — the installed `typescript` devDependency's
+own default is `strict: true`, which is *not* what this repo wants yet (issue #16's
+Non-Goals section: default strictness, not full strict mode), so `jsconfig.json` must set
+`"strict": false` explicitly rather than relying on tsc's default.
 
 **Automated tests are prohibited in this repository** (`WARP.md`: "Tests are forbidden
 — this is an MVP factory, no testing allowed"). This is a deliberate, standing project
 rule, not an oversight — do not add a test framework, do not write `*.test.js` files,
 and do not treat "add tests" as an acceptable response to a bug found in this codebase.
 Where the GDS example this document is adapted from relies on `npm run test:run`,
-this repo's substitute is: (a) the verify-docs + lint + scan-secrets + build chain
-above, (b) `npm run typecheck` once §3's pending issue lands, (c) an explicit **Manual
-Verification** section in every engineering issue (curl commands, click-paths,
-expected output) that a human or agent runs and records before calling the work done.
-"It builds" is not "it works" — always carry out the manual verification steps and
-report their actual result, not their absence.
+this repo's substitute is: (a) the verify-docs + lint + typecheck + scan-secrets + build
+chain above, (b) an explicit **Manual Verification** section in every engineering issue
+(curl commands, click-paths, expected output) that a human or agent runs and records
+before calling the work done. "It builds" is not "it works" — always carry out the
+manual verification steps and report their actual result, not their absence.
 
 **Definition of Done**, checked explicitly, not assumed:
 - Behavior implemented and demonstrably works (manual verification executed and its
   actual output recorded, not merely "should work").
-- `npm run verify-docs`, `npm run lint`, `npm run scan-secrets`, and `npm run build`
-  all clean.
+- `npm run verify-docs`, `npm run lint`, `npm run typecheck`, `npm run scan-secrets`,
+  and `npm run build` all clean.
 - Relevant docs updated in the **same change set** (§4).
 - Traceable to an issue (§2).
 - Edge cases, failure states, and — for any UI change — accessibility considered and
@@ -264,9 +271,13 @@ a one-line amendment to this section — ask, don't assume.
   `X-Organization-UUID`. Getting this pairing wrong is exactly the class of bug this
   program's Phase 1 security issues (org-scoped card mutations, admin user-management
   endpoints) exist to close — do not reintroduce it in new routes.
-- **No automated tests** — see §3. **No TypeScript source** (JSDoc + `tsc --checkJs`
-  is the planned static-analysis layer, not a migration to `.ts` files) once that
-  issue lands.
+- **No automated tests** — see §3. **No TypeScript source** — JSDoc + `tsc --checkJs`
+  (issue #16, see §3) is the static-analysis layer, not a migration to `.ts` files;
+  `lib/types.js` holds the shared `@typedef`s (`UserDoc`, `OrgDoc`, `CardDoc`,
+  `SessionPayload`) and `jsconfig.json` scopes `checkJs`. New `lib/` code should add
+  `@param`/`@returns` JSDoc referencing those typedefs, and cast MongoDB driver reads
+  once at the boundary per `lib/types.js`'s documented convention — see `WARP.md`'s
+  Quality Gate section for the exact pattern.
 - **Debug logging convention:** gate verbose/diagnostic logs behind an explicit env
   flag read at the top of the file (`OAUTH_DEBUG`, `ORG_CACHE_DEBUG`, and similarly
   named flags as they're added) — never log request headers or cookies unconditionally,

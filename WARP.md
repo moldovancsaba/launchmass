@@ -37,13 +37,60 @@ npm run verify-docs
 # exists and what it deliberately does/doesn't enforce
 npm run lint
 
+# tsc --checkJs against jsconfig.json — JSDoc-typed static analysis (v1.23.9+, issue
+# #16); catches type-shape mismatches (e.g. a wrong field name on a DB document) at
+# commit time with zero runtime cost. Runs `tsc -p jsconfig.json --noEmit` — the `-p`
+# flag is required because the plain `tsc` CLI only auto-discovers `tsconfig.json`,
+# never `jsconfig.json`.
+npm run typecheck
+
 # Credential-pattern guard over staged/tracked files
 npm run scan-secrets
 
-# Production build (the only one of these four that actually contacts Next.js's
+# Production build (the only one of these five that actually contacts Next.js's
 # compiler — run it for anything touching routing, config, or provider setup)
 npm run build
 ```
+
+#### JSDoc typing convention for `lib/` code (issue #16)
+
+`jsconfig.json` enables `checkJs` (with `strict: false` — default strictness, not full
+strict mode) against `lib/**/*.js` and `pages/**/*.js`. Shared shapes live in
+`lib/types.js` as JSDoc `@typedef`s — `UserDoc`, `OrgDoc`, `CardDoc`, `SessionPayload`
+— reused across `lib/users.js`, `lib/permissions.js`, `lib/ssoPermissions.mjs`,
+`lib/session.js`, `lib/org.js`, and `lib/db.js`, the six modules with full
+`@param`/`@returns` coverage on every exported function as of issue #16.
+
+When writing new `lib/` code:
+- Add `@param`/`@returns` JSDoc to every exported function, referencing
+  `lib/types.js`'s typedefs via `import('./types.js').UserDoc` (or a bare `UserDoc` if
+  you first alias it with `/** @typedef {import('./types.js').UserDoc} UserDoc */` at
+  the top of the file, as the six annotated modules do).
+- **Boundary-cast the MongoDB driver once per read-path function.** The driver's own
+  return types (`Collection.findOne()`, `.find().toArray()`, etc.) are untyped by
+  default — annotating a function's return type alone does not give you type-checked
+  DB reads; you also need to assert the driver's result at the point it enters
+  application code:
+  ```js
+  const doc = /** @type {UserDoc | null} */ (await col.findOne({ ssoUserId }));
+  ```
+  If tsc rejects that single-step assertion ("neither type sufficiently overlaps" —
+  this happens when casting a whole `Collection<Document>` to `Collection<UserDoc>`,
+  since driver methods like `bulkWrite()` aren't structurally close enough), cast
+  through `unknown` first, exactly as tsc's own error message suggests:
+  ```js
+  return /** @type {Collection<UserDoc>} */ (/** @type {unknown} */ (col));
+  ```
+  See `lib/types.js`'s "Boundary-cast convention" header comment for the full
+  rationale — this is the one pattern, reused consistently; don't invent a second
+  casting style in new `lib/` code.
+- `pages/**` route handlers are not required to carry full JSDoc coverage (`checkJs`
+  still runs against them for cross-boundary error catching — e.g. a route calling a
+  now-typed `lib/` function with the wrong shape — but deliberate authorship is scoped
+  to the six `lib/` modules above). If your `pages/**` change trips a type error from a
+  `lib/` call, a local, minimal fix (a narrowing cast, a corrected inline type) is
+  expected; a full annotation of the whole route file is not required by this
+  convention.
 
 ### Data Management
 ```bash

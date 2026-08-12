@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.8**
+**Version: 1.23.9**
 
 ## Overview
 
@@ -568,3 +568,46 @@ migration scripts under `scripts/`), and promoting it to `error` before a full a
 of the remaining call sites would make the gate too blunt to be trustworthy. See
 `LEARNINGS.md` for the flat-config specifics (why `scripts/` needs an explicit `--dir`
 flag, why `.cjs` files need `sourceType: 'script'`) discovered while wiring this up.
+
+## Static Typing via JSDoc + tsc --checkJs (v1.23.9+, issue #16)
+
+ESLint (above) catches dead code and undefined references; it does not catch a
+type-shape mismatch — a function called with an object that's missing a field, or a
+field referenced under the wrong name. That second class of bug is exactly what #12
+was: `lib/ssoPermissions.mjs`'s `batchSyncToSSO` read `user.status`/`user.role` for
+months, silently matching zero users on every call, because the real schema (see
+`lib/users.js`'s `upsertUserFromSso`) stores these as `appStatus`/`appRole`. Nothing in
+this codebase — no test, no lint rule — could have caught that; a structural type
+checker can, at commit time, with zero runtime cost.
+
+`jsconfig.json` (`checkJs: true`, `allowJs: true`, `noEmit: true`, `strict: false`)
+scopes `tsc`'s checker to `lib/**/*.js` and `pages/**/*.js`, without migrating any file
+to `.ts` — this repo's source stays 100% `.js`/`.mjs`; types live entirely in JSDoc
+comments and one typedef-only module, `lib/types.js` (`UserDoc`, `OrgDoc`, `CardDoc`,
+`SessionPayload`). Full `@param`/`@returns` coverage is scoped to six modules —
+`lib/users.js`, `lib/permissions.js`, `lib/ssoPermissions.mjs`, `lib/session.js`,
+`lib/org.js`, `lib/db.js` — the ones most implicated in this program's audit findings;
+`pages/**` is still checked (for cross-boundary errors when it calls into a now-typed
+`lib/` function) but not deliberately annotated, an intentionally incremental scope
+matching #16's Non-Goals.
+
+**The boundary-cast problem and its one convention:** the MongoDB driver's own return
+types (`Collection.findOne()`, `.find().toArray()`, etc.) are effectively untyped —
+annotating a function's `@returns` alone does not give type-checked DB reads, because
+the driver result crossing into that function is still whatever the driver inferred
+(usually a loose `Document`). Every read-path function in the six annotated modules
+casts the driver result once, at that crossing point, with a JSDoc type assertion —
+documented in full, with the `unknown`-intermediate fallback for cases tsc rejects a
+direct assertion, in `lib/types.js`'s header comment. This is deliberately the *one*
+casting pattern reused everywhere, not a per-function ad hoc choice.
+
+`strict: false` is a deliberate choice, not an oversight: the installed `typescript`
+package defaults `strict` to `true`, but #16's Non-Goals explicitly scope this to
+default strictness (`checkJs` catching real shape mismatches) rather than full strict
+mode (`strictNullChecks` and friends, which would demand a much larger annotation
+effort for comparatively little of the #12-class payoff) — a possible future
+incremental step, not required here. See `WARP.md`'s Quality Gate section for the
+`npm run typecheck` command and the JSDoc/boundary-cast convention to follow in new
+`lib/` code, and `LEARNINGS.md` for the environment-specific gotchas discovered while
+wiring this up (jsconfig.json vs. tsconfig.json CLI discovery, styled-jsx typing, and
+more).
