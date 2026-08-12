@@ -81,12 +81,15 @@ export async function getServerSideProps(context) {
       return undefined;
     };
 
-    const safe = rows.map(({ _id, createdAt, updatedAt, ...rest }) => ({
-      ...rest,
-      tags: Array.isArray(rest?.tags) ? rest.tags : [],
-      ...(createdAt && { createdAt: toISOString(createdAt) }),
-      ...(updatedAt && { updatedAt: toISOString(updatedAt) })
-    }));
+    const safe = rows.map(({ createdAt, updatedAt, ...rest }) => {
+      delete rest._id;
+      return {
+        ...rest,
+        tags: Array.isArray(rest?.tags) ? rest.tags : [],
+        ...(createdAt && { createdAt: toISOString(createdAt) }),
+        ...(updatedAt && { updatedAt: toISOString(updatedAt) })
+      };
+    });
 
     return { props: { org: { uuid: org.uuid, slug: org.slug, name: org.name, background: org.background || null }, cards: safe, activeTag: filterTag || null } };
   } catch (error) {

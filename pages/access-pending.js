@@ -117,7 +117,7 @@ export default function AccessPending() {
               An administrator will review your request
             </li>
             <li style={{ marginBottom: '0.5rem' }}>
-              You'll receive an email once access is granted
+              You&apos;ll receive an email once access is granted
             </li>
             <li>
               You can then log in and start using Launchmass

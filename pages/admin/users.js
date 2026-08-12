@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import { validateSsoSession, isAppAdmin } from '../../lib/auth-oauth';
 
-export default function AdminUsers({ currentUser }) {
+export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending'); // 'all' | 'pending' | 'active'

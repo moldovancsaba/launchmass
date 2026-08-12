@@ -92,7 +92,7 @@ async function analyzeDatabase() {
     console.log('\n\n🔍 QUERY PATTERN ANALYSIS\n');
     console.log('═'.repeat(80));
     
-    await analyzeQueryPatterns(db);
+    await analyzeQueryPatterns();
     
     // Index recommendations
     console.log('\n\n💡 INDEX RECOMMENDATIONS\n');
@@ -109,7 +109,7 @@ async function analyzeDatabase() {
   }
 }
 
-async function analyzeQueryPatterns(db) {
+async function analyzeQueryPatterns() {
   const patterns = [];
   
   // Cards collection patterns
@@ -260,7 +260,7 @@ async function recommendIndexes(db) {
           });
         }
       }
-    } catch (err) {
+    } catch {
       // Collection doesn't exist yet
       console.log(`⚠️  Collection ${collInfo.name} does not exist yet - will be created`);
     }

@@ -27,6 +27,24 @@ npm run build
 npm run start
 ```
 
+### Quality Gate (run before every push — see CLAUDE.md §3 for the full policy)
+```bash
+# Documentation/version consistency
+npm run verify-docs
+
+# ESLint — the test-substitute static-analysis gate (v1.23.8+, issue #15); see
+# ARCHITECTURE.md's "Static Analysis as the Test Substitute" section for why this
+# exists and what it deliberately does/doesn't enforce
+npm run lint
+
+# Credential-pattern guard over staged/tracked files
+npm run scan-secrets
+
+# Production build (the only one of these four that actually contacts Next.js's
+# compiler — run it for anything touching routing, config, or provider setup)
+npm run build
+```
+
 ### Data Management
 ```bash
 # Seed database with default cards
