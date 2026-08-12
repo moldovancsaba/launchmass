@@ -1,8 +1,8 @@
 # launchmass
 
-**Version: 1.23.12**
+**Version: 1.23.13**
 
-![Version](https://img.shields.io/badge/version-1.23.12-blue)
+![Version](https://img.shields.io/badge/version-1.23.13-blue)
 
 Mobile-first grid of oversized buttons with a simple JSON-driven admin page. Features consent-gated Google Analytics tracking and centralized SSO authentication.
 

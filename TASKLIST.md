@@ -1,8 +1,46 @@
 # Task List - launchmass
 
-**Version: 1.23.12**
+**Version: 1.23.13**
 
 ## Completed Tasks
+
+### ✅ v1.23.13 — UX: Structured background/gradient editor replacing raw-CSS textarea (Completed 2026-08-12T18:00:00.000Z, closes #20)
+- ✅ `components/admin/BackgroundEditor.jsx` (new): three-mode editor — Solid (validated
+      hex text field), Gradient (angle + N color stops, add/remove, not capped at 3),
+      Advanced (the original raw-CSS textarea, unchanged) — wired into `pages/admin
+      /index.js`'s `Card` component in place of the old always-raw-CSS textarea.
+      Storage contract unchanged: `item.background` stays a plain CSS string,
+      unchanged-`normalizeBg`-parseable.
+- ✅ `detectMode(cssValue)` classifies an existing card's stored value into the mode it
+      opens into, falling back to Advanced for anything not cleanly a solid hex or a
+      clean single-line `linear-gradient(...)` (multi-layer shorthand, rgba stops
+      without an explicit `%`, etc.) so an unusual-but-valid value is never corrupted.
+- ✅ Mode-switch data-loss guard: an Advanced-mode value `detectMode` can't classify
+      disables the Solid/Gradient radio options (GDS `GdsSegmentedControl`) and shows a
+      GDS `InlineAlert` with an explicit "Reset to default gradient" action — never a
+      silent switch-and-discard.
+- ✅ Inline validation (GDS `FormField` error text) for the Solid hex field and each
+      Gradient stop's color field; the card form's Save button is disabled while
+      invalid, so no malformed value can be saved via a silent fallback.
+- ✅ Live preview swatch (decorative, `aria-hidden`) updates synchronously with every
+      field edit in all three modes.
+- ✅ GDS component-fit investigation (Mandatory per the issue): confirmed, against the
+      real vendored `@sovereignsquad/gds-core@6.0.0` compiled output (not just its
+      `.d.ts` files), that GDS has no color-picker/color-input primitive and does not
+      re-export Mantine's `ColorInput`/`ColorPicker` — a genuine, narrow gap, addressed
+      by using GDS's own `FormField` as a validated text field rather than reaching for
+      a non-GDS picker library. Full writeup in `ARCHITECTURE.md` and `LEARNINGS.md`.
+- ✅ Real-browser verification via headless Chromium against a temporary scratch route
+      (`pages/dev-bg-editor-test.js`, deleted before this commit — not part of the
+      shipped change): solid-hex card opens in Solid mode with the correct color;
+      gradient card opens in Gradient mode with the real angle/stops; a new card's
+      default gradient is pre-populated, not blank; an invalid hex shows inline
+      validation and reports invalid (Save-gating); the live preview swatch updates on
+      edit; an unparseable Advanced value disables Solid/Gradient and shows the
+      blocked-mode alert with a working Reset action; add/remove-stop works beyond 3
+      stops. All 15 assertions passed; see the PR body for the full list.
+- ✅ `npm run verify-docs`, `npm run lint`, `npm run typecheck`, `npm run scan-secrets`,
+      and `npm run build` all clean.
 
 ### ✅ v1.23.12 — CLEANUP: Normalize ssoPermissions module extension and logging conventions (Completed 2026-08-12T00:00:00.000Z, closes #17)
 - ✅ `lib/ssoPermissions.mjs` renamed to `lib/ssoPermissions.js` via `git mv` (history

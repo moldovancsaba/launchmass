@@ -1,5 +1,68 @@
 # Release Notes - launchmass
 
+## [v1.23.13] — 2026-08-12T18:00:00.000Z
+
+### UX: Structured background/gradient editor replacing raw-CSS textarea (Closes #20)
+
+The admin card-edit form's `background` field previously asked operators to hand-type
+or paste raw CSS into a plain textarea, parsed by best-effort regex matching
+(`normalizeBg`) with no feedback until the card rendered with a fallback gradient
+instead of the intended one. Replaced with a structured, three-mode editor while
+keeping the stored value a plain CSS string — no migration of existing card data.
+
+**Added:**
+- `components/admin/BackgroundEditor.jsx`: Solid mode (a GDS `FormField`-wrapped,
+  pattern-validated hex text field), Gradient mode (a GDS `GdsSlider` for angle plus
+  per-stop `FormField` color + `NumberStepper` position rows, add/remove via
+  `ChoiceChip`, not capped at 3 stops), and Advanced mode (the original raw-CSS
+  textarea, functionally unchanged).
+- `detectMode(cssValue)`, exported from the new component: classifies an existing
+  card's background into the mode it should open into, falling back to Advanced for
+  anything not cleanly a solid hex or a clean single-line `linear-gradient(...)`.
+- A mode-switch data-loss guard: an Advanced-mode value that doesn't cleanly parse
+  disables the Solid/Gradient options (rather than silently discarding it on switch)
+  and surfaces a GDS `InlineAlert` with an explicit "Reset to default gradient" action.
+- Inline validation (no silent save-time fallback): the Solid hex field and each
+  Gradient stop's color field show a GDS `FormField` error message when invalid, and
+  the card form's Save button is disabled while either is invalid.
+- A live, decorative preview swatch bound to the current serialized background value,
+  updating synchronously with every field edit across all three modes.
+
+**Unchanged (by design):**
+- `lib/shared.js`'s `normalizeBg`/`DEFAULT_BG` — zero change to the storage/parsing
+  contract or to `PATCH /api/cards/[id]`. The structured editor always writes a plain
+  CSS string; only Advanced mode still round-trips through `normalizeBg`, exactly as
+  before this change.
+- The Advanced mode's raw textarea itself — same placeholder, same behavior, still the
+  power-user fallback, not removed.
+
+**GDS component-fit finding:** the vendored `@sovereignsquad/gds-core@6.0.0` has no
+dedicated color-picker/color-input component, and `GdsSchemaForm`'s field-type union has
+no `'color'` variant — confirmed by enumerating the package's compiled export surface,
+not just its `.d.ts` files. GDS also does not re-export or wrap Mantine's
+`ColorInput`/`ColorPicker` anywhere; its own compiled bundles import only a specific,
+curated allowlist of Mantine primitives that stops short of Mantine's color components.
+This is a genuine, narrow gap (a true color-*picking* widget), not a gap in general
+structured-form primitives — `FormField`, `GdsSegmentedControl`, `GdsSlider`,
+`NumberStepper`, `InlineAlert`, and `ChoiceChip` (already adopted in issues #18/#19) are
+all real fits for everything else the editor needed. Colors are entered as a validated
+text field instead, which is also the objectively correct shape here regardless of the
+GDS gap: this app's own `DEFAULT_BG` gradient stops are `rgba(...)`, not hex, so a
+hex-only picker couldn't represent them anyway. Full detail in `ARCHITECTURE.md`'s
+"Structured Background Editor" section and a new `LEARNINGS.md` entry.
+
+**Verified:**
+- `npm run verify-docs`, `npm run lint`, `npm run typecheck`, `npm run scan-secrets`,
+  and `npm run build` all clean.
+- Real-browser verification via headless Chromium (`/opt/pw-browsers/chromium`) against
+  a temporary scratch route (deleted before this commit, not part of the shipped
+  change): 15 assertions covering mode auto-detection on open (solid-hex and gradient
+  cards), the new-card default gradient's stops being pre-populated (not blank), inline
+  validation appearing on an invalid hex (and reporting invalid for Save-gating), the
+  live preview swatch reflecting a typed color, the blocked-mode-switch guard
+  disabling Solid/Gradient with its Reset action working, and add/remove-stop beyond 3
+  stops — all passed.
+
 ## [v1.23.12] — 2026-08-12T00:00:00.000Z
 
 ### CLEANUP: Normalize ssoPermissions module extension and logging conventions (Closes #17)
