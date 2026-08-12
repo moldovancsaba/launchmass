@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.10**
+**Version: 1.23.11**
 
 ## Overview
 
@@ -39,6 +39,36 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Role**: Primary card grid display with server-side rendering
 - **Dependencies**: MongoDB data fetching, OversizedLink component
 - **Status**: Active - Primary user interface
+- **Three-state rendering contract (v1.23.11+, issue #19)**: `getServerSideProps`
+  now returns an explicit `fetchError: boolean` prop, distinguishing a genuine
+  DB/fetch failure from a legitimately-empty organization -- both previously
+  collapsed to the exact same `{ cards: [], activeTag: null }` shape via a bare
+  `catch {}` that discarded the real error entirely. On any failure the catch
+  block now runs `console.error('[index] getServerSideProps failed:', err.message)`
+  (server-side only -- the real error never reaches the client) and returns
+  `{ cards: [], activeTag: null, orgName: null, orgBackground: null, fetchError: true }`;
+  on success (including a genuinely-empty result) it returns `fetchError: false`
+  alongside whatever cards matched. `Home` renders exactly one of three
+  mutually-exclusive states from this:
+  - `fetchError === true` -> GDS's `GdsErrorPageTemplate` (fixed, generic copy;
+    `onRetry` wired to `window.location.reload()` -- a full navigation, since
+    this page has no client-side data-fetching layer to re-run in place).
+  - `fetchError === false && cards.length === 0` -> GDS's `GdsEmptyStateTemplate`
+    (the pre-existing "Welcome to SEYU / No content found yet" copy, restyled
+    onto GDS, with the same Organizations/Admin quick-access actions). This is
+    also what a tag filter with zero matching cards renders as (`activeTag` set,
+    `cards` empty, `fetchError` false) -- a legitimate zero-result query, not a
+    failure; the filter bar (`ChoiceChip` "Filtering by" / "Clear") still renders
+    alongside it.
+  - `cards.length > 0` -> the existing `<main className="grid">` of
+    `OversizedLink` cards, byte-for-byte unchanged by this issue. Both GDS
+    templates render their own `<main>` landmark internally (via gds-core's
+    `PageTemplateFrame`), so the populated grid's `<main>` is only rendered
+    when there are cards, avoiding two `<main>` landmarks on one page.
+  See `node_modules/@sovereignsquad/gds-core/dist/AISearchCard-DlLxEGV9.d.ts`
+  for `GdsEmptyStateTemplateProps`/`GdsErrorPageTemplateProps`'s exact shape --
+  verified against the actually-installed gds-core@6.0.0, not assumed from the
+  issue's sketch (same discipline as the `BannerNotice` choice in issue #18).
 #### Admin Interface (`pages/admin/index.js`)
 - **Role**: Administrative panel for card management
 - **Dependencies**: Material-UI components, drag-and-drop functionality, OAuth authentication
