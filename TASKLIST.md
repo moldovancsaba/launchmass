@@ -1,8 +1,25 @@
 # Task List - launchmass
 
-**Version: 1.23.0**
+**Version: 1.23.1**
 
 ## Completed Tasks
+
+### ✅ v1.23.1 — Consolidated admin-role authorization into a shared guard (Completed 2026-08-12T12:54:05.000Z, closes #9)
+- ✅ Extracted `isAppAdmin(user)` (predicate) and `requireAdminRole(handler, message)`
+      (API-route HOF) into `lib/auth-oauth.js`, reproducing the exact `appRole`/
+      `isSuperAdmin`-flag check and per-route 403 message text that was previously
+      duplicated inline across `pages/api/admin/users/index.js`,
+      `.../[ssoUserId]/change-role.js`, `.../[ssoUserId]/grant-access.js`,
+      `.../[ssoUserId]/revoke-access.js`, `pages/api/admin/batch-sync-sso.js`, and
+      `pages/admin/users.js`'s `getServerSideProps` — zero behavior change, pure
+      refactor of an already-correct check (the actual privilege-escalation
+      vulnerability was fixed earlier in PR #38 / v1.21.0)
+- ✅ All six call sites now import the shared guard/predicate; no duplicate inline
+      `appRole`/`isSuperAdmin` checks remain
+- ✅ `ARCHITECTURE.md` documents `isAppAdmin`/`requireAdminRole` and notes that all
+      `admin/users/**` and `admin/batch-sync-sso` routes require `appRole`
+      admin/superadmin (or the `isSuperAdmin` flag)
+- ✅ `npm run verify-docs` and `npm run build` both clean
 
 ### ✅ v1.23.0 — Session cookie domain made env-driven (Completed 2026-08-12T12:28:37.000Z, prep for #46)
 - ✅ `sso_session` cookie `Domain=` and post-logout redirect target were hardcoded to
