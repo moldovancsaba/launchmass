@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.22.0**
+**Version: 1.23.0**
 
 ## Overview
 
@@ -478,6 +478,12 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
   user pending explicit admin approval). Never consulted when SSO already has a
   permission record, or when a local `users` document already exists — see `WARP.md`'s
   Authentication Pattern section for the full precedence order. Never grants admin.
+- **SESSION_COOKIE_DOMAIN** (optional, v1.23.0+): `Domain=` scope for the `sso_session`
+  cookie. Defaults to `.doneisbetter.com`, matching production today. Only relevant if
+  migrating to a different apex domain — see #46.
+- **APP_BASE_URL** (optional, v1.23.0+): base origin for the post-logout SSO redirect.
+  Defaults to `https://launchmass.doneisbetter.com`. Keep in sync with
+  `SESSION_COOKIE_DOMAIN`/`SSO_REDIRECT_URI` during a domain migration.
 
 **Legacy (Deprecated in v1.7.0):**
 - ~~**SSO_COOKIE_DOMAIN**: Cookie domain for SSO~~ (v1.5.0 cookie-forwarding approach)
