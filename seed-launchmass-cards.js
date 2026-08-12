@@ -6,8 +6,15 @@
  */
 
 import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
 
-const LAUNCHMASS_URI = "mongodb+srv://moldovancsaba:gbR86EK0bxumEpxq@mosaic-cluster.nm3s5dj.mongodb.net/?retryWrites=true&w=majority&appName=mosaic-cluster";
+dotenv.config({ path: '.env.local' });
+
+const LAUNCHMASS_URI = process.env.MONGODB_URI;
+if (!LAUNCHMASS_URI) {
+  console.error('MONGODB_URI environment variable is not set. See .env.example.');
+  process.exit(1);
+}
 const LAUNCHMASS_DB = "launchmass";
 
 // Extracted cards from the provided HTML

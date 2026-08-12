@@ -21,6 +21,31 @@
       admin/superadmin (or the `isSuperAdmin` flag)
 - ✅ `npm run verify-docs` and `npm run build` both clean
 
+### ✅ v1.23.1 — Security: Org-scoped authorization on card mutation endpoints (Completed 2026-08-12T12:51:18.000Z, closes #8)
+- ✅ `pages/api/cards/index.js` (POST), `cards/[id].js` (PATCH, DELETE), `cards/reorder.js`
+      (POST) checked only that *a* valid session existed (`withSsoAuth`), never that the
+      caller held the relevant `cards.*` permission in the org named by
+      `X-Organization-UUID` — any authenticated user of any org could write to another
+      org's cards
+- ✅ Replaced `withSsoAuth` + manual `getOrgContext` in all four routes with
+      `withOrgPermission('cards.create'|'cards.update'|'cards.delete'|'cards.reorder',
+      handler)` — the same wrapper already used correctly in
+      `pages/api/organizations/[uuid]/**`; no new authorization primitive, permission
+      matrix unchanged
+- ✅ Removed each route's now-redundant manual `getOrgContext` call (`withOrgPermission`
+      resolves org context internally and attaches `req.orgContext`)
+- ✅ Updated `ARCHITECTURE.md`'s API-routes section to document the new per-route
+      permission requirement
+- ✅ `npm run verify-docs` and `npm run build` both clean
+- ⚠️ Live curl-based manual verification from the issue's Manual Verification section was
+      not executed (no live SSO/DB credentials in this environment) — only static/
+      code-path verification was performed; see RELEASE_NOTES.md v1.23.1 entry and the PR
+      description for exact scope
+- ⚠️ Post-merge review fix (same PR, before merge): routes as first written called
+      `withOrgPermission` without `withSsoAuth`, leaving `req.user` undefined and
+      rejecting every request with 403 — fixed by composing
+      `withSsoAuth(withOrgPermission(...))` before merge; rebuilt clean
+
 ### ✅ v1.23.0 — Session cookie domain made env-driven (Completed 2026-08-12T12:28:37.000Z, prep for #46)
 - ✅ `sso_session` cookie `Domain=` and post-logout redirect target were hardcoded to
       `.doneisbetter.com` / `https://launchmass.doneisbetter.com` in `lib/auth-oauth.js`

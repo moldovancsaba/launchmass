@@ -164,6 +164,7 @@ aspirational one — is:**
 
 ```bash
 npm run verify-docs   # version/doc consistency (scripts/verify-docs-consistency.js)
+npm run scan-secrets  # credential-pattern guard over staged/tracked files (scripts/scan-secrets.mjs)
 npm run build         # next build
 ```
 
@@ -179,7 +180,7 @@ is.
 rule, not an oversight — do not add a test framework, do not write `*.test.js` files,
 and do not treat "add tests" as an acceptable response to a bug found in this codebase.
 Where the GDS example this document is adapted from relies on `npm run test:run`,
-this repo's substitute is: (a) the verify-docs + build chain above, (b) static analysis
+this repo's substitute is: (a) the verify-docs + scan-secrets + build chain above, (b) static analysis
 once §3's pending issues land, (c) an explicit **Manual Verification** section in every
 engineering issue (curl commands, click-paths, expected output) that a human or agent
 runs and records before calling the work done. "It builds" is not "it works" — always
@@ -189,7 +190,7 @@ absence.
 **Definition of Done**, checked explicitly, not assumed:
 - Behavior implemented and demonstrably works (manual verification executed and its
   actual output recorded, not merely "should work").
-- `npm run verify-docs` and `npm run build` both clean.
+- `npm run verify-docs`, `npm run scan-secrets`, and `npm run build` all clean.
 - Relevant docs updated in the **same change set** (§4).
 - Traceable to an issue (§2).
 - Edge cases, failure states, and — for any UI change — accessibility considered and

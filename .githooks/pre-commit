@@ -7,3 +7,10 @@ npm run verify-docs || {
   echo "  (run 'npm run verify-docs' to see details)" >&2
   exit 1
 }
+
+npm run scan-secrets || {
+  echo "" >&2
+  echo "✗ pre-commit: scan-secrets found a possible credential in staged files. Commit blocked." >&2
+  echo "  (run 'npm run scan-secrets' to see details)" >&2
+  exit 1
+}
