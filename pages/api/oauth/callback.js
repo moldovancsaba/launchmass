@@ -6,6 +6,7 @@
  */
 
 import { sessionCookieDomain } from '../../../lib/auth-oauth.js';
+import { logEvent, EVENT_TYPES } from '../../../lib/analytics.js';
 
 // Functional: Debug logger gated behind OAUTH_DEBUG.
 // Strategic: The OAuth callback previously logged auth codes, emails, and token
@@ -333,6 +334,11 @@ export default async function handler(req, res) {
       ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
       userAgent: req.headers['user-agent'],
     });
+
+    // Functional: Distinct, additive analytics event alongside the audit-trail
+    // recordAuthEvent call above — analyticsEvents feeds usage analytics, authLogs
+    // remains the security audit trail. Fire-and-forget, never blocks the redirect.
+    logEvent(EVENT_TYPES.USER_LOGIN, { userId: user.id, orgUuid: null });
 
     dlog('✅ OAuth flow completed successfully!');
     dlog('   Redirecting to:', state || '/admin');

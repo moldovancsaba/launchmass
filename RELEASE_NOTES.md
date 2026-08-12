@@ -1,5 +1,49 @@
 # Release Notes - launchmass
 
+## [v1.23.6] — 2026-08-12T14:14:17.000Z
+
+### FIX: Wire orphaned analytics event-logging module into mutation flows (Closes #13)
+
+`lib/analytics.js` was a fully-built, working event-batching subsystem (queueing,
+50-event/5-second batch flush, exponential-backoff retry, graceful-shutdown flush, an
+`EVENT_TYPES` taxonomy) that no route in `pages/api/**` ever called — it had never
+written a single document to `analyticsEvents` in production. This release wires it
+into the mutation endpoints it was built for, rather than deleting working
+infrastructure.
+
+**Changed:**
+- `pages/api/cards/index.js` (POST) — `logEvent(EVENT_TYPES.CARD_CREATE, { orgUuid,
+  userId: req.user.ssoUserId, cardId })` fires after the successful insert.
+- `pages/api/cards/[id].js` (PATCH/DELETE) — `logEvent(EVENT_TYPES.CARD_UPDATE)` /
+  `logEvent(EVENT_TYPES.CARD_DELETE)` fire after the corresponding successful write.
+- `pages/api/cards/reorder.js` — `logEvent(EVENT_TYPES.CARD_REORDER, { orgUuid, userId,
+  cardIds })` fires after the successful `bulkWrite`.
+- `pages/api/admin/users/[ssoUserId]/{change-role,grant-access,revoke-access}.js` —
+  `logAdminAction(action, null, req.user.ssoUserId, { targetSsoUserId, ... })` fires
+  after each successful update.
+- `pages/api/oauth/callback.js` — `logEvent(EVENT_TYPES.USER_LOGIN, { userId, orgUuid:
+  null })` fires on successful session creation, additive alongside the existing
+  `recordAuthEvent` call (analytics vs. audit trail remain two separate concerns).
+- All new event payloads carry identifiers only (`orgUuid`/`userId`/`cardId`/
+  `cardIds`/`targetSsoUserId`) — never full card content or other PII, per the
+  module's existing analytics-not-audit-log design.
+- `lib/analytics.js`'s docstring rewritten to remove the "orphaned" framing, list the
+  real call sites, and document the serverless-cold-shutdown best-effort-delivery
+  caveat as an accepted trade-off of the batching design, not something redesigned
+  here.
+
+**Deferred (tracked, not silently dropped):**
+- `logCardClick` / card-click-through tracking — needs a new public beacon endpoint
+  (`POST /api/analytics/click`), a materially larger feature with its own
+  abuse/rate-limit surface; left for a future issue.
+- `ORG_CREATE/UPDATE/DELETE` events in `pages/api/organizations/**` — kept out of this
+  release's diff surface, which is bounded to the cards + admin/users routes already
+  touched by this program.
+
+**No behavior change to any existing response:** `logEvent`/`logAdminAction` are
+fire-and-forget (queue-then-return); no response status code, body shape, or latency
+profile changes.
+
 ## [v1.23.5] — 2026-08-12T14:06:03.000Z
 
 ### FIX: Correct field-name mismatch in SSO batch permission sync (Closes #12)

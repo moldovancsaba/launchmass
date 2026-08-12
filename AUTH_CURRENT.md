@@ -1,6 +1,6 @@
 # Authentication Guide - launchmass
 
-**Version: 1.23.5**
+**Version: 1.23.6**
 **Last Updated:** 2026-08-12T14:06:03.000Z
 **Auth System:** OAuth 2.0 / OpenID Connect (v1.7.0+)  
 **Primary Library:** `lib/auth-oauth.js`

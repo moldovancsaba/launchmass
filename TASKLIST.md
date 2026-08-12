@@ -1,8 +1,28 @@
 # Task List - launchmass
 
-**Version: 1.23.5**
+**Version: 1.23.6**
 
 ## Completed Tasks
+
+### ✅ v1.23.6 — FIX: Wire orphaned analytics event-logging module into mutation flows (Completed 2026-08-12T14:14:17.000Z, closes #13)
+- ✅ `lib/analytics.js`'s `logEvent`/`logAdminAction` (previously fully built but never
+      called from any route) are now wired in as fire-and-forget calls immediately after
+      each successful Mongo write:
+      `pages/api/cards/index.js` (POST → `CARD_CREATE`), `pages/api/cards/[id].js`
+      (PATCH → `CARD_UPDATE`, DELETE → `CARD_DELETE`), `pages/api/cards/reorder.js`
+      (→ `CARD_REORDER`), the three admin user-management routes
+      (`change-role`/`grant-access`/`revoke-access.js` → `logAdminAction`), and
+      `pages/api/oauth/callback.js` on successful login (→ `USER_LOGIN`, additive
+      alongside the existing `recordAuthEvent` audit-trail call, not a replacement).
+- ✅ Event payloads carry identifiers only (`orgUuid`/`userId`/`cardId`/`cardIds`) —
+      never full card content (`href`/`title`/`description`) or other PII.
+- ✅ Explicitly deferred, not wired in: a client-side card-click beacon endpoint for
+      `logCardClick` (needs a new public `POST /api/analytics/click` endpoint — its own
+      future issue), and `ORG_CREATE/UPDATE/DELETE` events in
+      `pages/api/organizations/**`.
+- ✅ `lib/analytics.js`'s docstring rewritten: removed "orphaned" framing, listed the
+      real call sites now wired in, documented the serverless-cold-shutdown
+      best-effort-delivery caveat as an accepted trade-off of the batching design.
 
 ### ✅ v1.23.5 — FIX: Correct field-name mismatch in SSO batch permission sync (Completed 2026-08-12T14:06:03.000Z, closes #12)
 - ✅ `lib/ssoPermissions.mjs`'s `batchSyncToSSO()` now queries `appStatus` (not the
