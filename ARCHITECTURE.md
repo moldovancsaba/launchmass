@@ -463,6 +463,11 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 **Database:**
 - **MONGODB_URI**: Database connection string
 - **DB_NAME**: Database name (default: 'launchmass')
+- **SSO_MONGODB_URI**: Connection string for the SSO service's own database (separate
+  cluster from `MONGODB_URI`). Required only by the operator scripts under `scripts/`
+  that read/update SSO's `oauthClients` collection directly
+  (`enable-client-credentials.mjs`, `find-oauth-client.mjs`, `get-client-secret.mjs`) —
+  not used by the running application itself. See issue #7.
 
 **OAuth 2.0 Authentication (v1.7.0+):**
 - **SSO_SERVER_URL**: SSO service URL (https://sso.doneisbetter.com)

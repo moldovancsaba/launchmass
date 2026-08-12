@@ -6,7 +6,11 @@
 
 import { MongoClient } from 'mongodb';
 
-const SSO_MONGODB_URI = 'REDACTED_ROTATED_2026-08-14';
+const SSO_MONGODB_URI = process.env.SSO_MONGODB_URI;
+if (!SSO_MONGODB_URI) {
+  console.error('SSO_MONGODB_URI environment variable is not set. See .env.example.');
+  process.exit(1);
+}
 const LAUNCHMASS_CLIENT_ID = 'df9bea3a-eb1e-49b4-a8d0-3a8e0b18842f';
 
 async function getClientSecret() {
