@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.9**
+**Version: 1.23.10**
 
 ## Overview
 
@@ -16,19 +16,22 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **Status**: Active - Core application foundation
 
 #### Document Structure (`pages/_document.js`)
-- **Role**: Custom HTML document with Google Analytics integration
+- **Role**: Custom HTML document — font preconnect links only (v1.23.10+)
 - **Dependencies**: next/document components
-- **Status**: Active - Analytics tracking enabled
+- **Status**: Active
 - **Configuration**: 
-  - Google Analytics tracking ID: G-HQ5QPLMJC1
-  - gtag.js implementation via document head injection
-  - Async script loading for optimal performance
+  - `<link rel="preconnect">` for the SEYU brand fonts (Google Fonts CDN)
+  - **No longer injects Google Analytics** — `gtag.js` moved to a consent-gated,
+    client-side load (see "Google Analytics (gtag.js)" below and issue #18).
+    `_document.js` runs server-side with no access to `localStorage`, so it structurally
+    cannot check consent state — moving the script out of it was required, not optional.
 
 #### Application Wrapper (`pages/_app.js`)
-- **Role**: Global application wrapper with background and branding
-- **Dependencies**: Global CSS styles
+- **Role**: Global application wrapper with background, branding, and app-wide GDS providers
+- **Dependencies**: Global CSS styles, `MantineProvider`, `OverlayManagerProvider` (`@sovereignsquad/gds-core/client`), `ConsentBanner` (`components/ConsentBanner.jsx`)
 - **Status**: Active - Visual foundation layer
 - **Info Bar Behavior**: The global bottom info bar is suppressed on all `/admin` routes via conditional rendering (useRouter path check).
+- **Consent Banner (v1.23.10+)**: `<ConsentBanner />` is mounted unconditionally (every route). It renders nothing until a client-side mount effect resolves the stored consent decision, so it never affects server-rendered output. See "Google Analytics (gtag.js)" below.
 
 ### Page Components
 
@@ -269,14 +272,31 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 5. **Org Context**: All admin writes require organization context (X-Organization-UUID header)
 6. **SSO Sync**: Permissions can be synced to central SSO system via batch sync feature
 
-#### Google Analytics (gtag.js)
+#### Google Analytics (gtag.js) — Consent-Gated (v1.23.10+, issue #18)
 - **Role**: User behavior tracking and analytics collection
-- **Dependencies**: Google Tag Manager CDN
-- **Status**: Active - Analytics tracking enabled
-- **Implementation**: 
-  - Injected via Next.js _document.js for consistent coverage
-  - Async loading to prevent performance impact
-  - Configured with tracking ID G-HQ5QPLMJC1
+- **Dependencies**: Google Tag Manager CDN, `lib/consent.js`, `components/ConsentBanner.jsx`
+- **Status**: Active - loads only after explicit user consent
+- **Implementation**:
+  - `lib/consent.js`'s `loadGoogleAnalytics()` injects the `gtag.js` script tag and
+    fires `gtag('config', ...)` — called only client-side, only once consent is
+    `'accepted'` (fresh click or a previously stored decision read back on a later page
+    load). A module-level guard prevents double-injection.
+  - Consent decision lives in `localStorage` under the key `seyu-analytics-consent`
+    (`'accepted'` | `'declined'`; the key's absence means undecided). Reads/writes are
+    wrapped in try/catch (`readConsent()`/`writeConsent()`) — a storage failure
+    (private browsing, quota exceeded) is treated as "undecided," not a crash.
+  - `components/ConsentBanner.jsx`, mounted from `pages/_app.js`, owns the UI: a GDS
+    `BannerNotice` (Accept/Decline) while undecided, and a persistent "Cookie
+    preferences" `Button` once decided, which reopens the same banner. SSR-safe —
+    renders `null` until a client-side mount effect has resolved the stored decision.
+  - Async loading (unchanged from the pre-#18 implementation) to prevent performance
+    impact once consent is granted.
+  - Configured with tracking ID G-HQ5QPLMJC1 (unchanged, still hardcoded — no new env
+    var introduced by this change).
+  - **Not** the issue's suggested `GdsSheet`/`GdsDrawer`: those are
+    `OverlayManagerProvider`-governed, focus-trapping surfaces — modal behavior the
+    issue explicitly disallows for this non-modal banner. See `LEARNINGS.md`'s "GDS
+    Component Selection" entry for the full verification trail.
 
 ## Authentication System (v1.7.0+ OAuth 2.0)
 
@@ -485,7 +505,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 2. **Admin Operations**: OAuth-authenticated users perform CRUD operations through protected API routes
 3. **Permission Enforcement**: API routes verify user permissions via `withOrgPermission` middleware
 4. **User Management**: Admins manage user access and roles, with optional SSO permission sync
-5. **Analytics Tracking**: All page views and interactions tracked via Google Analytics
+5. **Analytics Tracking**: Page views and interactions tracked via Google Analytics only after explicit user consent (v1.23.10+, issue #18) — see "Google Analytics (gtag.js) — Consent-Gated" above
 6. **Authentication**: OAuth 2.0 session validation with automatic user sync and audit logging
 7. **Organization Management**: Users create/edit organizations with custom backgrounds and member management
 
