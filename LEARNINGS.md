@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.21.0**
+**Version: 1.22.0**
 
 ## Frontend
 
@@ -173,7 +173,7 @@ as a deliberately temporary, clearly-labeled bridge (see `ARCHITECTURE.md`), not
 long-term dependency strategy -- and don't reach for it without confirming first, in an
 isolated location, that the source you're vendoring actually builds clean.
 
-### Checking a Major-Version Bump's Real Blast Radius Before Upgrading (v1.21.0, 2026-08-12T11:35:34.000Z)
+### Checking a Major-Version Bump's Real Blast Radius Before Upgrading (v1.22.0, 2026-08-12T11:35:34.000Z)
 **Issue**: `gds-v4.1.3` (vendored above) turned out to be four months stale by the time
 of the next check-in -- the source repo had moved through `4.1.5`...`4.1.11`, then two
 major bumps, `5.0.0` and `6.0.0`. A naive read ("two majors, could be anything") would
