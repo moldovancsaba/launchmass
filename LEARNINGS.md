@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.20.0**
+**Version: 1.21.0**
 
 ## Frontend
 
@@ -172,6 +172,24 @@ and every consuming repo needs to re-vendor by hand when the real thing ships. T
 as a deliberately temporary, clearly-labeled bridge (see `ARCHITECTURE.md`), not a
 long-term dependency strategy -- and don't reach for it without confirming first, in an
 isolated location, that the source you're vendoring actually builds clean.
+
+### Checking a Major-Version Bump's Real Blast Radius Before Upgrading (v1.21.0, 2026-08-12T11:35:34.000Z)
+**Issue**: `gds-v4.1.3` (vendored above) turned out to be four months stale by the time
+of the next check-in -- the source repo had moved through `4.1.5`...`4.1.11`, then two
+major bumps, `5.0.0` and `6.0.0`. A naive read ("two majors, could be anything") would
+justify treating the whole upgrade as high-risk and deferring it indefinitely.  
+**Solution**: cloned the source repo fresh and diffed `CHANGELOG.md`/
+`DEPRECATIONS_AND_MIGRATIONS.md` between the two tags directly, rather than guessing
+from the version numbers alone. The two majors turned out to document exactly two
+breaking changes total: a demo-only component's import path moving, and a brand-theme
+token rename for a theme this repo never uses. Grepping this repo's actual source
+(not build output) for both confirmed zero exposure before touching anything.  
+**Key Learning**: "major version bump" and "breaking change relevant to you" are not
+the same fact -- semver majors are conservative by design (any breaking change anywhere
+in the package forces one), so a major bump on a project you use narrowly can easily be
+a no-op for your actual usage. Read the real changelog/migration doc and grep your own
+source for the documented breaking surfaces before deciding an upgrade is risky; don't
+let the version number alone set the risk assessment.
 
 ## Security
 
