@@ -17,7 +17,7 @@ export default function AccessPending() {
   useEffect(() => {
     if (requested) {
       try {
-        setRequestedDate(new Date(requested));
+        setRequestedDate(new Date(String(requested)));
       } catch (e) {
         console.error('Invalid requested date:', e);
       }

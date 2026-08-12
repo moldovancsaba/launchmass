@@ -1,8 +1,65 @@
 # Task List - launchmass
 
-**Version: 1.23.8**
+**Version: 1.23.9**
 
 ## Completed Tasks
+
+### ✅ v1.23.9 — TOOLING: Introduce static type checking via JSDoc annotations + tsc --checkJs (Completed 2026-08-12T15:22:52.000Z, closes #16)
+- ✅ Added `jsconfig.json` (`checkJs: true`, `allowJs: true`, `noEmit: true`, `target:
+      ES2022`, `module: ESNext`, `moduleResolution: Bundler`) scoped to `lib/**/*.js` +
+      `pages/**/*.js`. Deviated from the issue's literal sketch in three ways, each
+      necessary for a clean `npm run typecheck` and documented in the PR: `"strict":
+      false` (the installed `typescript` devDependency defaults `strict` to `true`,
+      which is not what the issue's Non-Goals section wants — default strictness, not
+      full strict mode); `"jsx": "preserve"` (several `pages/**`/`components/**` `.jsx`
+      files use JSX and fail to parse without it); and an added `types/global.d.ts`
+      include entry (ambient `declare module '*.css'` for side-effect CSS imports, plus
+      a `/// <reference types="styled-jsx/global" />` for `<style jsx>` — this repo has
+      no generated `next-env.d.ts` to supply either).
+- ✅ Added `lib/types.js` — JSDoc `@typedef`s for `UserDoc`, `OrgDoc`, `CardDoc`,
+      `SessionPayload`, read from the actual current implementation (not the issue's
+      original sketch): `UserDoc.appRole` is `'none'|'user'|'admin'|'superadmin'` (the
+      sketch's 3-value set omitted `'superadmin'`, which `scripts/migrate-default-org.cjs`
+      genuinely sets) and `UserDoc.appStatus` includes `'error'` (set by
+      `pages/api/oauth/callback.js`'s fail-closed DB-error path) alongside the sketch's
+      `pending`/`active`/`suspended`. Documents the boundary-cast convention (cast the
+      MongoDB driver's untyped result once, at the read-path function, into the typed
+      shape — cast through `unknown` first if tsc rejects the single-step assertion).
+- ✅ Added `@param`/`@returns` JSDoc to every exported function in `lib/users.js`,
+      `lib/permissions.js`, `lib/ssoPermissions.mjs`, `lib/session.js`, `lib/org.js`,
+      `lib/db.js`, applying the boundary-cast convention at every driver read
+      (`getUsersCollection()`'s return, `getOrgBySlugCached`/`getOrgByUuid`'s
+      `findOne()`, `batchSyncToSSO`'s `.find().toArray()`).
+- ✅ Fixed genuine type errors the annotations surfaced, beyond just adding types:
+      `lib/permissions.js`'s `getPermissionMetrics()` had a real `string | number`
+      mismatch feeding `parseFloat()` (fallback `0` where `.toFixed()` returns a
+      string — changed to `'0.00'`/`'0.0'`, `parseFloat('0.00') === 0` so no behavior
+      change); `lib/analytics.js`'s `logEvent()` JSDoc claimed a fixed `{orgUuid,
+      userId, metadata}` shape but every real call site passes free-form extra fields
+      directly on the object (not nested under `metadata`) — loosened to
+      `Record<string, any>` to match actual usage rather than the stale doc.
+      `pages/api/oauth/callback.js`'s `userRole`/`permissionStatus` locals get narrow
+      `@type` annotations (not full route annotation, per the issue's `pages/**`
+      Non-Goal) so `signSession()`/`upsertUserFromSso()`'s new parameter types hold.
+- ✅ `tsc` (providing the `tsc` binary) and `@types/node` added as devDependencies only
+      (`package.json` `dependencies` unchanged); `"typecheck": "tsc -p jsconfig.json
+      --noEmit"` added to `package.json` scripts — the explicit `-p jsconfig.json` is
+      required because the `tsc` CLI does not auto-discover a config file named
+      `jsconfig.json` (only `tsconfig.json`), confirmed empirically. Wired into
+      `.githooks/pre-commit` and `.github/workflows/ci.yml` in the same position as
+      `lint` (after it, before `scan-secrets`), matching issue #15's precedent.
+- ✅ **Core acceptance criterion, actually executed, not just reasoned through:** ran
+      the issue's exact reproduction — `sed -i "s/appStatus/status/" lib/ssoPermissions.mjs`
+      (simulating the historical #12 bug) — and observed `npm run typecheck` fail
+      (exit 2) with `lib/ssoPermissions.mjs(377,16): error TS2339: Property 'status'
+      does not exist on type 'UserDoc'.` (and again at line 378), then reverted the
+      file and re-confirmed a clean `npm run typecheck` (exit 0). This is the
+      mechanism issue #16 exists to add — confirmed working, not assumed.
+- ✅ All five quality-gate commands (`verify-docs`, `lint`, `typecheck`, `scan-secrets`,
+      `build`) run clean against the final tree; `CLAUDE.md`/`AGENTS.md` §3 updated
+      (byte-identical, `diff` empty) to add `typecheck` to the documented chain and
+      Definition of Done; `WARP.md` documents the command and the JSDoc/boundary-cast
+      convention for future `lib/` code.
 
 ### ✅ v1.23.8 — TOOLING: Introduce ESLint baseline configuration and CI integration (Completed 2026-08-12T14:53:41.000Z, closes #15)
 - ✅ Added flat-config `eslint.config.mjs` (project's `package.json` has `"type": "module"`),

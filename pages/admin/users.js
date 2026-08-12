@@ -515,7 +515,10 @@ export async function getServerSideProps({ req }) {
       currentUser: {
         name: user?.name || '',
         email: user?.email || '',
-        ssoUserId: user?.id || user?.ssoUserId || '',
+        // WHAT: user is typed as UserDoc (see lib/types.js) as of issue #16, which has
+        // no `.id` field (only `.ssoUserId`) — the `user?.id` fallback predates that
+        // typing; kept as-is (behavior-preserving) via a type-only cast.
+        ssoUserId: /** @type {any} */ (user)?.id || user?.ssoUserId || '',
         appRole: user?.appRole || 'user',
       },
     },

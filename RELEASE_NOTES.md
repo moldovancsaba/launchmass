@@ -1,5 +1,88 @@
 # Release Notes - launchmass
 
+## [v1.23.9] — 2026-08-12T15:22:52.000Z
+
+### TOOLING: Introduce static type checking via JSDoc annotations + tsc --checkJs (Closes #16)
+
+This is the specific mechanism that would have caught #12 (the `appStatus`/`status`
+field-name mismatch) automatically, at commit time, without writing a single test —
+addressing the no-automated-tests constraint (`WARP.md`) with a compiler instead of a
+test runner. Adds compile-time type checking via JSDoc annotations and `tsc --checkJs`,
+without migrating any file to TypeScript syntax.
+
+**Added:**
+- `jsconfig.json` — `checkJs`/`allowJs`/`noEmit` on, `target: ES2022`, `module:
+  ESNext`, `moduleResolution: Bundler`, scoped to `lib/**/*.js` + `pages/**/*.js` (plus
+  an added `types/global.d.ts` ambient-declarations entry — see Known Deviations).
+- `lib/types.js` — shared JSDoc `@typedef`s: `UserDoc`, `OrgDoc`, `CardDoc`,
+  `SessionPayload`, read from the current implementation rather than assumed. Also
+  documents the "boundary-cast convention" (single-point JSDoc type assertion where a
+  MongoDB driver read crosses into typed application code — otherwise type information
+  is lost at every DB read, per the issue's Edge Cases).
+- `@param`/`@returns` JSDoc on every exported function in `lib/users.js`,
+  `lib/permissions.js`, `lib/ssoPermissions.mjs`, `lib/session.js`, `lib/org.js`,
+  `lib/db.js`, referencing `lib/types.js`'s typedefs.
+- `typescript` (providing `tsc`) and `@types/node` as devDependencies only (zero
+  runtime/`dependencies` impact); `"typecheck": "tsc -p jsconfig.json --noEmit"` in
+  `package.json`, wired into `.githooks/pre-commit` and `.github/workflows/ci.yml`
+  alongside `lint`.
+
+**Fixed** (genuine type errors the new annotations surfaced, not just type additions):
+- `lib/permissions.js`'s `getPermissionMetrics()`: a `string | number` mismatch feeding
+  `parseFloat()` (a bare `0` fallback where the true branch returns a `.toFixed()`
+  string) — corrected to a string fallback; `parseFloat('0.00') === 0`, so this is not
+  a behavior change, only a type-correctness fix.
+- `lib/analytics.js`'s `logEvent()` JSDoc claimed a fixed `{orgUuid, userId, metadata}`
+  parameter shape that contradicted every real call site (which pass free-form extra
+  fields — `cardId`, `action`, etc. — directly on the object, not nested under
+  `metadata`) — loosened to match actual usage.
+- `lib/users.js`'s `recordAuthEvent()` JSDoc said `event.ssoUserId`/`event.email` were
+  `string` while its own doc comment said "(null if unavailable)" — corrected to
+  `string | null`, matching real call sites in `lib/auth-oauth.js`.
+- `lib/auth-oauth.js` (not one of the six annotated modules, but a caller of them) had
+  several pre-existing `@param {Object}` annotations too loose to survive `checkJs`
+  once its callees were properly typed — given minimal, targeted fixes (not full
+  annotation), per the issue's `pages/**`-caller carve-out extended here since the
+  failures were structurally identical.
+
+**Known deviations from the issue's literal `jsconfig.json` sketch** (all necessary for
+a clean `npm run typecheck`, none affecting runtime behavior):
+- `"strict": false` added explicitly — the installed `typescript` version defaults
+  `strict` to `true`, which is not this issue's intent (Non-Goals: default strictness,
+  not full strict mode).
+- `"jsx": "preserve"` added — several `.jsx`/`.js` files under `pages/**`/`components/**`
+  use JSX and fail to parse without it (this repo has never had a TS/JS config before).
+- `types/global.d.ts` added to `include` — ambient `declare module '*.css'` (side-effect
+  CSS imports) and a `styled-jsx/global` reference (`<style jsx>` prop typing); both are
+  normally supplied by Next.js's auto-generated `next-env.d.ts`, which this repo has
+  never had.
+- The `"typecheck"` script is `tsc -p jsconfig.json --noEmit`, not the issue's literal
+  `tsc --noEmit` — the `tsc` CLI does not auto-discover a config file named
+  `jsconfig.json` (confirmed empirically: a bare `tsc --noEmit` with only a
+  `jsconfig.json` present prints tsc's help text, not a type-check), only
+  `tsconfig.json`, so the explicit `-p` flag is required for the script to do anything.
+
+**Manual Verification — the #12 reproduction, actually run:**
+```bash
+npm run typecheck                                          # exit 0
+sed -i "s/appStatus/status/" lib/ssoPermissions.mjs         # simulate the #12 bug
+npm run typecheck                                           # exit 2:
+#   lib/ssoPermissions.mjs(377,16): error TS2339: Property 'status' does not exist on type 'UserDoc'.
+#   lib/ssoPermissions.mjs(378,16): error TS2339: Property 'status' does not exist on type 'UserDoc'.
+git checkout -- lib/ssoPermissions.mjs                       # revert (via a manual
+#   backup diff in practice, to avoid discarding this change set's own uncommitted
+#   annotations to the same file — see LEARNINGS.md)
+npm run typecheck                                           # exit 0 again
+```
+All five quality-gate commands (`verify-docs`, `lint`, `typecheck`, `scan-secrets`,
+`build`) also run clean against the final tree.
+
+**Known limitation** (matches the issue's own Non-Goal): `pages/**` route handlers are
+not deliberately annotated with `@param`/`@returns` in this release — only the six
+`lib/` modules above are. `checkJs` still runs against `pages/**/*.js` for
+cross-boundary error catching (and did surface a handful of genuine mismatches, listed
+under Fixed above), but full annotation of route handlers is left to a future issue.
+
 ## [v1.23.8] — 2026-08-12T14:53:41.000Z
 
 ### TOOLING: Introduce ESLint baseline configuration and CI integration (Closes #15)
