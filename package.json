@@ -1,6 +1,6 @@
 {
   "name": "launchmass",
-  "version": "1.23.7",
+  "version": "1.23.8",
   "description": "",
   "main": "index.js",
   "directories": {
@@ -13,6 +13,7 @@
     "start": "next start",
     "bump-version": "bash scripts/bump-version.sh",
     "verify-docs": "node scripts/verify-docs-consistency.js",
+    "lint": "next lint --dir pages --dir lib --dir components --dir scripts",
     "scan-secrets": "node scripts/scan-secrets.mjs",
     "install-hooks": "sh scripts/install-hooks.sh",
     "prepare": "sh scripts/install-hooks.sh || true"
@@ -42,5 +43,11 @@
     "next": "^15.5.9",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.23",
+    "globals": "^17.11.0"
   }
 }

@@ -1,8 +1,65 @@
 # Task List - launchmass
 
-**Version: 1.23.7**
+**Version: 1.23.8**
 
 ## Completed Tasks
+
+### ✅ v1.23.8 — TOOLING: Introduce ESLint baseline configuration and CI integration (Completed 2026-08-12T14:53:41.000Z, closes #15)
+- ✅ Added flat-config `eslint.config.mjs` (project's `package.json` has `"type": "module"`),
+      built on `eslint-config-next`'s `next/core-web-vitals` (via `FlatCompat`, since
+      `eslint-config-next` still ships legacy-style shareable configs) plus the
+      project-specific rules: `no-unused-vars: error`, `no-console: [warn, {allow:
+      ['error','warn']}]`, `no-undef: error`, `eqeqeq: [error, smart]`.
+- ✅ `pages/`, `lib/`, `components/` get both browser and Node globals (client components
+      run in the browser; `pages/api/*` and the `lib/*` that backs them run under Node on
+      the server). `scripts/**` gets only Node globals — no browser globals apply to pure
+      CLI scripts — and `scripts/**/*.cjs` additionally gets `sourceType: 'script'` so
+      `require`/`module`/`exports`/`__dirname` resolve as CommonJS globals instead of
+      false-positive `no-undef` errors (ESLint 9's flat-config parser rejects a bare
+      `sourceType: 'commonjs'` — the accepted values are `module`/`script`/`unambiguous`).
+- ✅ `next lint`'s default directory scan (`src`, `app`, `pages`, `components`, `lib`) does
+      **not** include `scripts/` — confirmed empirically (a first run silently skipped it).
+      `"lint"` in `package.json` therefore passes `--dir pages --dir lib --dir components
+      --dir scripts` explicitly so the issue's required scope is actually covered.
+- ✅ Triaged all 32 error-level violations surfaced by the first real run against the
+      post-#14 tree (432 warnings, all `no-console`, left as warnings per the issue's own
+      design — see Known Limitations below) and fixed every one at the source, no
+      `eslint-disable` suppressions:
+      - 19 genuine unused imports/vars/functions (dead code — e.g. `pages/admin/index.js`'s
+        `createOrganization`/`orgForm` state, an org-creation feature with no UI wired to
+        it at all, and a duplicate `handleLogout` that `components/Header.jsx`'s global
+        header already superseded; `pages/api/organizations/index.js`'s unused
+        `ensureOrgContext`/`getOrgContext` imports; several swallowed `catch (err)` blocks
+        converted to bindingless `catch {}` where the error was never inspected).
+      - 10 `@next/next/no-html-link-for-pages` (plain `<a href="/...">` for in-app routes
+        in `pages/index.js`, `pages/organization/[slug]/admin.js`, and
+        `components/Header.jsx`) — converted to `next/link`'s `<Link>`.
+      - 2 destructure-to-omit-a-field patterns (`pages/api/organization/[slug].js`,
+        `pages/index.js`, `pages/organization/[slug].js`) where the omitted field
+        (`isActive`, `_id`) was bound but never read — reworked to `delete rest.<field>`
+        instead of binding an unused name.
+      - 1 `react/no-unescaped-entities` (a literal apostrophe in `pages/access-pending.js`).
+- ✅ Wired into `.githooks/pre-commit` (after `verify-docs`, before `scan-secrets`, matching
+      the issue's Architecture diagram) and `.github/workflows/ci.yml` (after `verify-docs`,
+      before `scan-secrets`/`build`).
+- ✅ Actually ran the synthetic pre-commit-block test end-to-end (not just wrote the hook):
+      appended an obviously-unused `const unusedLintTestVar = 12345;` to `lib/db.js`,
+      staged it, attempted a commit — the pre-commit hook printed the exact
+      `'unusedLintTestVar' is assigned a value but never used  no-unused-vars` ESLint
+      error and exited non-zero, blocking the commit (`git log` confirmed no commit landed);
+      reverted the test change with `git restore --staged --worktree lib/db.js` before the
+      real commit.
+- ✅ `CLAUDE.md`/`AGENTS.md` §3's quality-gate chain and Definition of Done updated to add
+      `npm run lint` (removing the "not present yet" language), kept byte-identical per
+      their own §8 sync rule. `WARP.md`'s development-commands section documents
+      `npm run lint`. `ARCHITECTURE.md` gained a short "lint as the test substitute"
+      rationale note.
+- Known Limitation carried over from the issue: `no-console` stays `warn`, not `error` —
+      432 warnings remain across the tree (overwhelmingly legitimate server-side
+      `console.error`/diagnostic logging in `scripts/*` migration/maintenance tooling and
+      `lib/analytics.js`/`lib/org.js`/`lib/ssoPermissions.mjs`), consistent with the issue's
+      own Non-Goal ("zero warnings on day one"); a full audit to promote it to `error` is
+      explicitly deferred to a future issue.
 
 ### ✅ v1.23.7 — REFACTOR: Extract shared card/organization normalization helpers into a single module (Completed 2026-08-12T14:30:56.000Z, closes #14)
 - ✅ New `lib/shared.js` exports `DEFAULT_BG`, `normalizeBg`, `normalizeTags`, `toClient` —

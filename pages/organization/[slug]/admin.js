@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { getOrgBySlugCached, getOrgByUuid } from '../../../lib/org.js';
 
 // /organization/[id]/admin — Organization-scoped admin UI
@@ -24,15 +25,15 @@ export default function OrgAdminPage({ org }) {
         <span style={{ fontWeight: 600 }}>Organization Admin:</span>
         <span>{org?.name || 'Unknown'}</span>
         <span style={{ opacity: 0.7, fontSize: 12 }}>({org?.slug || org?.uuid})</span>
-        <a
+        <Link
           href={`/organization/${encodeURIComponent(org.uuid)}`}
           className="tag-chip"
           style={{ marginLeft: 'auto' }}
         >
           ← Back to org
-        </a>
+        </Link>
       </div>
-      <p style={{ opacity: 0.75 }}>Redirecting to admin… If not redirected, <a href="/admin">open admin</a>.</p>
+      <p style={{ opacity: 0.75 }}>Redirecting to admin… If not redirected, <Link href="/admin">open admin</Link>.</p>
     </main>
   );
 }

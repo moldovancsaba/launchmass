@@ -51,7 +51,7 @@ async function migrate() {
     try {
       existingMemberCount = await orgMembersCol.countDocuments({});
       console.log(`ℹ️  Collection exists with ${existingMemberCount} documents`);
-    } catch (err) {
+    } catch {
       // Functional: Collection doesn't exist yet, that's okay
       // Strategic: MongoDB creates collections on first insert, but we create it explicitly for indexes
       console.log('ℹ️  Collection doesn\'t exist yet, will be created');
@@ -62,7 +62,7 @@ async function migrate() {
     let existingIndexes = [];
     try {
       existingIndexes = await orgMembersCol.indexes();
-    } catch (err) {
+    } catch {
       // Collection doesn't exist yet, no indexes
       existingIndexes = [];
     }

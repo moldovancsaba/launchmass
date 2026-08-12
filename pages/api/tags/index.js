@@ -20,6 +20,7 @@ export default async function handler(req, res) {
     const safe = (Array.isArray(tags) ? tags : []).filter(t => typeof t === 'string' && t.trim() !== '');
     return res.status(200).json(safe);
   } catch (e) {
+    console.error('[tags] distinct query failed:', e.message);
     return res.status(200).json([]);
   }
 }

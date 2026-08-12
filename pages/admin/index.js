@@ -96,7 +96,7 @@ function TagInput({ value = [], options = [], onChange }) {
   );
 }
 
-function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange, sortable, tagOptions }) {
+function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange, tagOptions }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: item._id });
   const style = { transform: CSS.Transform.toString(transform), transition };
   const bg = item.background || DEFAULT_BG;
@@ -217,7 +217,7 @@ export default dynamic(() => Promise.resolve(AdminPageInner), { ssr: false });
 
 // Functional: Admin interface component with cookie-based SSO authentication
 // Strategic: Receives authenticated user from SSR guard; no OAuth token management needed
-function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', forcedOrgSlug = '' }) {
+function AdminPageInner({ forcedOrgUuid = '' }) {
   const [items, setItems] = useState([]);
   const [editingId, setEditingId] = useState('');
   const [status, setStatus] = useState('');
@@ -226,8 +226,6 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
   // Strategic: Mirrors narimato header-based org context; keeps UI simple with a dropdown selector.
   const [orgs, setOrgs] = useState([]);
   const [selectedOrgUuid, setSelectedOrgUuid] = useState('');
-  // Minimal Organizations management inline: allow creating orgs directly from Admin.
-  const [orgForm, setOrgForm] = useState({ name: '', slug: '', description: '' });
 
   // Functional: Fetch organizations using SSO session (cookies sent automatically)
   // Strategic: No Authorization header needed - withSsoAuth middleware validates session
@@ -417,36 +415,6 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
   }
 
 
-  // Create a new organization from Admin UI
-  async function createOrganization(e) {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/organizations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          name: String(orgForm.name || '').trim(),
-          slug: String(orgForm.slug || '').trim().toLowerCase(),
-          description: String(orgForm.description || '')
-        })
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      // Refresh org list and clear form
-      await fetchOrgs();
-      setOrgForm({ name: '', slug: '', description: '' });
-      // Auto-select the newly created org if not forced by route
-      if (!forcedOrgUuid && data?.organization?.uuid) {
-        setSelectedOrgUuid(data.organization.uuid);
-        localStorage.setItem('admin.selectedOrgUuid', data.organization.uuid);
-      }
-      setStatus('Organization created'); setTimeout(() => setStatus(''), 1200);
-    } catch (e) {
-      setStatus('Create organization failed'); setTimeout(() => setStatus(''), 1500);
-    }
-  }
-
   function onChangeOrg(e) {
     if (forcedOrgUuid) return; // locked by route
     const v = e.target.value;
@@ -455,34 +423,9 @@ function AdminPageInner({ user = {}, forcedOrgUuid = '', forcedOrgName = '', for
     setStatus('Organization selected'); setTimeout(() => setStatus(''), 1000);
   }
 
-  // Functional: Logout handler - clears local session then SSO session
-  // Strategic: Two-phase logout ensures both Launchmass and SSO sessions are cleared
-  async function handleLogout() {
-    try {
-      // WHAT: Call Launchmass logout API to clear local session
-      // WHY: Must clear both Launchmass AND SSO sessions
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      const data = await response.json();
-      
-      // WHAT: Redirect to SSO logout which will redirect back
-      // WHY: Complete the full logout flow
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-      } else {
-        window.location.href = '/';
-      }
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // Fallback: direct redirect to SSO logout
-      const ssoUrl = 'https://sso.doneisbetter.com';
-      const returnUrl = encodeURIComponent(window.location.origin);
-      window.location.href = `${ssoUrl}/api/oauth/logout?post_logout_redirect_uri=${returnUrl}`;
-    }
-  }
+  // Note: logout is handled globally by <Header/> (rendered below), which owns the
+  // same two-phase (local session + SSO) logout flow — this page no longer needs its
+  // own copy.
 
   // WHAT: Get current organization name for header title
   // WHY: Show which organization is being managed in the header
