@@ -4,9 +4,17 @@
 
 ![Version](https://img.shields.io/badge/version-1.23.13-blue)
 
-Mobile-first grid of oversized buttons with a simple JSON-driven admin page. Features consent-gated Google Analytics tracking and centralized SSO authentication.
+launchmass is a multi-tenant, mobile-first card-grid platform: each organization gets
+its own public grid of oversized launcher cards (with tags, backgrounds, and custom
+branding) plus an OAuth-authenticated admin panel for managing them, gated by an
+organization-scoped role/permission system. The UI runs on a SEYU brand identity
+(design tokens in `styles/globals.css`) with an incremental migration onto the
+Sovereign Squad General Design System (GDS) for new components. Admin access is
+SSO-only (`sso.doneisbetter.com`), and Google Analytics tracking only loads after
+explicit visitor consent.
 
-Note: The global bottom info bar is automatically suppressed on admin routes (/admin) to keep the admin UI uncluttered.
+Note: The global bottom info bar is automatically suppressed on admin routes (`/admin`)
+to keep the admin UI uncluttered.
 
 ## Quick Start
 
@@ -24,94 +32,183 @@ npm run build
 npm run start
 ```
 
+Admin routes (`/admin`, `/settings`, `/organization/[slug]/admin`) require a live OAuth
+session and only work on `*.doneisbetter.com` hosts — see [Authentication](#authentication)
+below. Public pages (`/`, `/organization/[slug]`) run fine on `localhost`.
+
+## Core Concepts
+
+### Organizations
+
+launchmass is multi-tenant: every card belongs to exactly one organization
+(`orgUuid`), and every request that touches cards must resolve an organization
+context via the `X-Organization-UUID` header (preferred) or `?orgUuid=`/slug fallback
+(`lib/org.js`). Each organization has its own slug, display name, description, and a
+custom background (solid color or CSS gradient) used to theme its public grid.
+
+- Public grid: `GET /organization/[slug]` — optional `?tag=` filter.
+- Org-scoped admin: `GET /organization/[uuid]/admin` — a path-based alias into the
+  admin panel, pre-selecting that organization.
+- Organization CRUD (create/edit/delete/set-default) lives at `/settings`.
+
+### Roles & Permissions
+
+Authorization is organization-scoped and separate from authentication: having a valid
+SSO login (`withSsoAuth`) proves *who* you are, not what you're allowed to do in a
+given organization. Every mutating API route that acts on an organization is gated by
+`lib/permissions.js`'s `hasOrgPermission`, composed via `withOrgPermission` in
+`lib/auth-oauth.js`.
+
+- **System roles** — `admin` and `user` — are hardcoded in `lib/permissions.js` for
+  fast, DB-free lookups. `admin` has full org, card, member, role, and tag
+  permissions; `user` has read/write access to cards but not org, member, or role
+  administration.
+- **Permission matrix** — 18 granular permissions across five resources: `org.*`
+  (read/write/delete), `cards.*` (read/create/update/delete/reorder), `members.*`
+  (read/invite/remove/edit_roles), `roles.*` (read/write), `tags.*` (read/write).
+- **Custom roles** — the `organizationRoles` collection and `getOrgRole()` can load
+  per-organization custom roles with an arbitrary permission subset, cached with a
+  5-minute TTL. This data-layer support has shipped since v1.18.0; a dedicated role-
+  management UI (`/settings/roles`) is still a planned Phase 2 item — see
+  `PERMISSIONS_DESIGN.md`.
+- **Super admin** — `isSuperAdmin(user)` bypasses all organization-level checks
+  entirely. Separate from the app-level `admin`/`superadmin` `appRole` used to gate
+  the app-wide `/admin/users` panel (`isAppAdmin()` checks either).
+- A denied permission check returns `403` with the specific permission that was
+  missing; a request with no resolvable organization context returns `400`.
+
+### Cards
+
+A card is the unit of content shown on an organization's grid: a label, a link, an
+optional background and tag list, and a manual sort order. Card CRUD and reordering
+are all organization-scoped and permission-gated:
+
+- `GET /api/cards` — public once an organization context is resolved (no session
+  required); `400` without one.
+- `POST /api/cards` — requires `cards.create` in the target org.
+- `PATCH` / `DELETE /api/cards/[id]` — require `cards.update` / `cards.delete`.
+- `POST /api/cards/reorder` — requires `cards.reorder` (admin-only in the system role
+  matrix).
+
+The admin panel (`/admin`) manages cards for whichever organization is selected in its
+org switcher, with drag-and-drop reordering, inline editing, tag autocomplete, and a
+structured background editor (solid color or multi-stop gradient, with a raw-CSS
+fallback mode) — see `ARCHITECTURE.md`'s "Structured Background Editor" section for
+the full mode-detection and validation behavior.
+
 ## Authentication
 
-### OAuth 2.0 Integration (v1.7.0+)
+### OAuth 2.0 / SSO (v1.7.0+)
 
-**Admin access requires OAuth 2.0 authentication via sso.doneisbetter.com**
+**Admin access requires OAuth 2.0 authentication via `sso.doneisbetter.com`.**
 
-**Critical:** Admin features ONLY work on **launchmass.doneisbetter.com** (production) due to OAuth cookie domain requirements. Localhost admin access is NOT possible.
+**Critical:** Admin features only work on `*.doneisbetter.com` hosts (production:
+`launchmass.doneisbetter.com`) — SSO sets its session cookie scoped to
+`.doneisbetter.com` by default, and browsers won't send it to `localhost`. Localhost
+admin access is not possible; public pages are unaffected.
 
-**Authentication Flow:**
-1. Visit `https://launchmass.doneisbetter.com/admin`
-2. Redirected to OAuth authorization at sso.doneisbetter.com
-3. Sign in with SSO credentials (email + token or password)
-4. OAuth callback exchanges authorization code for tokens
-5. Tokens stored in HttpOnly session cookie
-6. User auto-synced to MongoDB with role/permissions
-7. Redirected back to admin interface
+**Authentication flow** (`lib/auth-oauth.js`):
+1. Visit an admin route (e.g. `/admin`) without a valid session.
+2. Server-side (`getServerSideProps`) calls `validateSsoSession(req)`, which finds no
+   `sso_session` cookie (or an invalid/expired/tampered one) and redirects to SSO's
+   authorization endpoint.
+3. Sign in at SSO; SSO redirects back to `/api/oauth/callback` with an authorization
+   code, which is exchanged for tokens.
+4. The tokens and a snapshot of the user's app role/status are stored in an
+   **HMAC-signed** `sso_session` cookie (`lib/session.js`; verified, not merely
+   base64-decoded, on every read — a forged or tampered cookie is rejected).
+5. The user is synced into MongoDB's `users` collection (`upsertUserFromSso`).
+6. On every subsequent request, `validateSsoSession` re-reads `appRole`/`hasAccess`/
+   `appStatus` from MongoDB — **not** from the cookie's copies — so an admin-side
+   access revocation takes effect on the user's very next request regardless of what
+   the still-validly-signed cookie says.
 
-**Features:**
-- OAuth 2.0 Authorization Code flow with OpenID Connect
-- HttpOnly cookies with 24-hour expiration
-- Server-side session validation (SSR)
-- Client-side session monitoring (5-minute intervals)
-- Automatic re-authentication on expiration
-- User management with role-based access control
-- SSO permission synchronization (v1.13.0)
-- Comprehensive audit logging
+**Authorization layering:**
+- `withSsoAuth` — proves a valid, non-revoked session exists. Used alone only for
+  routes that don't act on a specific organization.
+- `requireAdminRole` — composes with `withSsoAuth` to additionally require
+  `isAppAdmin(req.user)` (app-level `admin`/`superadmin` role, or the `isSuperAdmin`
+  flag). Gates `/admin/users` and its API routes.
+- `withOrgPermission(permission, handler)` — composes authentication with an
+  organization-scoped permission check (see [Roles & Permissions](#roles--permissions)
+  above). This is the only correct way to gate a mutating route that acts on an
+  organization; `withSsoAuth` alone is not sufficient.
 
-**For Development/Testing:**
-- Use Vercel preview deployments with *.doneisbetter.com subdomain
-- Public pages work on localhost (non-admin routes)
+**Other features:**
+- Client-side session monitoring every 5 minutes, with automatic redirect to SSO login
+  on expiration.
+- Comprehensive audit logging (`authLogs` collection) of every auth attempt.
+- SSO permission synchronization — an admin can batch-push local role state to the
+  central SSO system (`lib/ssoPermissions.js`, `/admin/users`' "Batch sync" action).
 
-**See AUTH_CURRENT.md for complete authentication documentation.**
+**For development/testing:** use a Vercel preview deployment on a `*.doneisbetter.com`
+subdomain, or work against public (non-admin) routes on `localhost`.
 
-## Key Features
+**See [AUTH_CURRENT.md](AUTH_CURRENT.md) for the complete, authoritative authentication
+reference** (session internals, cookie domain handling, revocation semantics).
 
-### Organizations (v1.3.1+)
-- Multi-tenant architecture with organization-scoped data
-- Organization context via X-Organization-UUID header or query parameter
-- Public route: `/organization/[slug]` with optional `?tag=` filtering
-- Optional path-based admin: `/organization/[id]/admin` for org-scoped management
-- Custom backgrounds per organization (v1.12.0)
-- Organization management in `/settings` page
+## Admin Workflow
 
-### User Management (v1.7.0+)
-- Admin interface at `/admin/users` for access control
-- Role-based permissions (user/admin)
-- Organization membership management
-- SSO permission synchronization (v1.13.0)
-- User status workflows (active/pending/suspended)
-- Comprehensive audit logging
+1. **Sign in** — visit `/admin` (or any admin route); an unauthenticated visit
+   redirects through SSO and back.
+2. **Create an organization** — `/settings` → the Organizations form (name, slug,
+   description, background, optional "use slug as public URL"). The creator becomes
+   that organization's first member.
+3. **Manage cards** — `/admin`, using the organization switcher to pick which org
+   you're editing (or land directly on one via `/organization/[uuid]/admin`). Add,
+   edit, reorder (drag-and-drop), tag, and set backgrounds for cards; changes are
+   permission-checked per the matrix above.
+4. **Manage organization membership** — org membership records live in the
+   `organizationMembers` collection and are managed via
+   `/api/organizations/[uuid]/members` (list/invite/remove/change role); there is no
+   dedicated membership-management page yet, only the API and the read-only role badge
+   shown per organization on `/settings`.
+5. **Manage app-level users and access** — `/admin/users` (app admins/superadmins
+   only): approve or deny pending sign-ups, grant/revoke access, change a user's
+   app-wide role (`user`/`admin`), and batch-sync permissions to SSO.
 
-### Admin Interface (v1.7.0+)
-- OAuth 2.0 authenticated admin panel
-- Drag-and-drop card reordering
-- Inline card editing
-- Organization selector
-- Tag management with autocomplete
-- Hamburger menu navigation (v1.11.0)
-- Mobile-responsive design
+## Environment Variables
 
-### Guided Tour (v1.19.0)
-- Spotlight-and-tooltip walkthrough of the hamburger menu, reachable via "❓ Guided tour"
-- Steps adapt to auth state: Home always shown, Admin/Organizations/Manage Users once signed in, Login when not
-- Same tour engine (`lib/tour/*`, `components/tour/TourOverlay.jsx`) as camera, messmass, and fanmass, built on `@sovereignsquad/gds-core`'s `OverlayManagerProvider`
-- "Seen" state persisted in `localStorage`, replay anytime from the same menu item
+Copy [`.env.example`](.env.example) to `.env.local` and fill in real values — it is the
+authoritative, up-to-date list (database connection, OAuth client credentials, session
+signing secret, optional debug flags) with inline comments for every variable. Don't
+duplicate that list here; see also `ARCHITECTURE.md`'s "Environment Configuration"
+section for how each variable is used at runtime, and `AUTH_CURRENT.md` for the
+auth-specific ones.
 
-### Tag Chips (v1.20.0, GDS pilot; bumped to 6.0.0 in v1.22.0)
-- Card tag pills (`components/OversizedLink.jsx`) and the active-filter bar (`pages/index.js`) now render via `@sovereignsquad/gds-core`'s `ChoiceChip`, replacing the legacy `.tag-chip` CSS class on those two surfaces
-- `@sovereignsquad/gds-core`/`gds-theme` are vendored at `6.0.0` (`vendor/gds/*.tgz`, `file:` dependency) — the only version ever published anywhere is `3.9.0`, so this is a self-built pilot, not a registry install; see `LEARNINGS.md`
+## Also in this codebase
 
-### Consent-Gated Analytics (v1.23.10)
-- Google Analytics (`gtag.js`) no longer loads unconditionally. On first visit a GDS `BannerNotice` banner (`components/ConsentBanner.jsx`) asks for Accept/Decline; `gtag.js` only loads after Accept, and the decision is remembered (`localStorage`, key `seyu-analytics-consent`) so the banner does not reappear on later visits
-- A small persistent "Cookie preferences" control stays visible once a decision has been made, reopening the same banner to change it at any time
-- No content related to the decision is ever server-rendered (avoids a hydration mismatch); a storage read/write failure (private browsing, quota exceeded) is treated as "undecided," not a crash
-- See `RELEASE_NOTES.md`'s `v1.23.10` entry for the full design/verification notes and the GDS component choice rationale
+A few things worth knowing exist, even though they're not this README's focus (see the
+docs below for detail):
+
+- **Guided tour** (`lib/tour/*`, `components/tour/TourOverlay.jsx`) — an optional
+  spotlight walkthrough of the hamburger menu, manually triggered, "seen" state
+  persisted in `localStorage`.
+- **GDS component adoption** — select UI surfaces (tag chips, the structured
+  background editor, empty/error states, the analytics consent banner) are built on
+  `@sovereignsquad/gds-core`/`gds-theme`, vendored at `6.0.0` (`vendor/gds/*.tgz`); the
+  rest of the UI remains Material-UI/plain SEYU CSS.
+- **Consent-gated Google Analytics** — `gtag.js` only loads after a visitor accepts a
+  cookie-consent banner; the decision is remembered in `localStorage` and can be
+  changed anytime via a persistent "Cookie preferences" control.
+- **Static analysis as the test substitute** — automated tests are deliberately not
+  used in this repo (see `WARP.md`); ESLint and `tsc --checkJs` (over JSDoc-typed
+  `lib/`/`pages/` code) are the standing quality gate instead, alongside a
+  secret-scanning guard (`npm run scan-secrets`) on staged/tracked files.
 
 ## Documentation
 
 ### Essential Guides
 - [AUTH_CURRENT.md](AUTH_CURRENT.md) - **OAuth 2.0 authentication guide** (authoritative)
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and components (v1.23.2)
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and components
+- [PERMISSIONS_DESIGN.md](PERMISSIONS_DESIGN.md) - Custom role system design (Phase 2: Q2 2026)
 - [TASKLIST.md](TASKLIST.md) - Active tasks and completed work
-- [ROADMAP.md](ROADMAP.md) - 2026 development plans
-- [RELEASE_NOTES.md](RELEASE_NOTES.md) - Version history v1.0.1-v1.23.2
+- [ROADMAP.md](ROADMAP.md) - Development plans
+- [RELEASE_NOTES.md](RELEASE_NOTES.md) - Version history
 - [LEARNINGS.md](LEARNINGS.md) - Development insights and patterns
-- [PERMISSIONS_DESIGN.md](PERMISSIONS_DESIGN.md) - Custom role system design (Q2 2026)
 
 ### Development Resources
-- [WARP.md](WARP.md) - AI agent development guidance and project rules
+- [WARP.md](WARP.md) - Dev commands and project rules
+- [CLAUDE.md](CLAUDE.md) / [AGENTS.md](AGENTS.md) - Standing operating rules for AI coding agents in this repo
 - [WARP.DEV_AI_CONVERSATION.md](WARP.DEV_AI_CONVERSATION.md) - Timestamped planning log
-- [docs/archive/](docs/archive/) - Historical documentation (v1.5.0-v1.6.0 auth)
+- [docs/archive/](docs/archive/) - Historical documentation
