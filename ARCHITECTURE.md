@@ -195,7 +195,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
 - **`@sovereignsquad/gds-theme/styles.css`** is now imported in `pages/_app.js`
   (previously only `@mantine/core/styles.css` was, sufficient for the tour's plain
   Mantine primitives but not for `ChoiceChip`'s `--gds-*` token references).
-- **Bumped to `6.0.0` (v1.23.0)**: the source repo's tags moved past `4.1.3` --
+- **Bumped to `6.0.0` (v1.22.0)**: the source repo's tags moved past `4.1.3` --
   `4.1.5`...`4.1.11`, then major bumps `5.0.0` and `6.0.0` -- while the published
   registry version is still `3.9.0`. Checked the upstream `CHANGELOG.md`/
   `DEPRECATIONS_AND_MIGRATIONS.md` before upgrading: exactly two breaking changes
@@ -478,6 +478,12 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
   user pending explicit admin approval). Never consulted when SSO already has a
   permission record, or when a local `users` document already exists — see `WARP.md`'s
   Authentication Pattern section for the full precedence order. Never grants admin.
+- **SESSION_COOKIE_DOMAIN** (optional, v1.23.0+): `Domain=` scope for the `sso_session`
+  cookie. Defaults to `.doneisbetter.com`, matching production today. Only relevant if
+  migrating to a different apex domain — see #46.
+- **APP_BASE_URL** (optional, v1.23.0+): base origin for the post-logout SSO redirect.
+  Defaults to `https://launchmass.doneisbetter.com`. Keep in sync with
+  `SESSION_COOKIE_DOMAIN`/`SSO_REDIRECT_URI` during a domain migration.
 
 **Legacy (Deprecated in v1.7.0):**
 - ~~**SSO_COOKIE_DOMAIN**: Cookie domain for SSO~~ (v1.5.0 cookie-forwarding approach)

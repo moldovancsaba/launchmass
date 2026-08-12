@@ -90,7 +90,7 @@ npm run start
 - Same tour engine (`lib/tour/*`, `components/tour/TourOverlay.jsx`) as camera, messmass, and fanmass, built on `@sovereignsquad/gds-core`'s `OverlayManagerProvider`
 - "Seen" state persisted in `localStorage`, replay anytime from the same menu item
 
-### Tag Chips (v1.20.0, GDS pilot; bumped to 6.0.0 in v1.23.0)
+### Tag Chips (v1.20.0, GDS pilot; bumped to 6.0.0 in v1.22.0)
 - Card tag pills (`components/OversizedLink.jsx`) and the active-filter bar (`pages/index.js`) now render via `@sovereignsquad/gds-core`'s `ChoiceChip`, replacing the legacy `.tag-chip` CSS class on those two surfaces
 - `@sovereignsquad/gds-core`/`gds-theme` are vendored at `6.0.0` (`vendor/gds/*.tgz`, `file:` dependency) — the only version ever published anywhere is `3.9.0`, so this is a self-built pilot, not a registry install; see `LEARNINGS.md`
 
