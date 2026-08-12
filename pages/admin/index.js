@@ -7,19 +7,14 @@ import Header from '../../components/Header';
 // Functional: Import OAuth-based SSO authentication utilities
 // Strategic: Migrated from legacy cookie-forwarding (lib/auth.js) to OAuth 2.0 flow (lib/auth-oauth.js)
 import { validateSsoSession, getOAuthLoginUrl } from '../../lib/auth-oauth.js';
+import { DEFAULT_BG, normalizeBg } from '../../lib/shared.js';
 // Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
 // We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
-const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
-
-function normalizeBg(input) {
-  const lines = String(input || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
-  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
-  const pick = (linear || color || input || '').replace(/^background:\s*/,'').replace(/;$/,'');
-  return pick || DEFAULT_BG;
-}
-
+// Functional: Tag normalization stays a local, browser-only copy here (deliberate, issue #14
+// Non-Goal) -- it runs in the client bundle and is intentionally not merged into
+// lib/shared.js's server-oriented exports in this refactor; a future issue can revisit
+// whether a client+server-safe module is worth building for it.
 function normalizeTags(input){
   const arr = Array.isArray(input) ? input : [];
   const out = [];

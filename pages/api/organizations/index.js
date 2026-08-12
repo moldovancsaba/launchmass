@@ -2,6 +2,7 @@ import clientPromise from '../../../lib/db.js';
 import { ensureOrgContext, getOrgContext } from '../../../lib/org.js';
 import { withSsoAuth } from '../../../lib/auth-oauth.js';
 import { isSuperAdmin } from '../../../lib/permissions.js';
+import { normalizeBg } from '../../../lib/shared.js';
 
 // /api/organizations (index): GET (list active) and POST (create)
 // Functional: Manage organizations with permission-based filtering and auto-admin membership
@@ -25,21 +26,6 @@ function coerceBoolean(v) {
   if (typeof v === 'boolean') return v;
   if (typeof v === 'string') return v.toLowerCase() === 'true';
   return false;
-}
-
-// WHAT: Default background gradient for organizations
-// WHY: Consistent with card default background
-const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
-
-// WHAT: Normalize background input to extract CSS value
-// WHY: Handle multi-line CSS paste format like cards do
-function normalizeBg(input) {
-  if (!input) return DEFAULT_BG;
-  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
-  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
-  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
-  return pick || DEFAULT_BG;
 }
 
 export default async function handler(req, res) {

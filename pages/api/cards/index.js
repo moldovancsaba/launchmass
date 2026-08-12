@@ -2,38 +2,13 @@ import clientPromise from '../../../lib/db';
 import { getOrgContext } from '../../../lib/org.js';
 import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
 import { logEvent, EVENT_TYPES } from '../../../lib/analytics.js';
-
-const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
+import { DEFAULT_BG, normalizeBg, normalizeTags, toClient } from '../../../lib/shared.js';
 
 // Functional: Debug logger gated behind CARDS_DEBUG.
 // Strategic: Matches the OAUTH_DEBUG (pages/api/oauth/callback.js) / ORG_CACHE_DEBUG
 // (lib/org.js) convention — verbose per-request diagnostics must be opt-in, and must
 // never include cookie/header content even when the flag is on (see issue #11).
 const dlog = (...args) => { if (process.env.CARDS_DEBUG === 'true') console.log(...args); };
-
-function toClient(doc) {
-  if (!doc) return doc;
-  const { _id, createdAt, updatedAt, ...rest } = doc;
-  
-  // Functional: Normalize timestamps to ISO strings for consistent JSON serialization
-  // Strategic: Handle both Date objects (new cards) and string timestamps (migrated legacy cards)
-  const toISOString = (val) => {
-    if (!val) return undefined;
-    if (typeof val === 'string') return val; // Already a string, assume ISO format
-    if (val instanceof Date) return val.toISOString(); // Date object
-    return undefined; // Unknown type
-  };
-  
-  return { 
-    _id: _id?.toString?.() || String(_id), 
-    ...rest,
-    // Ensure tags is always an array for the client
-    tags: Array.isArray(rest?.tags) ? rest.tags : [],
-    // Convert timestamps to ISO strings
-    ...(createdAt && { createdAt: toISOString(createdAt) }),
-    ...(updatedAt && { updatedAt: toISOString(updatedAt) })
-  };
-}
 
 export default async function handler(req, res) {
   try {
@@ -96,25 +71,4 @@ export default async function handler(req, res) {
     console.error('[cards API] Stack:', error.stack);
     return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
-}
-
-function normalizeBg(input) {
-  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
-  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
-  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
-  return pick;
-}
-
-function normalizeTags(input) {
-  const arr = Array.isArray(input) ? input : [];
-  const out = [];
-  const seen = new Set();
-  for (const raw of arr) {
-    if (typeof raw !== 'string') continue;
-    const t = raw.trim().replace(/^#/,'').toLowerCase();
-    if (!t) continue;
-    if (!seen.has(t)) { seen.add(t); out.push(t); }
-  }
-  return out;
 }

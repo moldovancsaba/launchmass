@@ -1,6 +1,7 @@
 import clientPromise from '../../../lib/db.js';
 import { invalidateOrgCacheBySlug } from '../../../lib/org.js';
 import { withSsoAuth, withOrgPermission } from '../../../lib/auth-oauth.js';
+import { normalizeBg } from '../../../lib/shared.js';
 
 // /api/organizations/[uuid]: GET, PUT (update), DELETE (soft delete)
 // Functional: Read, update, or soft-delete organization by UUID with permission checks
@@ -23,21 +24,6 @@ function coerceBoolean(v) {
 
 // Functional: ISO 8601 UTC timestamp helper (project standard)
 function isoNow() { return new Date().toISOString(); }
-
-// WHAT: Default background gradient for organizations
-// WHY: Consistent with card default background
-const DEFAULT_BG = "linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%)";
-
-// WHAT: Normalize background input to extract CSS value
-// WHY: Handle multi-line CSS paste format like cards do
-function normalizeBg(input) {
-  if (!input) return DEFAULT_BG;
-  const lines = String(input).split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-  const linear = lines.find(l => l.startsWith('background: linear-gradient'));
-  const color = lines.find(l => /^background:\s*#?[0-9a-fA-F]{3,8}/.test(l));
-  const pick = (linear || color || input).replace(/^background:\s*/,'').replace(/;$/,'');
-  return pick || DEFAULT_BG;
-}
 
 // Functional: Protect organization operations with SSO authentication and permission checks
 // Strategic: GET requires org.read, PUT requires org.write, DELETE requires org.delete
