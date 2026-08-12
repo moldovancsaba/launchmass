@@ -6,6 +6,9 @@
  */
 
 import { MongoClient } from 'mongodb';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
 
 const LAUNCHMASS_URI = process.env.MONGODB_URI;
 if (!LAUNCHMASS_URI) {
