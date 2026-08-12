@@ -9,6 +9,7 @@
 import { withSsoAuth, requireAdminRole } from '../../../../../lib/auth-oauth';
 import clientPromise from '../../../../../lib/db';
 import { syncPermissionToSSO } from '../../../../../lib/ssoPermissions.mjs';
+import { logAdminAction } from '../../../../../lib/analytics.js';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -82,6 +83,8 @@ async function handler(req, res) {
     }
 
     console.log('Access granted:', { ssoUserId, role });
+
+    logAdminAction('grant_access', null, req.user?.ssoUserId, { targetSsoUserId: ssoUserId, role });
 
     return res.status(200).json({
       success: true,
