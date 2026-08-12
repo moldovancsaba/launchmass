@@ -7,7 +7,13 @@ import Header from '../../components/Header';
 // Functional: Import OAuth-based SSO authentication utilities
 // Strategic: Migrated from legacy cookie-forwarding (lib/auth.js) to OAuth 2.0 flow (lib/auth-oauth.js)
 import { validateSsoSession, getOAuthLoginUrl } from '../../lib/auth-oauth.js';
-import { DEFAULT_BG, normalizeBg } from '../../lib/shared.js';
+import { DEFAULT_BG } from '../../lib/shared.js';
+// Structured background/gradient editor (issue #20) -- replaces the raw-CSS textarea
+// as the default editing surface; see BackgroundEditor.jsx for the GDS component-fit
+// writeup (no dedicated GDS color-picker exists, so color entry is a GDS FormField
+// -wrapped, pattern-validated text field, with the Advanced/raw-textarea mode kept
+// unchanged as the power-user fallback).
+import BackgroundEditor from '../../components/admin/BackgroundEditor.jsx';
 // Custom lightweight tag input to avoid Popper dependency issues in CI/build environments.
 // We deliberately avoid MUI Autocomplete here to prevent @popperjs/core bundling errors.
 
@@ -103,6 +109,13 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
 
   const tags = Array.isArray(item.tags) ? item.tags : [];
 
+  // Functional: Gates the Save button on the structured background editor's own
+  // validity (issue #20 acceptance criterion: inline validation feedback, not a
+  // save-time silent fallback). Defaults true so an editor that hasn't reported yet
+  // (impossible in practice -- BackgroundEditor reports synchronously via
+  // useLayoutEffect on its first commit, before paint) never blocks Save.
+  const [bgValid, setBgValid] = useState(true);
+
   return (
     <div ref={setNodeRef} style={style} className="admin-card" >
       <div className="admin-card-inner" style={{ background: bg }}>
@@ -133,12 +146,9 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
             <label>Title<input value={item.title} onChange={e => onChange({ ...item, title: e.target.value })} /></label>
             <label>Link<input value={item.href} onChange={e => onChange({ ...item, href: e.target.value })} /></label>
             <label>Description<textarea value={item.description} onChange={e => onChange({ ...item, description: e.target.value })} rows={3} /></label>
-            <label>Background (paste your 2 lines)<textarea
-              placeholder={"background: #2A7B9B;\nbackground: linear-gradient(90deg, rgba(42, 123, 155, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(237, 221, 83, 1) 100%);"}
-              value={item._bgInput ?? ('background: ' + (item.background || DEFAULT_BG))}
-              onChange={e => onChange({ ...item, _bgInput: e.target.value, background: normalizeBg(e.target.value) })}
-              rows={4}
-            /></label>
+            <div style={{ margin: '8px 0' }}>
+              <BackgroundEditor item={item} onChange={onChange} onValidityChange={setBgValid} />
+            </div>
 {/* Functional: Predictive tags input with chips and remove (x). */}
             {/* Strategic: Lightweight custom input avoids Popper-based Autocomplete to ensure reliable builds. */}
             <div style={{ margin: '8px 0' }}>
@@ -150,7 +160,7 @@ function Card({ item, editing, onStartEdit, onCancel, onSave, onDelete, onChange
             </div>
             <div className="form-actions">
               <button onClick={onCancel}>Cancel</button>
-              <button onClick={onSave}>Save</button>
+              <button onClick={onSave} disabled={!bgValid} title={!bgValid ? 'Fix the background field before saving' : undefined}>Save</button>
             </div>
           </div>
         )}
