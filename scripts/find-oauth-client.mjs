@@ -5,7 +5,11 @@
 
 import { MongoClient } from 'mongodb';
 
-const SSO_MONGODB_URI = 'mongodb+srv://thanperfect:CuW54NNNFKnGQtt6@doneisbetter.49s2z.mongodb.net';
+const SSO_MONGODB_URI = process.env.SSO_MONGODB_URI;
+if (!SSO_MONGODB_URI) {
+  console.error('SSO_MONGODB_URI environment variable is not set. See .env.example.');
+  process.exit(1);
+}
 
 async function findClient() {
   const client = new MongoClient(SSO_MONGODB_URI);
