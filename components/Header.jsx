@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useTourController } from '../lib/tour/useTourController';
 import { getLaunchmassTourSteps, LAUNCHMASS_TOUR_ID } from '../lib/tour/config/tourSteps';
 import { hasTourBeenSeen } from '../lib/tour/storage';
@@ -169,14 +170,14 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
             overflowY: 'auto',
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <a
+              <Link
                 href="/"
                 data-tour-id="tour-home"
                 className="menu-item"
                 onClick={() => setMenuOpen(false)}
               >
                 🏠 Home
-              </a>
+              </Link>
 
               <button
                 type="button"
@@ -196,30 +197,30 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
 
               {isAuthenticated && (
                 <>
-                  <a
+                  <Link
                     href="/admin"
                     data-tour-id="tour-admin"
                     className="menu-item"
                     onClick={() => setMenuOpen(false)}
                   >
                     ⚙️ Admin
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/settings"
                     data-tour-id="tour-organizations"
                     className="menu-item"
                     onClick={() => setMenuOpen(false)}
                   >
                     🏢 Organizations
-                  </a>
-                  <a
+                  </Link>
+                  <Link
                     href="/admin/users"
                     data-tour-id="tour-manage-users"
                     className="menu-item"
                     onClick={() => setMenuOpen(false)}
                   >
                     👥 Manage Users
-                  </a>
+                  </Link>
                   <div style={{ borderTop: '1px solid #2A2F52', margin: '8px 0' }} />
                   <button
                     className="menu-item"
@@ -263,14 +264,14 @@ export default function Header({ orgName, onAddCard, showAddCard = false }) {
               )}
               
               {!isAuthenticated && (
-                <a
+                <Link
                   href="/admin"
                   data-tour-id="tour-login"
                   className="menu-item"
                   onClick={() => setMenuOpen(false)}
                 >
                   🔐 Login
-                </a>
+                </Link>
               )}
             </div>
           </nav>

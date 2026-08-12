@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ChoiceChip } from '@sovereignsquad/gds-core';
 import OversizedLink from '../components/OversizedLink';
 import Header from '../components/Header';
@@ -20,8 +21,8 @@ export default function Home({ cards, activeTag, orgName, orgBackground }) {
         <section style={{ margin: '84px 16px 0', padding: '26px 28px', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', background: '#fff', border: '1px solid var(--seyu-line)', borderRadius: 'var(--seyu-radius-card)', color: 'var(--seyu-ink)', boxShadow: '0 10px 30px rgba(27,31,60,0.28)' }}>
           <strong className="anton" style={{ fontSize: 22 }}>Welcome to SEYU</strong>
           <span style={{ color: 'var(--seyu-muted)', fontWeight: 500 }}>No content found yet.</span>
-          <a href="/settings#organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</a>
-          <a href="/admin" className="tag-chip">Admin</a>
+          <Link href="/settings#organizations" className="tag-chip" style={{ marginLeft: 'auto' }}>Organizations</Link>
+          <Link href="/admin" className="tag-chip">Admin</Link>
         </section>
       )}
       {activeTag ? (
@@ -81,12 +82,15 @@ export async function getServerSideProps(context) {
       return undefined;
     };
 
-    const safe = cards.map(({ _id, createdAt, updatedAt, ...rest }) => ({
-      ...rest,
-      tags: Array.isArray(rest?.tags) ? rest.tags : [],
-      ...(createdAt && { createdAt: toISOString(createdAt) }),
-      ...(updatedAt && { updatedAt: toISOString(updatedAt) })
-    }));
+    const safe = cards.map(({ createdAt, updatedAt, ...rest }) => {
+      delete rest._id;
+      return {
+        ...rest,
+        tags: Array.isArray(rest?.tags) ? rest.tags : [],
+        ...(createdAt && { createdAt: toISOString(createdAt) }),
+        ...(updatedAt && { updatedAt: toISOString(updatedAt) })
+      };
+    });
     return { props: { cards: safe, activeTag: filterTag || null, orgName: defaultOrg?.name || null, orgBackground: defaultOrg?.background || null } };
   } catch {
     // DB unavailable → render empty state with quick-access links

@@ -8,6 +8,13 @@ npm run verify-docs || {
   exit 1
 }
 
+npm run lint || {
+  echo "" >&2
+  echo "✗ pre-commit: lint failed. Fix ESLint error-level violations before committing." >&2
+  echo "  (run 'npm run lint' to see details)" >&2
+  exit 1
+}
+
 npm run scan-secrets || {
   echo "" >&2
   echo "✗ pre-commit: scan-secrets found a possible credential in staged files. Commit blocked." >&2

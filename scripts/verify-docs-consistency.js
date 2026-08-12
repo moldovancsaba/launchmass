@@ -228,9 +228,11 @@ function main() {
   console.log(`${colors.blue}║  DOCUMENTATION CONSISTENCY VALIDATION            ║${colors.reset}`);
   console.log(`${colors.blue}╚═══════════════════════════════════════════════════╝${colors.reset}`);
 
-  const docsExist = validateRequiredDocs();
-  const versionsConsistent = validateVersionConsistency();
-  const timestampsValid = validateTimestampFormat();
+  // Functional: each validator's own console output + `exitCode` mutation is what
+  // drives the summary below; the boolean it returns isn't separately consumed here.
+  validateRequiredDocs();
+  validateVersionConsistency();
+  validateTimestampFormat();
 
   console.log(`\n${colors.cyan}═══════════════════════════════════════════════════${colors.reset}`);
   console.log(`${colors.cyan}  VALIDATION SUMMARY${colors.reset}`);
