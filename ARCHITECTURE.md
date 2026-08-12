@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.11**
+**Version: 1.23.12**
 
 ## Overview
 
@@ -392,7 +392,7 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
   - Logs slow permission checks for debugging
   - Exposes metrics via getPermissionMetrics()
 
-**Server-Side (`lib/ssoPermissions.mjs`) - v1.13.0+:**
+**Server-Side (`lib/ssoPermissions.js`) - v1.13.0+:**
 - SSO permission synchronization helper
 - Syncs launchmass permissions to central SSO system
 - Unified access control across all applications
@@ -635,7 +635,7 @@ scopes `tsc`'s checker to `lib/**/*.js` and `pages/**/*.js`, without migrating a
 to `.ts` — this repo's source stays 100% `.js`/`.mjs`; types live entirely in JSDoc
 comments and one typedef-only module, `lib/types.js` (`UserDoc`, `OrgDoc`, `CardDoc`,
 `SessionPayload`). Full `@param`/`@returns` coverage is scoped to six modules —
-`lib/users.js`, `lib/permissions.js`, `lib/ssoPermissions.mjs`, `lib/session.js`,
+`lib/users.js`, `lib/permissions.js`, `lib/ssoPermissions.js`, `lib/session.js`,
 `lib/org.js`, `lib/db.js` — the ones most implicated in this program's audit findings;
 `pages/**` is still checked (for cross-boundary errors when it calls into a now-typed
 `lib/` function) but not deliberately annotated, an intentionally incremental scope

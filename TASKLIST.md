@@ -1,8 +1,28 @@
 # Task List - launchmass
 
-**Version: 1.23.11**
+**Version: 1.23.12**
 
 ## Completed Tasks
+
+### ✅ v1.23.12 — CLEANUP: Normalize ssoPermissions module extension and logging conventions (Completed 2026-08-12T00:00:00.000Z, closes #17)
+- ✅ `lib/ssoPermissions.mjs` renamed to `lib/ssoPermissions.js` via `git mv` (history
+      preserved through the rename — verified with `git log --follow lib/ssoPermissions.js`).
+- ✅ All import sites updated (`pages/api/oauth/callback.js`,
+      `pages/api/admin/batch-sync-sso.js`,
+      `pages/api/admin/users/[ssoUserId]/change-role.js`,
+      `pages/api/admin/users/[ssoUserId]/grant-access.js`,
+      `pages/api/admin/users/[ssoUserId]/revoke-access.js`); `git grep -n "ssoPermissions"`
+      confirms zero remaining `.mjs` references outside of historical changelog/
+      debugging-narrative text in `RELEASE_NOTES.md`/`TASKLIST.md`/`LEARNINGS.md`, which
+      is left as an accurate record of past events, unchanged.
+- ✅ Local `logger` object replaced with the codebase's `dlog`/`OAUTH_DEBUG` gated-debug
+      pattern (`logger.debug`/`logger.info` → `dlog(...)`; `logger.warn`/`logger.error` →
+      direct, unconditional `console.warn`/`console.error`), matching the convention in
+      `pages/api/oauth/callback.js` and `lib/org.js`.
+- ✅ `ARCHITECTURE.md`, `WARP.md`, and `lib/types.js` updated to reference
+      `lib/ssoPermissions.js` in their current-state module descriptions.
+- ✅ `npm run verify-docs`, `npm run lint`, `npm run typecheck`, `npm run scan-secrets`,
+      and `npm run build` all clean.
 
 ### ✅ v1.23.11 — UX: Loading, error, and retry states for the public card grid (Completed 2026-08-12T16:01:48.000Z, closes #19)
 - ✅ `pages/index.js`'s `getServerSideProps` no longer swallows fetch failures with a
