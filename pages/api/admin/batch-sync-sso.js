@@ -9,6 +9,7 @@
 import { withSsoAuth } from '../../../lib/auth-oauth';
 import clientPromise from '../../../lib/db';
 import { batchSyncToSSO } from '../../../lib/ssoPermissions.mjs';
+import { isSuperAdmin } from '../../../lib/permissions';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -16,9 +17,13 @@ async function handler(req, res) {
   }
 
   try {
-    // WHAT: Verify user has admin/superadmin role
+    // WHAT: Verify caller is an admin, checking both appRole and the canonical
+    // isSuperAdmin flag -- scripts/migrate-user-rights.cjs seeds isSuperAdmin: true
+    // independently of appRole, and lib/permissions.js's isSuperAdmin() is what the
+    // rest of the permission system (hasOrgPermission) already treats as authoritative;
+    // checking appRole alone would lock a real superadmin out
     // WHY: Only admins should be able to trigger batch sync
-    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin') {
+    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin' && !isSuperAdmin(req.user)) {
       return res.status(403).json({
         error: 'Forbidden',
         message: 'Only admins can perform batch sync',
