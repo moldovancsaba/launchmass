@@ -6,10 +6,9 @@
  * HOW: Calls SSO API to update role, syncs local cache
  */
 
-import { withSsoAuth } from '../../../../../lib/auth-oauth';
+import { withSsoAuth, requireAdminRole } from '../../../../../lib/auth-oauth';
 import clientPromise from '../../../../../lib/db';
 import { syncPermissionToSSO } from '../../../../../lib/ssoPermissions.mjs';
-import { isSuperAdmin } from '../../../../../lib/permissions';
 
 async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -32,16 +31,6 @@ async function handler(req, res) {
       return res.status(400).json({
         error: 'Invalid role',
         message: 'Role must be: user or admin',
-      });
-    }
-
-    // WHAT: Verify caller is an admin, checking both appRole and the canonical
-    // isSuperAdmin flag (see grant-access.js for why appRole alone isn't enough)
-    // WHY: Changing a user's role (including promotion to admin) must not be reachable by ordinary users
-    if (req.user?.appRole !== 'admin' && req.user?.appRole !== 'superadmin' && !isSuperAdmin(req.user)) {
-      return res.status(403).json({
-        error: 'Forbidden',
-        message: 'Only admins can change roles',
       });
     }
 
@@ -101,4 +90,6 @@ async function handler(req, res) {
   }
 }
 
-export default withSsoAuth(handler);
+// WHAT: Wrap with SSO authentication, then the shared admin-role guard
+// WHY: Changing a user's role (including promotion to admin) must not be reachable by ordinary users
+export default withSsoAuth(requireAdminRole(handler, 'Only admins can change roles'));

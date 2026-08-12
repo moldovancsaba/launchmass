@@ -1,5 +1,43 @@
 # Release Notes - launchmass
 
+## [v1.23.2] — 2026-08-12T12:54:05.000Z
+
+### Consolidated admin-role authorization into a shared guard (Closes #9)
+
+The privilege-escalation vulnerability #9 described was already fixed in PR #38
+(v1.21.0) — every `admin/users/**` API route and `pages/admin/users.js`'s
+`getServerSideProps` already rejected non-admin callers. What remained per #9's own
+Technical/Documentation acceptance criteria was that the fix had been applied as six
+independent inline copies of the same `appRole`/`isSuperAdmin`-flag check instead of
+one shared implementation, and `ARCHITECTURE.md` never documented the requirement.
+This release is a pure refactor — zero behavior change — that consolidates those six
+copies into one guard and adds the missing documentation.
+
+**Changed:**
+- `lib/auth-oauth.js` — new `isAppAdmin(user)` predicate and `requireAdminRole(handler,
+  message)` API-route HOF, reproducing the exact check (`appRole === 'admin'/'superadmin'`
+  OR the canonical `isSuperAdmin` flag) and exact per-route 403 message text that was
+  previously duplicated inline.
+- `pages/api/admin/users/index.js`, `.../[ssoUserId]/change-role.js`,
+  `.../[ssoUserId]/grant-access.js`, `.../[ssoUserId]/revoke-access.js`,
+  `pages/api/admin/batch-sync-sso.js` — now compose `withSsoAuth(requireAdminRole(handler,
+  '<original message>'))` instead of an inline check; each site's original 403 message
+  text is preserved via the `message` parameter.
+- `pages/admin/users.js` — `getServerSideProps` now calls `isAppAdmin(user)` instead of
+  repeating the inline check.
+- `ARCHITECTURE.md` — documents `isAppAdmin`/`requireAdminRole` and notes that all
+  `admin/users/**` and `admin/batch-sync-sso` routes require `appRole` admin/superadmin
+  (or the `isSuperAdmin` flag).
+
+**Verification:**
+- `npm run verify-docs` and `npm run build` both clean.
+- Manual code read of all six call sites confirms each imports and uses the shared
+  guard/predicate, with no remaining duplicate inline `appRole`/`isSuperAdmin` check.
+- No behavior change: admin/superadmin callers unaffected; non-admin callers still get
+  403 with the same message text as before per route.
+
+---
+
 ## [v1.23.1] — 2026-08-12T12:51:18.000Z
 
 ### Security: Enforce organization-scoped authorization on card mutation endpoints (Closes #8)
@@ -42,6 +80,12 @@ cards it doesn't belong to.
   already build the status message from `'HTTP ' + res.status + ' — ' + (await
   res.text())`, which embeds the 403 JSON body's raw text (including the `message`
   field) — confirmed by reading the code, not merely assumed.
+- **Post-merge review fix (same PR, before merge):** the routes as first written called
+  `withOrgPermission` directly without `withSsoAuth`, which left `req.user` undefined
+  for every request and made every card mutation return 403 — including for legitimate
+  same-org members and super admins. Fixed by composing
+  `withSsoAuth(withOrgPermission(...))`, matching `pages/api/organizations/[uuid].js`'s
+  existing pattern. Caught by review before merge; rebuilt and re-verified clean.
 
 ## [v1.23.0] — 2026-08-12T12:28:37.000Z
 
