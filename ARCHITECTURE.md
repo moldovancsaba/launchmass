@@ -1,6 +1,6 @@
 # System Architecture - launchmass
 
-**Version: 1.23.6**
+**Version: 1.23.7**
 
 ## Overview
 
@@ -98,6 +98,23 @@ launchmass is a Next.js application featuring a mobile-first grid interface with
   - `authLogs` - Authentication audit trail (v1.7.0+)
   - `organizationRoles` - Custom role definitions (v1.18.0+)
   - `analyticsEvents` - Event tracking for analytics (v1.18.0+)
+
+#### Shared Normalization Helpers (`lib/shared.js`) - v1.23.7+
+- **Role**: Single canonical source for `DEFAULT_BG`, `normalizeBg`, `normalizeTags`, and
+  `toClient` — background-CSS extraction, tag canonicalization, and client-safe card
+  document shaping (stringified `_id`, ISO timestamp coercion).
+- **Status**: Active — extracted from six independently-drifting copies (issue #14):
+  `pages/api/cards/index.js`, `pages/api/cards/[id].js`, `pages/api/organizations/index.js`,
+  `pages/api/organizations/[uuid].js`, `pages/admin/index.js`, and `pages/settings.js` all
+  previously defined their own `normalizeBg`/`DEFAULT_BG`; `cards/index.js` and
+  `cards/[id].js` additionally each defined their own `normalizeTags`/`toClient`.
+- **Constraint**: zero dependency on Next.js request/response objects or any server-only
+  API — pure functions only, so the module is safely importable by both server-side API
+  routes and client-bundled page components (`pages/admin/index.js`, `pages/settings.js`
+  import `normalizeBg`/`DEFAULT_BG` from here directly).
+- **Deliberate exception**: `pages/admin/index.js` keeps its own local `normalizeTags` —
+  a client-side-only copy left un-deduplicated on purpose (issue #14 Non-Goal); see that
+  file's inline comment for the rationale.
 
 #### API Routes (`pages/api/`)
 - **Role**: RESTful API endpoints for data operations

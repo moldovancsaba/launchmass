@@ -1,5 +1,43 @@
 # Release Notes - launchmass
 
+## [v1.23.7] — 2026-08-12T14:30:56.000Z
+
+### REFACTOR: Extract shared card/organization normalization helpers into a single module (Closes #14)
+
+`normalizeBg`, `normalizeTags`, `toClient`, and `DEFAULT_BG` were independently
+duplicated across up to six files — a bug fix or behavior change had to be applied in
+every copy independently, with no single source of truth. This release extracts them
+into a new `lib/shared.js` and updates every call site to import from it. Pure
+extraction — zero behavior change.
+
+**Added:**
+- `lib/shared.js` — exports `DEFAULT_BG`, `normalizeBg`, `normalizeTags`, `toClient`.
+  Zero dependency on Next.js request/response objects or any server-only API, so it's
+  safely importable from both server-side API routes and client-bundled page
+  components.
+
+**Changed:**
+- `pages/api/cards/index.js`, `pages/api/cards/[id].js` — now import `normalizeBg`,
+  `normalizeTags`, `toClient` (and `DEFAULT_BG` where still used) from `lib/shared.js`;
+  local definitions deleted.
+- `pages/api/organizations/index.js`, `pages/api/organizations/[uuid].js` — now import
+  `normalizeBg` from `lib/shared.js`; local `normalizeBg`/`DEFAULT_BG` deleted.
+- `pages/admin/index.js`, `pages/settings.js` — client-bundled pages that had their own
+  `normalizeBg`/`DEFAULT_BG` copies now import them from `lib/shared.js` too, since the
+  module has no server-only dependency and is safe to bundle client-side.
+
+**Scope note:** the originating issue's text described three pre-refactor `normalizeBg`
+copies; the actual repository at implementation time had six (two more API-route copies
+and two client-page copies had been added by PRs that landed after the issue was
+filed). All six are consolidated here — see `TASKLIST.md`'s v1.23.7 entry for the full
+per-file breakdown and the behavioral-divergence analysis between the six pre-refactor
+copies.
+
+**Deliberately not touched (Non-Goal):**
+- `pages/admin/index.js`'s local `normalizeTags` — a client-side-only copy, left
+  un-deduplicated on purpose; extracting a truly shared client+server tag-normalization
+  module is a larger, deferred change (see that function's inline comment).
+
 ## [v1.23.6] — 2026-08-12T14:14:17.000Z
 
 ### FIX: Wire orphaned analytics event-logging module into mutation flows (Closes #13)

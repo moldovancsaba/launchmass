@@ -1,6 +1,6 @@
 # Development Learnings - launchmass
 
-**Version: 1.23.6**
+**Version: 1.23.7**
 
 ## Frontend
 
@@ -122,6 +122,24 @@
 **Issue**: Project requires comprehensive commenting explaining both function and reasoning  
 **Solution**: Implemented detailed comments covering implementation decisions and architectural choices  
 **Key Learning**: Comments should explain not just what code does, but why specific approaches were chosen, especially for architectural decisions like script injection methods
+
+### `scripts/bump-version.sh` Uses macOS `sed -i ''` Syntax, Fails on Linux (2026-08-12T14:30:56.000Z)
+**Issue**: `npm run bump-version patch` (v1.23.7, issue #14) correctly bumps
+`package.json` via `npm version`, then fails: `sed: can't read s/v[0-9]\+\.../...: No
+such file or directory`. The script's doc-file update loop uses
+`sed -i '' "s/.../.../g" "$file"` — macOS/BSD `sed -i` requires a (possibly empty)
+extension argument; GNU `sed` (Linux) treats the `''` itself as the file argument.
+**Solution**: On Linux, hand-edit the version line in each doc file with GNU syntax
+(`sed -i "s/OLD/NEW/"`), scoped to just the current-version header/badge line (e.g. by
+line number) — never the script's blanket
+`s/[0-9]\+\.[0-9]\+\.[0-9]\+/$NEW_VERSION/g` across the whole file, which would also
+rewrite historical changelog entries that intentionally mention older version numbers.
+**Key Learning**: `package.json`'s version bump (via `npm version`, itself
+cross-platform) succeeds independently of the doc-sync step — a failure after "New
+version: ..." is this known, Linux-specific `sed` incompatibility, not a sign the
+version bump itself failed. Fix the script properly (branch on `$OSTYPE` or use a
+portable `sed -i.bak && rm` pattern) as its own follow-up rather than re-discovering
+this per session.
 
 ### Verify Package-Registry Claims Directly, Especially When They Arrive Mid-Conversation (2026-08-05T13:01:09.000Z)
 **Issue**: While installing `@sovereignsquad/gds-core` for this repo's guided tour

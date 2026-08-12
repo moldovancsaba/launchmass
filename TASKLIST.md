@@ -1,8 +1,35 @@
 # Task List - launchmass
 
-**Version: 1.23.6**
+**Version: 1.23.7**
 
 ## Completed Tasks
+
+### ✅ v1.23.7 — REFACTOR: Extract shared card/organization normalization helpers into a single module (Completed 2026-08-12T14:30:56.000Z, closes #14)
+- ✅ New `lib/shared.js` exports `DEFAULT_BG`, `normalizeBg`, `normalizeTags`, `toClient` —
+      pure functions with zero dependency on Next.js request/response objects or any
+      server-only API, so the module is safely importable by both server-side API routes
+      and client-bundled page components.
+- ✅ Consolidated six pre-refactor copies, not the three the issue text described (the repo
+      had drifted since the issue was filed): `pages/api/cards/index.js`,
+      `pages/api/cards/[id].js`, `pages/api/organizations/index.js`,
+      `pages/api/organizations/[uuid].js`, `pages/admin/index.js`, and `pages/settings.js`
+      all had their own `normalizeBg`/`DEFAULT_BG`; `cards/index.js` and `cards/[id].js`
+      additionally each had their own `normalizeTags`/`toClient`. All now import from
+      `lib/shared.js`.
+- ✅ Deliberately left untouched (issue #14 Non-Goal): `pages/admin/index.js`'s local
+      client-side `normalizeTags` copy — browser-bundle code, intentionally not merged.
+- ✅ Behavioral divergence found and resolved during the diff: `normalizeBg` had two
+      outlier copies (`cards/index.js` had neither the leading `!input` guard nor the
+      trailing `|| DEFAULT_BG` fallback; `cards/[id].js` had only the trailing fallback)
+      against four copies that already had both guards (`organizations/index.js`,
+      `organizations/[uuid].js`, `pages/settings.js`, and functionally
+      `pages/admin/index.js` via its `input || ''` idiom). Standardized on the
+      fully-defensive variant per the issue's own guidance; verified this is
+      behavior-preserving for both outlier call sites (see `lib/shared.js`'s inline
+      comment and the PR description for the full reasoning).
+- ✅ `git grep -n "function normalizeBg" pages` returns zero matches; `pages/admin/index.js`
+      still defines `normalizeTags` locally as intended.
+- ✅ `ARCHITECTURE.md` updated with a new `lib/shared.js` module-structure entry.
 
 ### ✅ v1.23.6 — FIX: Wire orphaned analytics event-logging module into mutation flows (Completed 2026-08-12T14:14:17.000Z, closes #13)
 - ✅ `lib/analytics.js`'s `logEvent`/`logAdminAction` (previously fully built but never
