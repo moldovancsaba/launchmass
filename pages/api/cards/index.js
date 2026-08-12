@@ -30,7 +30,30 @@ export default async function handler(req, res) {
 
       const filter = { orgUuid: ctx.orgUuid };
 
-      const docs = await col.find(filter).sort({ order: 1, _id: 1 }).toArray();
+      // Functional: Optional limit/offset pagination (issue #22).
+      // Strategic: Strictly additive/backward-compatible — omitting both params must
+      // preserve today's exact bare-array response for every existing caller (admin UI,
+      // public homepage). Invalid/out-of-range values (non-numeric, <=0, negative) are
+      // treated as "not supplied" and fall back to the default unbounded behavior rather
+      // than a 400, since this is an optional enhancement, not a validated required param.
+      const MAX_LIMIT = 500;
+      const rawLimit = Number(req.query.limit);
+      const rawOffset = Number(req.query.offset);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, MAX_LIMIT) : null;
+      const offset = Number.isFinite(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+
+      const query = col.find(filter).sort({ order: 1, _id: 1 });
+
+      if (limit !== null) {
+        // Functional: countDocuments only runs on the opted-in paginated path.
+        // Strategic: Never adds a query cost to the default unpaginated path.
+        const total = await col.countDocuments(filter);
+        const docs = await query.skip(offset).limit(limit).toArray();
+        dlog('[cards API]', req.method, 'org=', ctx.orgUuid, 'limit=', limit, 'offset=', offset, 'total=', total, 'count=', docs.length);
+        return res.status(200).json({ cards: docs.map(toClient), total, hasMore: total > offset + docs.length });
+      }
+
+      const docs = await query.toArray();
       dlog('[cards API]', req.method, 'org=', ctx.orgUuid, 'count=', docs.length);
 
       return res.status(200).json(docs.map(toClient));
