@@ -211,6 +211,22 @@ body {
   border: 0; border-radius: var(--seyu-radius-pill); padding: 7px 14px; font-weight: 700;
   background: var(--seyu-magenta); color: #fff; cursor: pointer;
 }
+.admin-card-form .form-actions button:disabled { opacity: .5; cursor: not-allowed; }
+
+/* Structured background/gradient editor (issue #20) */
+.bg-editor { display: grid; gap: 10px; margin-bottom: 8px; }
+.bg-editor-preview {
+  height: 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.5);
+}
+.bg-editor-gradient { display: grid; gap: 8px; }
+.bg-editor-stop {
+  display: grid; grid-template-columns: 20px 1fr 100px auto;
+  gap: 8px; align-items: end;
+}
+.bg-editor-stop-swatch {
+  width: 20px; height: 20px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.5);
+  align-self: center;
+}
 
 /* Spinner animation for loading states */
 @keyframes spin {
