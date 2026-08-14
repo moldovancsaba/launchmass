@@ -9,7 +9,7 @@
 
 import { MongoClient } from 'mongodb';
 
-const SSO_MONGODB_URI = 'REDACTED_ROTATED_2026-08-14';
+const SSO_MONGODB_URI = 'REDACTED_ROTATE_ME_2026-08-14';
 const LAUNCHMASS_CLIENT_ID = 'df9bea3a-eb1e-49b4-a8d0-3a8e0b18842f';
 
 async function updateOAuthClient() {

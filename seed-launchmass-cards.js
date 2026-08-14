@@ -7,7 +7,7 @@
 
 import { MongoClient } from 'mongodb';
 
-const LAUNCHMASS_URI = "REDACTED_ROTATED_2026-08-14";
+const LAUNCHMASS_URI = "REDACTED_ROTATE_ME_2026-08-14";
 const LAUNCHMASS_DB = "launchmass";
 
 // Extracted cards from the provided HTML
