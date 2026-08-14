@@ -5,7 +5,7 @@
 
 import { MongoClient } from 'mongodb';
 
-const SSO_MONGODB_URI = 'REDACTED_ROTATED_2026-08-14';
+const SSO_MONGODB_URI = 'REDACTED_ROTATE_ME_2026-08-14';
 
 async function findClient() {
   const client = new MongoClient(SSO_MONGODB_URI);
